@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resNFe versao="1.01" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <chNFe>35240112345678000199550010000001231234567890</chNFe>
+  <CNPJ>12345678000199</CNPJ>
+  <xNome>EMPRESA EMITENTE LTDA</xNome>
+  <IE>123456789012</IE>
+  <dhEmi>2024-01-15T10:30:00-03:00</dhEmi>
+  <tpNF>1</tpNF>
+  <vNF>15750.50</vNF>
+  <digVal>dGVzdGUgZGlnZXN0IHZhbHVlIGJhc2U2NA==</digVal>
+  <dhRecbto>2024-01-15T10:35:00-03:00</dhRecbto>
+  <nProt>135240000123456</nProt>
+  <cSitNFe>1</cSitNFe>
+</resNFe>
