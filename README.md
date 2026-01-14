@@ -4,7 +4,7 @@ Sistema completo para gestao de documentos fiscais eletronicos (DFe) brasileiros
 
 ## Visao Geral
 
-FiscalZen e uma plataforma moderna para empresas que precisam gerenciar documentos fiscais eletronicos de forma centralizada e automatizada. O sistema oferece:
+FiscalZen e uma plataforma moderna para empresas que precisam gerenciar documentos fiscais eletronicos de forma centralizada e automatizada:
 
 - **Monitoramento automatico** de NFe, CTe e MDFe via SEFAZ
 - **Manifestacao do Destinatario** com ciencia e confirmacao automatizadas
@@ -20,23 +20,25 @@ O projeto utiliza uma arquitetura de monorepo com Turborepo:
 ```
 fiscalzen/
 ├── apps/
-│   ├── web/          # Frontend Next.js 14 (App Router)
-│   └── api/          # Backend Fastify com BullMQ
+│   ├── web/            # Frontend Next.js 14 (App Router)
+│   └── api/            # Backend Fastify com BullMQ
 ├── packages/
-│   ├── ui/           # Componentes React (shadcn/ui)
-│   ├── database/     # Schema Drizzle ORM + PostgreSQL
-│   ├── sefaz-client/ # Cliente SEFAZ (DistribuicaoDFe)
-│   ├── xml-parser/   # Parser de XMLs fiscais
-│   └── nfse-client/  # Cliente NFSe (ABRASF + RPA)
+│   ├── ui/             # Componentes React (shadcn/ui)
+│   ├── database/       # Schema Drizzle ORM + PostgreSQL
+│   ├── shared/         # Tipos e utilitarios compartilhados
+│   ├── sefaz-client/   # Cliente SEFAZ (DistribuicaoDFe)
+│   ├── xml-parser/     # Parser de XMLs fiscais
+│   └── nfse-client/    # Cliente NFSe (ABRASF + RPA)
+├── docker/             # Docker Compose para servicos
+├── .env.example        # Variaveis de ambiente (arquivo unico na raiz)
+└── package.json        # Scripts do monorepo
 ```
 
 ## Requisitos
 
-- Node.js 20+
-- pnpm 8+
-- PostgreSQL 15+
-- Redis 7+
-- Meilisearch (opcional, para busca)
+- **Node.js** 20 ou superior
+- **pnpm** 9 ou superior
+- **Docker** e Docker Compose (para servicos de infraestrutura)
 
 ## Instalacao
 
@@ -55,87 +57,150 @@ pnpm install
 
 ### 3. Configure as variaveis de ambiente
 
-Copie os arquivos de exemplo e configure:
+Copie o arquivo `.env.example` da raiz do projeto:
 
-```bash
-# API
-cp apps/api/.env.example apps/api/.env
-
-# Web
-cp apps/web/.env.example apps/web/.env
+**Windows (CMD):**
+```cmd
+copy .env.example .env
 ```
 
-#### Variaveis da API (`apps/api/.env`)
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+
+**Linux/Mac:**
+```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` conforme necessario. As principais configuracoes sao:
 
 ```env
-# Servidor
-PORT=3001
-NODE_ENV=development
-LOG_LEVEL=info
-
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/fiscalzen
+DATABASE_URL=postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
+# S3/MinIO Storage
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=fiscalzen
+S3_SECRET_KEY=fiscalzen_minio_dev
+S3_BUCKET=fiscalzen-docs
+
 # Meilisearch
 MEILISEARCH_HOST=http://localhost:7700
-MEILISEARCH_API_KEY=your-master-key
+MEILISEARCH_API_KEY=fiscalzen_meilisearch_dev_key
+
+# Clerk Authentication (obtenha em https://dashboard.clerk.com)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+
+# API
+API_PORT=3001
+NODE_ENV=development
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # JWT
-JWT_SECRET=sua-chave-secreta-muito-segura
-JWT_EXPIRES_IN=7d
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
 
-# Storage (S3 compativel)
-STORAGE_ENDPOINT=http://localhost:9000
-STORAGE_ACCESS_KEY=minioadmin
-STORAGE_SECRET_KEY=minioadmin
-STORAGE_BUCKET=fiscalzen
+# SEFAZ
+SEFAZ_AMBIENTE=2  # 1=Producao, 2=Homologacao
 ```
 
-#### Variaveis do Web (`apps/web/.env`)
+### 4. Inicie os servicos de infraestrutura
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-### 4. Configure o banco de dados
+O projeto inclui um Docker Compose com todos os servicos necessarios:
 
 ```bash
-# Gere as migrations
-pnpm --filter @fiscalzen/database db:generate
-
-# Execute as migrations
-pnpm --filter @fiscalzen/database db:migrate
+pnpm docker:up
 ```
 
-### 5. Inicie os servicos
+Isso iniciara:
+- **PostgreSQL** na porta 5432
+- **Redis** na porta 6379
+- **Meilisearch** na porta 7700
+- **MinIO** nas portas 9000 (API) e 9001 (Console)
+
+Para verificar os logs:
+```bash
+pnpm docker:logs
+```
+
+Para parar os servicos:
+```bash
+pnpm docker:down
+```
+
+### 5. Configure o banco de dados
 
 ```bash
-# Desenvolvimento (todos os apps)
+# Gerar migrations
+pnpm db:generate
+
+# Executar migrations
+pnpm db:migrate
+
+# (Opcional) Popular com dados de teste
+pnpm db:seed
+```
+
+### 6. Inicie a aplicacao
+
+```bash
+# Iniciar todos os apps em modo desenvolvimento
 pnpm dev
-
-# Ou individualmente
-pnpm --filter @fiscalzen/api dev
-pnpm --filter @fiscalzen/web dev
 ```
 
-## Uso
-
-### Acessando a Aplicacao
-
-Apos iniciar os servicos:
-
+Acesse:
 - **Frontend**: http://localhost:3000
 - **API**: http://localhost:3001
-- **Documentacao API**: http://localhost:3001/docs (se habilitado)
+- **MinIO Console**: http://localhost:9001 (usuario: fiscalzen, senha: fiscalzen_minio_dev)
+- **Meilisearch**: http://localhost:7700
+
+## Scripts Disponiveis
+
+### Raiz do Monorepo
+
+| Script | Descricao |
+|--------|-----------|
+| `pnpm dev` | Inicia todos os apps em desenvolvimento |
+| `pnpm build` | Build de todos os pacotes |
+| `pnpm lint` | ESLint em todos os pacotes |
+| `pnpm test` | Executa todos os testes |
+| `pnpm format` | Formata codigo com Prettier |
+| `pnpm format:check` | Verifica formatacao |
+| `pnpm clean` | Limpa builds e node_modules |
+
+### Database
+
+| Script | Descricao |
+|--------|-----------|
+| `pnpm db:generate` | Gera migrations do Drizzle |
+| `pnpm db:migrate` | Executa migrations pendentes |
+| `pnpm db:push` | Sincroniza schema diretamente (dev) |
+| `pnpm db:studio` | Abre Drizzle Studio (GUI) |
+| `pnpm db:seed` | Popula com dados de teste |
+| `pnpm db:test` | Testa conexao com banco |
+
+### Docker
+
+| Script | Descricao |
+|--------|-----------|
+| `pnpm docker:up` | Inicia servicos de infraestrutura |
+| `pnpm docker:down` | Para servicos |
+| `pnpm docker:logs` | Exibe logs dos containers |
+
+## Uso da Aplicacao
 
 ### Primeiros Passos
 
 #### 1. Criar uma Conta
 
-Acesse a pagina de registro e crie sua conta. Cada conta e um tenant isolado que pode gerenciar multiplas empresas.
+Acesse http://localhost:3000 e crie sua conta via Clerk. Cada conta e um tenant isolado que pode gerenciar multiplas empresas.
 
 #### 2. Cadastrar uma Empresa
 
@@ -175,21 +240,11 @@ A sincronizacao automatica ocorre a cada hora para empresas ativas.
 
 ### Documentos
 
-#### Visualizando Documentos
-
 A pagina de **Documentos** exibe todos os documentos fiscais:
 
 - Filtros por tipo (NFe, CTe, MDFe), empresa, periodo e status
 - Busca por numero, chave, emitente ou destinatario
 - Ordenacao por data, valor ou numero
-
-#### Detalhes do Documento
-
-Clique em um documento para ver:
-
-- Dados completos (emitente, destinatario, itens)
-- Eventos (autorizacao, cancelamento, etc.)
-- Manifestacoes realizadas
 - Download do XML original
 
 ### Manifestacao do Destinatario
@@ -211,19 +266,9 @@ A manifestacao e obrigatoria para NFe onde sua empresa e destinataria.
 2. **Aguardando Manifestacao Final**: Documentos com ciencia registrada
 3. **Historico**: Manifestacoes ja realizadas
 
-#### Realizando Manifestacao
-
-1. Va para **Manifestacao**
-2. Na aba **Pendentes**, selecione os documentos
-3. Clique em **Dar Ciencia** (individual ou em lote)
-4. Apos a ciencia, va para **Aguardando Final**
-5. Escolha a manifestacao final (Confirmacao, Desconhecimento ou Nao Realizada)
-
 ### Configuracao NFSe
 
-Para monitorar NFSe (Notas Fiscais de Servico), configure os municipios:
-
-#### Adicionando um Municipio
+Para monitorar NFSe (Notas Fiscais de Servico):
 
 1. Va para **Empresas** > selecione a empresa > **NFSe**
 2. Clique em **Adicionar Municipio**
@@ -238,33 +283,10 @@ Para monitorar NFSe (Notas Fiscais de Servico), configure os municipios:
 
 | Tipo | Descricao | Municipios |
 |------|-----------|------------|
-| **ABRASF** | Web Service padronizado | Sao Paulo, Rio, BH, Curitiba, etc. |
-| **RPA** | Automacao de navegador | Manaus, Belem, Teresina, etc. |
+| **ABRASF** | Web Service padronizado | Sao Paulo, Rio, BH, Curitiba, Porto Alegre, Brasilia, Salvador, Recife, Fortaleza, Campinas, Guarulhos, Goiania, Florianopolis, Vitoria, Natal, Joao Pessoa |
+| **RPA** | Automacao de navegador | Manaus, Belem, Teresina, Sao Luis |
 
 Para municipios com RPA, e necessario informar login e senha do portal de NFSe.
-
-### Dashboard
-
-O dashboard apresenta:
-
-- **Resumo**: Total de documentos, valores, pendencias
-- **Grafico de Timeline**: Documentos por periodo
-- **Status de Integridade**: Gaps na sequencia de NSU
-- **Documentos Recentes**: Ultimas notas recebidas
-- **Alertas**: Certificados vencendo, erros de sync
-
-### Jobs e Filas
-
-O sistema utiliza filas para processamento em background:
-
-| Fila | Funcao |
-|------|--------|
-| `sefaz-monitor` | Consulta periodica a SEFAZ |
-| `xml-processor` | Parsing e armazenamento de XMLs |
-| `search-sync` | Indexacao no Meilisearch |
-| `nfse-monitor` | Consulta de NFSe |
-
-Para monitorar as filas, va para **Configuracoes** > **Jobs**.
 
 ## API
 
@@ -281,104 +303,85 @@ Authorization: Bearer <token>
 #### Empresas
 
 ```
-GET    /api/v1/companies          # Listar empresas
-POST   /api/v1/companies          # Criar empresa
-GET    /api/v1/companies/:id      # Detalhes da empresa
-PUT    /api/v1/companies/:id      # Atualizar empresa
-DELETE /api/v1/companies/:id      # Excluir empresa
+GET    /api/v1/companies              # Listar empresas
+POST   /api/v1/companies              # Criar empresa
+GET    /api/v1/companies/:id          # Detalhes
+PUT    /api/v1/companies/:id          # Atualizar
+DELETE /api/v1/companies/:id          # Excluir
 POST   /api/v1/companies/:id/certificate  # Upload certificado
+GET    /api/v1/companies/:id/nsu-status   # Status de sync
 ```
 
 #### Documentos
 
 ```
-GET    /api/v1/documents          # Listar documentos
-GET    /api/v1/documents/:id      # Detalhes do documento
-GET    /api/v1/documents/:id/xml  # Download XML
-GET    /api/v1/documents/:id/events  # Eventos do documento
+GET    /api/v1/documents              # Listar documentos
+GET    /api/v1/documents/:id          # Detalhes
+GET    /api/v1/documents/:id/xml      # Download XML
+GET    /api/v1/documents/:id/events   # Eventos do documento
 ```
 
 #### Manifestacao
 
 ```
-GET    /api/v1/manifestacao/pending      # Pendentes de ciencia
-GET    /api/v1/manifestacao/awaiting     # Aguardando final
-POST   /api/v1/manifestacao/ciencia      # Registrar ciencia
-POST   /api/v1/manifestacao/confirmar    # Confirmar operacao
-POST   /api/v1/manifestacao/desconhecer  # Desconhecer operacao
+GET    /api/v1/manifestacao/pending   # Pendentes de ciencia
+GET    /api/v1/manifestacao/awaiting  # Aguardando final
+POST   /api/v1/manifestacao/ciencia   # Registrar ciencia
+POST   /api/v1/manifestacao/confirmar # Confirmar operacao
 ```
 
 #### NFSe
 
 ```
-GET    /api/v1/nfse/municipios           # Municipios suportados
-GET    /api/v1/companies/:id/nfse        # Configs da empresa
-POST   /api/v1/companies/:id/nfse        # Adicionar municipio
-PATCH  /api/v1/companies/:id/nfse/:cod   # Atualizar config
-DELETE /api/v1/companies/:id/nfse/:cod   # Remover config
-POST   /api/v1/companies/:id/nfse/:cod/sync  # Sincronizar
+GET    /api/v1/nfse/municipios            # Municipios suportados
+GET    /api/v1/nfse/municipios/:codigo    # Info do municipio
+GET    /api/v1/companies/:id/nfse         # Configs da empresa
+POST   /api/v1/companies/:id/nfse         # Adicionar municipio
+PATCH  /api/v1/companies/:id/nfse/:cod    # Atualizar config
+DELETE /api/v1/companies/:id/nfse/:cod    # Remover config
+PATCH  /api/v1/companies/:id/nfse/:cod/toggle  # Ativar/desativar
+POST   /api/v1/companies/:id/nfse/:cod/test    # Testar conexao
+POST   /api/v1/companies/:id/nfse/:cod/sync    # Sincronizar
 ```
 
 #### Dashboard
 
 ```
-GET    /api/v1/dashboard/summary     # Resumo geral
-GET    /api/v1/dashboard/timeline    # Dados do grafico
-GET    /api/v1/dashboard/integrity   # Status de integridade
+GET    /api/v1/dashboard/summary      # Resumo geral
+GET    /api/v1/dashboard/timeline     # Dados do grafico
+GET    /api/v1/dashboard/integrity    # Status de integridade
 ```
 
-## Desenvolvimento
+#### Jobs
 
-### Scripts Disponiveis
-
-```bash
-# Desenvolvimento
-pnpm dev              # Inicia todos os apps
-pnpm dev:api          # Inicia apenas a API
-pnpm dev:web          # Inicia apenas o frontend
-
-# Build
-pnpm build            # Build de todos os pacotes
-pnpm build:api        # Build apenas da API
-pnpm build:web        # Build apenas do frontend
-
-# Testes
-pnpm test             # Executa todos os testes
-pnpm test:watch       # Testes em modo watch
-
-# Linting
-pnpm lint             # ESLint em todos os pacotes
-pnpm lint:fix         # Corrige problemas automaticamente
-
-# Type checking
-pnpm typecheck        # Verifica tipos em todos os pacotes
-
-# Database
-pnpm db:generate      # Gera migrations
-pnpm db:migrate       # Executa migrations
-pnpm db:studio        # Abre Drizzle Studio
+```
+GET    /api/v1/jobs/status            # Status das filas
+POST   /api/v1/jobs/trigger/:companyId  # Disparar sync manual
 ```
 
-### Estrutura de Pacotes
+## Estrutura de Pacotes
 
-#### @fiscalzen/ui
+### @fiscalzen/ui
 
 Componentes React baseados em shadcn/ui:
 
 ```tsx
-import { Button, Card, Input, Dialog } from '@fiscalzen/ui';
+import {
+  Button, Card, Input, Dialog, Tabs,
+  Badge, Alert, Progress, Checkbox
+} from '@fiscalzen/ui';
 ```
 
-#### @fiscalzen/database
+### @fiscalzen/database
 
 Schema e cliente Drizzle:
 
 ```typescript
 import { db } from '@fiscalzen/database';
-import { companies, documents } from '@fiscalzen/database/schema';
+import { companies, documents, nfseConfigs } from '@fiscalzen/database/schema';
 ```
 
-#### @fiscalzen/sefaz-client
+### @fiscalzen/sefaz-client
 
 Cliente para comunicacao com SEFAZ:
 
@@ -389,121 +392,103 @@ const client = new SefazClient(certificado, 'SP');
 const result = await client.distribuicaoDFe({ ultNSU: '0' });
 ```
 
-#### @fiscalzen/xml-parser
+### @fiscalzen/xml-parser
 
 Parser de XMLs fiscais:
 
 ```typescript
-import { parseNFe, parseCTe, parseMDFe } from '@fiscalzen/xml-parser';
+import { parseNFe, parseCTe, parseMDFe, parseNFSe } from '@fiscalzen/xml-parser';
 
 const nfe = parseNFe(xmlContent);
 console.log(nfe.chave, nfe.emitente, nfe.destinatario);
 ```
 
-#### @fiscalzen/nfse-client
+### @fiscalzen/nfse-client
 
 Cliente NFSe com suporte a ABRASF e RPA:
 
 ```typescript
-import { getAbrasfClient, getMunicipioConfig } from '@fiscalzen/nfse-client';
+import {
+  getAbrasfClient,
+  getMunicipioConfig,
+  getAllMunicipios,
+  getBrowserManager
+} from '@fiscalzen/nfse-client';
 
+// Listar municipios suportados
+const municipios = getAllMunicipios();
+
+// Criar cliente ABRASF para Sao Paulo
 const client = getAbrasfClient('3550308', certificado, 'producao');
 const nfses = await client.consultarNfseServicoTomado({ cnpjTomador: '...' });
 ```
 
-### Adicionando Novos Municipios NFSe
+## Filas de Processamento
 
-Para adicionar suporte a um novo municipio:
+O sistema utiliza BullMQ para processamento em background:
 
-1. **ABRASF**: Adicione a configuracao em `packages/nfse-client/src/registry.ts`
-2. **RPA**: Crie um scraper em `packages/nfse-client/src/rpa/municipios/`
+| Fila | Funcao | Concorrencia |
+|------|--------|--------------|
+| `sefaz-monitor` | Consulta periodica a SEFAZ | 2 |
+| `xml-processor` | Parsing e armazenamento de XMLs | 5 |
+| `search-sync` | Indexacao no Meilisearch | 10 |
+| `nfse-monitor` | Consulta de NFSe (ABRASF/RPA) | 2 |
 
-Exemplo de configuracao ABRASF:
+## Solucao de Problemas
 
-```typescript
-'1234567': {
-  codigo: '1234567',
-  nome: 'Nome do Municipio',
-  uf: 'UF',
-  tipo: 'abrasf',
-  versaoAbrasf: '2.04',
-  endpoints: {
-    producao: 'https://...',
-    homologacao: 'https://...',
-  },
-},
-```
+### Docker nao inicia (Windows)
 
-## Deploy
+- Verifique se o Docker Desktop esta rodando
+- Verifique se as portas 5432, 6379, 7700, 9000, 9001 estao livres
+- Execute como Administrador se necessario
 
-### Docker
+### Erro de certificado
 
-```bash
-# Build das imagens
-docker-compose build
+- Verifique se o certificado e do tipo A1 (arquivo `.pfx`)
+- Confirme que a senha esta correta
+- Verifique a validade do certificado
 
-# Iniciar servicos
-docker-compose up -d
-```
+### Documentos nao sincronizam
 
-### Variaveis de Producao
+- Confirme que a empresa esta ativa
+- Verifique o status do certificado
+- Consulte os logs da API (`pnpm --filter @fiscalzen/api dev`)
 
-Em producao, configure:
+### NFSe RPA falha
 
-```env
-NODE_ENV=production
-JWT_SECRET=<chave-forte-256-bits>
-DATABASE_URL=<url-producao>
-REDIS_URL=<url-redis-producao>
-```
+- Confirme as credenciais do portal
+- Verifique se o portal esta acessivel
+- Alguns portais podem ter captcha ou mudancas de layout
 
-### Recomendacoes
+### Erro de conexao com banco
 
-- Use HTTPS em todos os endpoints
-- Configure rate limiting no load balancer
-- Habilite backups automaticos do PostgreSQL
-- Monitore as filas do BullMQ
-- Configure alertas para erros de certificado
+- Verifique se o PostgreSQL esta rodando: `pnpm docker:logs`
+- Teste a conexao: `pnpm db:test`
+- Verifique a DATABASE_URL no `.env`
 
-## Suporte
+## Producao
 
-### Documentacao Fiscal
+Para deploy em producao:
+
+1. Configure variaveis de ambiente seguras (especialmente `JWT_SECRET`)
+2. Use HTTPS em todos os endpoints
+3. Configure backups automaticos do PostgreSQL
+4. Monitore as filas do BullMQ
+5. Configure alertas para erros de certificado
+6. Use `SEFAZ_AMBIENTE=1` para ambiente de producao
+
+## Links Uteis
 
 - [Manual NFe](https://www.nfe.fazenda.gov.br/)
 - [Manual CTe](https://www.cte.fazenda.gov.br/)
 - [Padrao ABRASF NFSe](http://www.abrasf.org.br/)
-
-### Problemas Comuns
-
-#### Erro de certificado
-
-- Verifique se o certificado e do tipo A1 (arquivo .pfx)
-- Confirme que a senha esta correta
-- Verifique a validade do certificado
-
-#### Documentos nao sincronizam
-
-- Confirme que a empresa esta ativa
-- Verifique o status do certificado
-- Consulte os logs de erro na fila
-
-#### NFSe RPA falha
-
-- Confirme as credenciais do portal
-- Verifique se o portal esta acessivel
-- Alguns portais podem ter captcha
+- [Clerk Authentication](https://clerk.com/)
+- [Drizzle ORM](https://orm.drizzle.team/)
+- [BullMQ](https://docs.bullmq.io/)
 
 ## Licenca
 
-MIT License - veja [LICENSE](LICENSE) para detalhes.
-
-## Contribuindo
-
-1. Fork o repositorio
-2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`)
-3. Commit suas mudancas (`git commit -m 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
-5. Abra um Pull Request
+MIT License - veja LICENSE para detalhes.
 
 ---
 
