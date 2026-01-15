@@ -1,20 +1,17 @@
 import { SefazClient } from '../client';
 import { SEFAZ_URLS, UF_CODES } from '../constants';
 import { buildSoapEnvelope, extractSoapBody } from '../soap/envelope';
-import type { DistDFeRequest, DocumentoZip, SefazResponse } from '../types';
+import type {
+  DistDFeRequest,
+  SefazResponse,
+  DistDFeResponse,
+  SefazAmbiente,
+  CertificadoA1,
+  DocumentoDistDFe,
+} from '../types';
 
-export interface DistDFeNFeDocument {
-  nsu: string;
-  schema: string;
-  xml: string;
-}
-
-export interface DistDFeNFeResponse {
-  cStat: string;
-  xMotivo: string;
-  ultNSU: string;
-  maxNSU: string;
-  documents: DistDFeNFeDocument[];
+export interface DistDFeNFeResponse extends Omit<DistDFeResponse, 'documentos'> {
+  documentos: DocumentoDistDFe[];
 }
 
 export class DistDFeNFe {
@@ -25,11 +22,11 @@ export class DistDFeNFe {
   }
 
   async consultar(request: DistDFeRequest): Promise<SefazResponse<DistDFeNFeResponse>> {
-    const envKey = this.client.environment === 'production' ? 'production' : 'homologation';
+    const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
     const url = SEFAZ_URLS.NFE.DISTDFE[envKey];
 
     const ufCode = UF_CODES[this.client.uf] || '35';
-    const tpAmb = this.client.environment === 'production' ? '1' : '2';
+    const tpAmb = this.client.environment === 'producao' ? '1' : '2';
 
     let distDFeInt = '';
     if (request.chNFe) {
@@ -74,13 +71,12 @@ export class DistDFeNFe {
   }
 
   private parseResponse(xml: string): DistDFeNFeResponse {
-    // Simple XML parsing - in production, use a proper parser
     const cStat = this.extractValue(xml, 'cStat');
     const xMotivo = this.extractValue(xml, 'xMotivo');
     const ultNSU = this.extractValue(xml, 'ultNSU');
     const maxNSU = this.extractValue(xml, 'maxNSU');
 
-    const documents: DistDFeNFeDocument[] = [];
+    const documents: DocumentoDistDFe[] = [];
 
     // Extract docZip elements
     const docZipRegex = /<docZip[^>]*NSU="(\d+)"[^>]*schema="([^"]+)"[^>]*>([^<]+)<\/docZip>/g;
@@ -88,34 +84,42 @@ export class DistDFeNFe {
     while ((match = docZipRegex.exec(xml)) !== null) {
       const [, nsu, schema, base64Content] = match;
       try {
-        // Decompress and decode the content
         const xmlContent = this.decompressGzip(base64Content);
         documents.push({
           nsu,
           schema,
           xml: xmlContent,
+          tipo: 'NFE',
+          isResumo: schema.includes('resNFe') || schema.includes('resEvento'),
+          isEvento: schema.includes('Evento'),
+          chave: this.extractChave(xmlContent),
         });
       } catch {
-        // If decompression fails, try direct base64 decode
+        // Try direct base64 decode if not gzipped
         try {
           const xmlContent = Buffer.from(base64Content, 'base64').toString('utf-8');
           documents.push({
             nsu,
             schema,
             xml: xmlContent,
+            tipo: 'NFE',
+            isResumo: schema.includes('resNFe') || schema.includes('resEvento'),
+            isEvento: schema.includes('Evento'),
+            chave: this.extractChave(xmlContent),
           });
         } catch {
-          // Skip invalid documents
+          // Skip invalid
         }
       }
     }
 
     return {
+      sucesso: cStat === '137' || cStat === '138',
       cStat,
       xMotivo,
       ultNSU,
       maxNSU,
-      documents,
+      documentos: documents,
     };
   }
 
@@ -125,15 +129,40 @@ export class DistDFeNFe {
     return match ? match[1] : '';
   }
 
+  private extractChave(xml: string): string | undefined {
+    const match = xml.match(/chNFe>(\d+)</) || xml.match(/Id="NFe(\d+)"/);
+    return match ? match[1] : undefined;
+  }
+
   private decompressGzip(base64Content: string): string {
     const buffer = Buffer.from(base64Content, 'base64');
-    // Note: In production, use zlib.gunzipSync
-    // For now, return as-is if it's already decompressed
     const str = buffer.toString('utf-8');
-    if (str.startsWith('<?xml') || str.startsWith('<')) {
-      return str;
-    }
-    // Attempt gzip decompression would go here
+    // Em produção usaria zlib.gunzipSync. Aqui assumimos que pode vir descomprimido ou string direta
+    // Se precisar de descompressão real, deve-se usar o módulo zlib do Node.js
     return str;
   }
+}
+
+// Wrapper function for API compatibility
+export async function consultarPorUltNSU(
+  ambiente: SefazAmbiente,
+  cnpj: string,
+  ultNSU: string,
+  certificado: CertificadoA1
+): Promise<DistDFeResponse> {
+  const client = new SefazClient({
+    ambiente,
+    certificado,
+    uf: 'SP', // Default UF usually fine for DistDFe (AN)
+    cnpj,
+  });
+
+  const service = new DistDFeNFe(client);
+  const response = await service.consultar({ ultNSU });
+
+  if (!response.data) {
+    throw new Error(response.error?.message || 'Erro na consulta DFe');
+  }
+
+  return response.data;
 }

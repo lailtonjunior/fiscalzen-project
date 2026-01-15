@@ -1,5 +1,5 @@
 import { SefazClient } from '../client';
-import { SEFAZ_URLS, UF_CODES } from '../constants';
+import { SEFAZ_URLS } from '../constants';
 import { buildSoapEnvelope, extractSoapBody } from '../soap/envelope';
 import type { SefazResponse } from '../types';
 
@@ -24,12 +24,10 @@ export class ConsultaProtocolo {
   }
 
   async consultar(request: ConsultaProtocoloRequest): Promise<SefazResponse<ConsultaProtocoloResponse>> {
-    const envKey = this.client.environment === 'production' ? 'production' : 'homologation';
+    const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
     const url = SEFAZ_URLS.NFE.CONSULTA[envKey];
 
-    // Extract UF from chave (positions 0-1)
-    const ufCode = request.chave.substring(0, 2);
-    const tpAmb = this.client.environment === 'production' ? '1' : '2';
+    const tpAmb = this.client.environment === 'producao' ? '1' : '2';
 
     const consultaXml = `
       <consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">

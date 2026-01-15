@@ -1,4 +1,3 @@
-// packages/sefaz-client/src/signature.ts
 import { SignedXml } from 'xml-crypto';
 import { createHash } from 'crypto';
 import type { CertificadoA1 } from './types';
@@ -69,9 +68,9 @@ export function signXml(
     ]
   } as any);
 
-  sig.signingKey = privateKeyPem;
+  (sig as any).signingKey = privateKeyPem;
 
-  sig.keyInfoProvider = {
+  (sig as any).keyInfoProvider = {
     getKeyInfo(): string {
       const cleanCert = pem
         .replace(/-----BEGIN CERTIFICATE-----/g, '')
@@ -112,9 +111,9 @@ export function signXmlLegacy(
     ]
   } as any);
 
-  sig.signingKey = privateKey;
+  (sig as any).signingKey = privateKey;
 
-  sig.keyInfoProvider = {
+  (sig as any).keyInfoProvider = {
     getKeyInfo(): string {
       const cleanCert = certificate
         .replace(/-----BEGIN CERTIFICATE-----/g, '')
@@ -138,7 +137,7 @@ export function validateSignature(signedXml: string, publicCert: string): boolea
   try {
     const sig = new SignedXml();
 
-    sig.keyInfoProvider = {
+    (sig as any).keyInfoProvider = {
       getKey(): Buffer {
         return Buffer.from(publicCert);
       }

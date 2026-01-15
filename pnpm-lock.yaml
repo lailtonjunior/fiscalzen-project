@@ -83,6 +83,9 @@ importers:
       bullmq:
         specifier: ^5.1.0
         version: 5.66.5
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       dotenv:
         specifier: ^16.3.1
         version: 16.6.1

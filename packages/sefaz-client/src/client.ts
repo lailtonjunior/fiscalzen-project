@@ -1,11 +1,11 @@
 import * as https from 'https';
-import type { SefazConfig, SefazEnvironment } from './types';
+import type { SefazClientConfig, SefazAmbiente } from './types';
 
 export class SefazClient {
-  private config: SefazConfig;
+  private config: SefazClientConfig;
   private httpsAgent: https.Agent;
 
-  constructor(config: SefazConfig) {
+  constructor(config: SefazClientConfig) {
     this.config = {
       timeout: 60000,
       retryAttempts: 3,
@@ -14,14 +14,14 @@ export class SefazClient {
     };
 
     this.httpsAgent = new https.Agent({
-      pfx: config.certificate.pfx,
-      passphrase: config.certificate.password,
+      pfx: config.certificado.pfxBuffer,
+      passphrase: config.certificado.password,
       rejectUnauthorized: true,
     });
   }
 
-  get environment(): SefazEnvironment {
-    return this.config.environment;
+  get environment(): SefazAmbiente {
+    return this.config.ambiente;
   }
 
   get uf(): string {
@@ -29,7 +29,7 @@ export class SefazClient {
   }
 
   get cnpj(): string {
-    return this.config.cnpj;
+    return this.config.cnpj || this.config.certificado.cnpj || '';
   }
 
   get agent(): https.Agent {

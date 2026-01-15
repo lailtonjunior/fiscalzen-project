@@ -154,7 +154,7 @@ function parseManifestacaoResponse(
       descricaoEvento: MANIFESTACAO_DESCRICOES[params.tipoEvento],
       sequencia: params.sequencia ?? 1,
       dhRegEvento: dhRegEvento ? new Date(dhRegEvento) : undefined,
-      nProt,
+      nProt: nProt ?? undefined, // Garante undefined se for null
       cStat,
       xMotivo,
       erro: sucesso

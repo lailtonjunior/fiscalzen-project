@@ -1,20 +1,17 @@
 import { SefazClient } from '../client';
 import { SEFAZ_URLS, UF_CODES } from '../constants';
 import { buildSoapEnvelope, extractSoapBody } from '../soap/envelope';
-import type { DistDFeRequest, SefazResponse } from '../types';
+import type {
+  DistDFeRequest,
+  SefazResponse,
+  DistDFeResponse,
+  SefazAmbiente,
+  CertificadoA1,
+  DocumentoDistDFe,
+} from '../types';
 
-export interface DistDFeCTeDocument {
-  nsu: string;
-  schema: string;
-  xml: string;
-}
-
-export interface DistDFeCTeResponse {
-  cStat: string;
-  xMotivo: string;
-  ultNSU: string;
-  maxNSU: string;
-  documents: DistDFeCTeDocument[];
+export interface DistDFeCTeResponse extends Omit<DistDFeResponse, 'documentos'> {
+  documentos: DocumentoDistDFe[];
 }
 
 export class DistDFeCTe {
@@ -25,11 +22,11 @@ export class DistDFeCTe {
   }
 
   async consultar(request: DistDFeRequest): Promise<SefazResponse<DistDFeCTeResponse>> {
-    const envKey = this.client.environment === 'production' ? 'production' : 'homologation';
+    const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
     const url = SEFAZ_URLS.CTE.DISTDFE[envKey];
 
     const ufCode = UF_CODES[this.client.uf] || '35';
-    const tpAmb = this.client.environment === 'production' ? '1' : '2';
+    const tpAmb = this.client.environment === 'producao' ? '1' : '2';
 
     let distDFeInt = '';
     if (request.NSU) {
@@ -77,7 +74,7 @@ export class DistDFeCTe {
     const ultNSU = this.extractValue(xml, 'ultNSU');
     const maxNSU = this.extractValue(xml, 'maxNSU');
 
-    const documents: DistDFeCTeDocument[] = [];
+    const documents: DocumentoDistDFe[] = [];
 
     const docZipRegex = /<docZip[^>]*NSU="(\d+)"[^>]*schema="([^"]+)"[^>]*>([^<]+)<\/docZip>/g;
     let match;
@@ -89,18 +86,23 @@ export class DistDFeCTe {
           nsu,
           schema,
           xml: xmlContent,
+          tipo: 'CTE',
+          isResumo: schema.includes('resCTE') || schema.includes('resEvento'),
+          isEvento: schema.includes('Evento'),
+          chave: this.extractChave(xmlContent),
         });
       } catch {
-        // Skip invalid documents
+        // Skip invalid
       }
     }
 
     return {
+      sucesso: cStat === '137' || cStat === '138',
       cStat,
       xMotivo,
       ultNSU,
       maxNSU,
-      documents,
+      documentos: documents,
     };
   }
 
@@ -109,4 +111,33 @@ export class DistDFeCTe {
     const match = xml.match(regex);
     return match ? match[1] : '';
   }
+
+  private extractChave(xml: string): string | undefined {
+    const match = xml.match(/chCTe>(\d+)</) || xml.match(/Id="CTe(\d+)"/);
+    return match ? match[1] : undefined;
+  }
+}
+
+// Wrapper function for API compatibility
+export async function consultarCTePorUltNSU(
+  ambiente: SefazAmbiente,
+  cnpj: string,
+  ultNSU: string,
+  certificado: CertificadoA1
+): Promise<DistDFeResponse> {
+  const client = new SefazClient({
+    ambiente,
+    certificado,
+    uf: 'SP',
+    cnpj,
+  });
+
+  const service = new DistDFeCTe(client);
+  const response = await service.consultar({ ultNSU });
+
+  if (!response.data) {
+    throw new Error(response.error?.message || 'Erro na consulta CTe');
+  }
+
+  return response.data;
 }

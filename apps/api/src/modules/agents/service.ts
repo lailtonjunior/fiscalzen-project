@@ -1,6 +1,7 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { db } from '../../config/database';
-import { localAgents, companies } from '@fiscalzen/database/schema';
+// Importa 'agents' e renomeia para 'localAgents' para manter o padrão do arquivo
+import { agents as localAgents, companies } from '@fiscalzen/database/schema';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { cache } from '../../config/redis';
 import type { RegisterAgentInput, ListAgentsQuery, AgentHeartbeatInput } from './schemas';
@@ -62,7 +63,7 @@ export const agentsService = {
   },
 
   async getById(tenantId: string, agentId: string) {
-    const agent = await db.query.localAgents.findFirst({
+    const agent = await db.query.agents.findFirst({
       where: and(eq(localAgents.id, agentId), eq(localAgents.tenantId, tenantId)),
     });
 
@@ -92,7 +93,7 @@ export const agentsService = {
     }
 
     // Check if agent with same machineId already exists
-    const existing = await db.query.localAgents.findFirst({
+    const existing = await db.query.agents.findFirst({
       where: and(
         eq(localAgents.tenantId, tenantId),
         eq(localAgents.machineId, data.machineId)
@@ -127,7 +128,7 @@ export const agentsService = {
   },
 
   async delete(tenantId: string, agentId: string) {
-    const existing = await db.query.localAgents.findFirst({
+    const existing = await db.query.agents.findFirst({
       where: and(eq(localAgents.id, agentId), eq(localAgents.tenantId, tenantId)),
     });
 
@@ -164,7 +165,7 @@ export const agentsService = {
   },
 
   async validateApiKey(apiKey: string): Promise<{ agentId: string; tenantId: string } | null> {
-    const agent = await db.query.localAgents.findFirst({
+    const agent = await db.query.agents.findFirst({
       where: eq(localAgents.apiKey, apiKey),
     });
 

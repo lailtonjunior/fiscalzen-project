@@ -35,6 +35,8 @@ export type {
   ConsultaProtocoloResponse,
   SoapEnvelope,
   SoapResponse,
+  SefazResponse,
+  DistDFeRequest,
 } from './types';
 
 // Exporta as constantes e classes de tipos
@@ -67,3 +69,10 @@ export {
   calculateDigestSha256,
   gerarEventoId,
 } from './signature';
+
+// Services
+export * from './services/manifestacao';
+export * from './services/consulta';
+export * from './services/distdfe-nfe';
+export * from './services/distdfe-cte';
+export * from './services/mdfe-distdfe';

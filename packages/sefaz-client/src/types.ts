@@ -19,14 +19,43 @@ export interface CertificadoA1 {
 export interface SefazClientConfig {
   ambiente: SefazAmbiente;
   certificado: CertificadoA1;
+  uf: string;              // Estado é obrigatório para configuração correta
+  cnpj?: string;           // CNPJ opcional (pode ser extraído do certificado)
   timeout?: number;        // Default: 30000ms
   retryAttempts?: number;  // Default: 3
   retryDelay?: number;     // Default: 1000ms (base for exponential backoff)
 }
 
 // ============================================
+// Generic Sefaz Response
+// ============================================
+
+export interface SefazResponse<T> {
+  success: boolean;
+  data?: T;
+  rawXml?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+// ============================================
 // DistDFe Request/Response
 // ============================================
+
+export interface DistDFeRequest {
+  chNFe?: string;
+  NSU?: string;
+  ultNSU?: string;
+}
+
+export interface DocumentoZip {
+  nsu: string;
+  schema: string;
+  base64: string;
+  xml?: string;
+}
 
 export interface DistDFeParams {
   ambiente: SefazAmbiente;
@@ -141,13 +170,6 @@ export interface ConsultaProtocoloResponse {
     mensagem: string;
   };
 }
-
-// ============================================
-// Códigos de Status SEFAZ
-// ============================================
-
-// Status codes são exportados apenas de constants.ts
-// Use: import { SEFAZ_STATUS } from './constants'
 
 // ============================================
 // SOAP Types

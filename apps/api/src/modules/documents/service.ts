@@ -4,7 +4,7 @@ import { documents, companies } from '@fiscalzen/database/schema';
 import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
 import { storage, type StorageKey } from '../../services/storage';
 import { search, type DocumentSearchRecord } from '../../services/search';
-import { parseNFe, parseCTe, parseMDFe, detectXmlType } from '@fiscalzen/xml-parser';
+import { parseNFe, parseCTe, parseMDFe, detectDocumentType } from '@fiscalzen/xml-parser';
 import type { ListDocumentsQuery, SearchDocumentsQuery } from './schemas';
 
 export const documentsService = {
@@ -173,9 +173,9 @@ export const documentsService = {
     }
 
     // Detect XML type
-    const detection = detectXmlType(xmlContent);
+    const docType = detectDocumentType(xmlContent);
 
-    if (!detection.type) {
+    if (!docType) {
       throw new ValidationError('Tipo de documento XML nao reconhecido');
     }
 
@@ -195,7 +195,7 @@ export const documentsService = {
       uf: string;
     };
 
-    switch (detection.type) {
+    switch (docType) {
       case 'NFE':
         const nfe = parseNFe(xmlContent);
         parsedData = {
@@ -233,7 +233,7 @@ export const documentsService = {
         break;
 
       default:
-        throw new ValidationError(`Tipo de documento ${detection.type} nao suportado para upload`);
+        throw new ValidationError(`Tipo de documento ${docType} nao suportado para upload`);
     }
 
     // Check if document already exists
@@ -250,7 +250,7 @@ export const documentsService = {
     const storageParams: StorageKey = {
       tenantId,
       companyId,
-      docType: detection.type,
+      docType: docType,
       year: dataEmissao.getFullYear(),
       month: dataEmissao.getMonth() + 1,
       documentId: parsedData.chave,
@@ -267,7 +267,7 @@ export const documentsService = {
         chave: parsedData.chave,
         numero: parsedData.numero,
         serie: parsedData.serie,
-        docType: detection.type,
+        docType: docType,
         situacao: parsedData.situacao,
         dataEmissao: parsedData.dataEmissao,
         valorTotal: parsedData.valorTotal.toString(),
