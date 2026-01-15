@@ -3,9 +3,9 @@ import {
   SefazError,
   CertificadoError,
   TimeoutError,
-  SEFAZ_STATUS,
   MANIFESTACAO_DESCRICOES,
 } from '../src/types';
+import { SEFAZ_STATUS } from '../src/constants';
 
 describe('Error Classes', () => {
   describe('SefazError', () => {

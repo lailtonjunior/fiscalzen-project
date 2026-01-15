@@ -55,22 +55,32 @@ export const SEFAZ_URLS = {
 
 // SEFAZ Status Codes
 export const SEFAZ_STATUS = {
-  // Success
-  '137': 'Documento localizado',
-  '138': 'Não há mais documentos',
+  // DistDFe Success
+  NENHUM_DOCUMENTO: '137',
+  DOCUMENTO_LOCALIZADO: '138',
 
-  // Errors
-  '656': 'Consumo indevido',
-  '593': 'Certificado inválido',
-  '594': 'Certificado revogado',
+  // DistDFe Errors
+  CONSUMO_INDEVIDO: '656',
+  CERTIFICADO_INVALIDO: '593',
+  CERTIFICADO_REVOGADO: '594',
+
+  // NFe Status
+  NFE_AUTORIZADA: '100',
+  NFE_CANCELADA: '101',
+  NFE_DENEGADA: '110',
+
+  // Evento Status
+  EVENTO_REGISTRADO: '135',
+  EVENTO_REGISTRADO_NAO_VINCULADO: '136',
+  EVENTO_DUPLICADO: '631',
 
   // Manifestação
-  '210200': 'Evento registrado com sucesso',
-  '210210': 'Ciência da Operação registrada',
-  '210220': 'Confirmação da Operação registrada',
-  '210240': 'Operação não Realizada registrada',
-  '210260': 'Desconhecimento da Operação registrado',
-};
+  MANIFESTACAO_CONFIRMACAO: '210200',
+  MANIFESTACAO_CIENCIA: '210210',
+  MANIFESTACAO_CONFIRMACAO_REGISTRADA: '210220',
+  MANIFESTACAO_NAO_REALIZADA: '210240',
+  MANIFESTACAO_DESCONHECIMENTO: '210260',
+} as const;
 
 // Document types that can be returned
 export const DIST_DFE_SCHEMAS = {

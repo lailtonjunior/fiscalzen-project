@@ -10,7 +10,8 @@ import type {
   SefazAmbiente,
   CertificadoA1,
 } from '../types';
-import { SefazError, SEFAZ_STATUS } from '../types';
+import { SefazError } from '../types';
+import { SEFAZ_STATUS } from '../constants';
 import { SoapClient, extractSoapBody, extractTagValue } from '../soap-client';
 import {
   getMDFeDistDFeEndpoint,
@@ -127,10 +128,8 @@ function parseDistDFeResponse(soapResponse: string): DistDFeResponse {
     const dhResp = extractTagValue(body, 'dhResp');
     const versaoApp = extractTagValue(body, 'verAplic');
 
-    const sucesso = [
-      SEFAZ_STATUS.DOCUMENTO_LOCALIZADO,
-      SEFAZ_STATUS.NENHUM_DOCUMENTO,
-    ].includes(cStat as typeof SEFAZ_STATUS.DOCUMENTO_LOCALIZADO);
+    const sucesso = cStat === SEFAZ_STATUS.DOCUMENTO_LOCALIZADO ||
+                    cStat === SEFAZ_STATUS.NENHUM_DOCUMENTO;
 
     const documentos = parseDocumentos(body);
 

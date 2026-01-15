@@ -146,9 +146,8 @@ export interface ConsultaProtocoloResponse {
 // Códigos de Status SEFAZ
 // ============================================
 
-import { SEFAZ_STATUS as ConstantsSEFAZ_STATUS } from './constants';
-
-export type SEFAZ_STATUS = typeof ConstantsSEFAZ_STATUS;
+// Status codes são exportados apenas de constants.ts
+// Use: import { SEFAZ_STATUS } from './constants'
 
 // ============================================
 // SOAP Types

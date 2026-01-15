@@ -14,7 +14,8 @@ import type {
   TipoEventoManifestacao,
   CertificadoA1,
 } from '../types';
-import { SefazError, SEFAZ_STATUS, MANIFESTACAO_DESCRICOES } from '../types';
+import { SefazError, MANIFESTACAO_DESCRICOES } from '../types';
+import { SEFAZ_STATUS } from '../constants';
 import { SoapClient, extractSoapBody, extractTagValue } from '../soap-client';
 import {
   getNFeEventoEndpoint,
@@ -143,10 +144,8 @@ function parseManifestacaoResponse(
     const dhRegEvento = extractTagValue(body, 'dhRegEvento');
 
     // Verifica se foi sucesso
-    const sucesso = [
-      SEFAZ_STATUS.EVENTO_REGISTRADO,
-      SEFAZ_STATUS.EVENTO_REGISTRADO_NAO_VINCULADO,
-    ].includes(cStat as typeof SEFAZ_STATUS.EVENTO_REGISTRADO);
+    const sucesso = cStat === SEFAZ_STATUS.EVENTO_REGISTRADO ||
+                    cStat === SEFAZ_STATUS.EVENTO_REGISTRADO_NAO_VINCULADO;
 
     return {
       sucesso,
