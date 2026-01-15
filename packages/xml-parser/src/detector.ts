@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import type { DocType, XmlSchemaType, XmlDetectionResult } from './types.js';
+import type { DocType, XmlSchemaType, XmlDetectionResult } from './types';
 
 const parser = new XMLParser({
   ignoreAttributes: false,

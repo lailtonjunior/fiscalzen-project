@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, timestamp, jsonb, inet, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { tenants } from './tenants.js';
-import { companies } from './tenants.js';
+import { tenants } from './tenants';
+import { companies } from './tenants';
 
 export const monitorJobs = pgTable(
   'monitor_jobs',

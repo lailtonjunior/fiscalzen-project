@@ -8,7 +8,7 @@ import {
   primaryKey,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { companies } from './companies.js';
+import { companies } from './companies';
 
 // ============================================
 // NFSe Configuration Table

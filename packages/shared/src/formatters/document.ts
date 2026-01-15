@@ -1,4 +1,4 @@
-import type { DocType, DocumentStatus } from '../types/documents.js';
+import type { DocType, DocumentStatus } from '../types/documents';
 
 /**
  * Formats a document number with leading zeros

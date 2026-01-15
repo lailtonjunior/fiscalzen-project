@@ -5,8 +5,8 @@ import {
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '../config/env.js';
-import { ExternalServiceError } from '../utils/errors.js';
+import { env } from '../config/env';
+import { ExternalServiceError } from '../utils/errors';
 
 const s3Client = new S3Client({
   endpoint: env.S3_ENDPOINT,

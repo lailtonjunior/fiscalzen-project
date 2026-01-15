@@ -1,7 +1,7 @@
-import { SefazClient } from '../client.js';
-import { SEFAZ_URLS, UF_CODES } from '../constants.js';
-import { buildSoapEnvelope, extractSoapBody } from '../soap/envelope.js';
-import type { SefazResponse } from '../types.js';
+import { SefazClient } from '../client';
+import { SEFAZ_URLS, UF_CODES } from '../constants';
+import { buildSoapEnvelope, extractSoapBody } from '../soap/envelope';
+import type { SefazResponse } from '../types';
 
 export interface ConsultaProtocoloRequest {
   chave: string;

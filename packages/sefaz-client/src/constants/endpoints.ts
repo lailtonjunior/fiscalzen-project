@@ -6,7 +6,7 @@
 // - CTe: https://www.cte.fazenda.gov.br/portal/webServices.aspx
 // - MDFe: https://mdfe-portal.sefaz.rs.gov.br/Site/Servicos
 
-import type { SefazAmbiente } from '../types.js';
+import type { SefazAmbiente } from '../types';
 
 // ============================================
 // NFe - Ambiente Nacional (AN)

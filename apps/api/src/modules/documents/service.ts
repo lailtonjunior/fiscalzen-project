@@ -1,11 +1,11 @@
 import { eq, and, sql, desc, asc, gte, lte } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { documents, companies } from '@fiscalzen/database/schema';
-import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors.js';
-import { storage, type StorageKey } from '../../services/storage.js';
-import { search, type DocumentSearchRecord } from '../../services/search.js';
+import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
+import { storage, type StorageKey } from '../../services/storage';
+import { search, type DocumentSearchRecord } from '../../services/search';
 import { parseNFe, parseCTe, parseMDFe, detectXmlType } from '@fiscalzen/xml-parser';
-import type { ListDocumentsQuery, SearchDocumentsQuery } from './schemas.js';
+import type { ListDocumentsQuery, SearchDocumentsQuery } from './schemas';
 
 export const documentsService = {
   async list(tenantId: string, query: ListDocumentsQuery) {

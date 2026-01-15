@@ -1,5 +1,5 @@
-import { createParser, parseDate, parseDecimal, ensureArray, buildSearchContent } from '../utils.js';
-import type { DocumentStatus } from '../types.js';
+import { createParser, parseDate, parseDecimal, ensureArray, buildSearchContent } from '../utils';
+import type { DocumentStatus } from '../types';
 
 export interface MDFeData {
   tipo: 'MDFE';

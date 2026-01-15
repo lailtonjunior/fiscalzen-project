@@ -1,4 +1,4 @@
-import type { DocType } from '../types/documents.js';
+import type { DocType } from '../types/documents';
 
 export interface DocTypeInfo {
   code: DocType;

@@ -1,5 +1,5 @@
 import { gunzipSync, gzipSync } from 'zlib';
-import type { DecodeResult } from './types.js';
+import type { DecodeResult } from './types';
 
 /**
  * Decodifica um documento retornado pela SEFAZ via DistDFe

@@ -1,5 +1,5 @@
-import { createParser, parseDate, parseDecimal, extractCnpjCpf } from '../utils.js';
-import type { ResNFeData, DocumentStatus } from '../types.js';
+import { createParser, parseDate, parseDecimal, extractCnpjCpf } from '../utils';
+import type { ResNFeData, DocumentStatus } from '../types';
 
 /**
  * Parser para Resumo de NFe (resNFe_v1.01.xsd)

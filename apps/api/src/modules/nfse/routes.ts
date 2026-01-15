@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { nfseService } from './service.js';
+import { nfseService } from './service';
 import {
   companyIdSchema,
   municipioCodigoSchema,
@@ -11,9 +11,9 @@ import {
   type CreateNfseConfigInput,
   type UpdateNfseConfigInput,
   type ToggleNfseConfigInput,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, sendCreated, sendNoContent } from '../../utils/response.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, sendCreated, sendNoContent } from '../../utils/response';
 
 export async function nfseRoutes(fastify: FastifyInstance) {
   // All routes require authentication

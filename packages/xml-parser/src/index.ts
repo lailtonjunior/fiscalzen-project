@@ -8,7 +8,7 @@ export {
   isValidChaveAcesso,
   parseChaveAcesso,
   quickDetectType,
-} from './detector.js';
+} from './detector';
 
 // ============================================
 // GZip Utilities
@@ -22,18 +22,18 @@ export {
   extractNsuFromDocZip,
   extractSchemaFromDocZip,
   getDocTypeFromSchema,
-} from './gzip.js';
+} from './gzip';
 
 // ============================================
 // Document Parsers
 // ============================================
-export { parseNFe, type NFeData, type NFeItem } from './parsers/nfe.js';
-export { parseCTe, type CTeData } from './parsers/cte.js';
-export { parseMDFe, type MDFeData } from './parsers/mdfe.js';
-export { parseSAT, type SATData, type SATItem } from './parsers/sat.js';
-export { parseNFCe, type NFCeData, type NFCeItem } from './parsers/nfce.js';
-export { parseNFSe, type NFSeData } from './parsers/nfse.js';
-export { parseDocument, type ParsedDocument } from './parsers/auto.js';
+export { parseNFe, type NFeData, type NFeItem } from './parsers/nfe';
+export { parseCTe, type CTeData } from './parsers/cte';
+export { parseMDFe, type MDFeData } from './parsers/mdfe';
+export { parseSAT, type SATData, type SATItem } from './parsers/sat';
+export { parseNFCe, type NFCeData, type NFCeItem } from './parsers/nfce';
+export { parseNFSe, type NFSeData } from './parsers/nfse';
+export { parseDocument, type ParsedDocument } from './parsers/auto';
 
 // ============================================
 // Resumo Parsers (DistDFe)
@@ -42,7 +42,7 @@ export {
   parseResNFe,
   isResNFe,
   extractResNFeInfo,
-} from './parsers/res-nfe.js';
+} from './parsers/res-nfe';
 
 export {
   parseResEvento,
@@ -52,7 +52,7 @@ export {
   isCCeEvento,
   extractResEventoInfo,
   eventTypeDescriptions,
-} from './parsers/res-evento.js';
+} from './parsers/res-evento';
 
 // ============================================
 // Event Parsers
@@ -64,7 +64,7 @@ export {
   extractProcEventoInfo,
   extractJustificativa,
   extractCorrecao,
-} from './parsers/proc-evento.js';
+} from './parsers/proc-evento';
 
 // ============================================
 // Types
@@ -82,7 +82,7 @@ export type {
   DecodeResult,
   ManifestacaoEventCode,
   NFeEventCode,
-} from './types.js';
+} from './types';
 
 export {
   docTypes,
@@ -90,7 +90,7 @@ export {
   xmlSchemaTypes,
   manifestacaoEventTypes,
   nfeEventTypes,
-} from './types.js';
+} from './types';
 
 // ============================================
 // Utils (for advanced usage)
@@ -102,4 +102,4 @@ export {
   ensureArray,
   extractCnpjCpf,
   buildSearchContent,
-} from './utils.js';
+} from './utils';

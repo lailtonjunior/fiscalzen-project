@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { documentsService } from './service.js';
+import { documentsService } from './service';
 import {
   listDocumentsQuerySchema,
   documentIdSchema,
@@ -10,10 +10,10 @@ import {
   type DocumentIdParams,
   type SearchDocumentsQuery,
   type DocumentByChaveParams,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, paginate } from '../../utils/response.js';
-import { ValidationError } from '../../utils/errors.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, paginate } from '../../utils/response';
+import { ValidationError } from '../../utils/errors';
 
 export async function documentsRoutes(fastify: FastifyInstance) {
   // All routes require authentication

@@ -1,3 +1,3 @@
-export { eventsRoutes } from './routes.js';
-export { eventsService } from './service.js';
-export * from './schemas.js';
+export { eventsRoutes } from './routes';
+export { eventsService } from './service';
+export * from './schemas';

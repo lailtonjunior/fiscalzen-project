@@ -1,8 +1,8 @@
 import { eq, and, lte, ne, sql } from 'drizzle-orm';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { companies, nsuControl } from '@fiscalzen/database/schema';
-import { addSefazMonitorJob } from './queues.js';
-import { logger } from './events.js';
+import { addSefazMonitorJob } from './queues';
+import { logger } from './events';
 
 // ============================================
 // Constants

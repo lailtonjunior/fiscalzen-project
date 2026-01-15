@@ -1,3 +1,3 @@
-export { dashboardRoutes } from './routes.js';
-export { dashboardService } from './service.js';
-export * from './schemas.js';
+export { dashboardRoutes } from './routes';
+export { dashboardService } from './service';
+export * from './schemas';

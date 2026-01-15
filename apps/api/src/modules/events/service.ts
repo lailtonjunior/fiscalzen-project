@@ -1,8 +1,8 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { documentEvents, documents } from '@fiscalzen/database/schema';
-import { NotFoundError } from '../../utils/errors.js';
-import type { ListEventsQuery } from './schemas.js';
+import { NotFoundError } from '../../utils/errors';
+import type { ListEventsQuery } from './schemas';
 
 export const eventsService = {
   async listByDocument(tenantId: string, documentId: string, query: ListEventsQuery) {

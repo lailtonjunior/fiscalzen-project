@@ -5,10 +5,10 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import https from 'https';
-import type { CertificadoA1, SoapEnvelope, SoapResponse, SefazClientConfig } from './types.js';
-import { SefazError, TimeoutError } from './types.js';
-import { loadCertificadoCached } from './certificate.js';
-import { XML_NAMESPACES } from './constants/endpoints.js';
+import type { CertificadoA1, SoapEnvelope, SoapResponse, SefazClientConfig } from './types';
+import { SefazError, TimeoutError } from './types';
+import { loadCertificadoCached } from './certificate';
+import { XML_NAMESPACES } from './constants/endpoints';
 
 // ============================================
 // Tipos

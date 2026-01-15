@@ -1,5 +1,5 @@
 import * as https from 'https';
-import type { SefazConfig, SefazEnvironment } from './types.js';
+import type { SefazConfig, SefazEnvironment } from './types';
 
 export class SefazClient {
   private config: SefazConfig;

@@ -1,5 +1,5 @@
-import { AbrasfClient } from '../client.js';
-import type { MunicipioConfig, CertificadoA1 } from '../../types.js';
+import { AbrasfClient } from '../client';
+import type { MunicipioConfig, CertificadoA1 } from '../../types';
 
 // ============================================
 // Belo Horizonte Configuration (BHISS Digital)

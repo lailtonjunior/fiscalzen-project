@@ -10,9 +10,9 @@ import type {
   DocumentoDistDFe,
   SefazAmbiente,
   CertificadoA1,
-} from '../types.js';
-import { SefazError, SEFAZ_STATUS } from '../types.js';
-import { SoapClient, extractSoapBody, extractTagValue, extractAllElements } from '../soap-client.js';
+} from '../types';
+import { SefazError, SEFAZ_STATUS } from '../types';
+import { SoapClient, extractSoapBody, extractTagValue, extractAllElements } from '../soap-client';
 import {
   getNFeDistDFeEndpoint,
   SOAP_ACTIONS,
@@ -20,7 +20,7 @@ import {
   SCHEMA_VERSIONS,
   getAmbienteCode,
   UF_CODES,
-} from '../constants/endpoints.js';
+} from '../constants/endpoints';
 import { decodeDocZip, isBase64Gzip } from '@fiscalzen/xml-parser';
 import { detectXmlSchema } from '@fiscalzen/xml-parser';
 

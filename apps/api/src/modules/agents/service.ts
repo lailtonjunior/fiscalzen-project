@@ -1,9 +1,9 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { localAgents, companies } from '@fiscalzen/database/schema';
-import { NotFoundError, ConflictError } from '../../utils/errors.js';
-import { cache } from '../../config/redis.js';
-import type { RegisterAgentInput, ListAgentsQuery, AgentHeartbeatInput } from './schemas.js';
+import { NotFoundError, ConflictError } from '../../utils/errors';
+import { cache } from '../../config/redis';
+import type { RegisterAgentInput, ListAgentsQuery, AgentHeartbeatInput } from './schemas';
 
 const AGENT_HEARTBEAT_TTL = 120; // 2 minutes
 const AGENT_CACHE_PREFIX = 'agent:heartbeat:';

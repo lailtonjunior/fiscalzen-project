@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
-import { env } from '../config/env.js';
-import { UnauthorizedError, ForbiddenError } from '../utils/errors.js';
+import { env } from '../config/env';
+import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 
 declare module 'fastify' {
   interface FastifyRequest {

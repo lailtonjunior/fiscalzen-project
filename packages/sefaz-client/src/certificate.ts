@@ -1,14 +1,24 @@
-// ============================================
-// Certificado Digital A1 (.pfx/.p12)
-// ============================================
-// Leitura e extração de informações do certificado
-// para uso em requisições SEFAZ
+// ======================================================
+// Certificado Digital A1 (.pfx / .p12)
+// Leitura, parsing, validação e extração de informações
+// Compatível com SEFAZ, XML Signature e DTS (tsup)
+// ======================================================
 
-import { createPrivateKey, createPublicKey, X509Certificate } from 'crypto';
+import forge from 'node-forge';
+import {
+  createPrivateKey,
+  createPublicKey,
+  X509Certificate,
+  createHash,
+} from 'crypto';
+
 import type { KeyObject } from 'crypto';
-import type { CertificadoA1 } from './types.js';
-import { CertificadoError } from './types.js';
+import type { CertificadoA1 } from './types';
+import { CertificadoError } from './types';
 
+/**
+ * Informações extraídas do certificado
+ */
 export interface CertificadoInfo {
   cnpj: string;
   razaoSocial: string;
@@ -20,97 +30,150 @@ export interface CertificadoInfo {
   thumbprint: string;
 }
 
+/**
+ * Estrutura completa do certificado carregado
+ */
 export interface CertificadoKeys {
   privateKey: KeyObject;
   publicKey: KeyObject;
   certificate: X509Certificate;
-  pem: string;
+  pem: string; // certificado em base64 (sem headers)
 }
 
 /**
- * Carrega e valida um certificado A1 (.pfx/.p12)
+ * Cache interno para evitar múltiplos parses do mesmo PFX
+ */
+const certificadoCache = new Map<string, CertificadoKeys>();
+
+/**
+ * Gera hash SHA-256 do buffer do certificado
+ * usado como chave de cache
+ */
+function generateCacheKey(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
+/**
+ * Carrega e processa um certificado A1 (.pfx/.p12)
+ * Parsing feito via node-forge (forma correta)
  */
 export function loadCertificado(certificado: CertificadoA1): CertificadoKeys {
   try {
     const { pfxBuffer, password } = certificado;
 
-    // Importa a chave privada do PFX
-    const privateKey = createPrivateKey({
-      key: pfxBuffer,
-      format: 'der',
-      type: 'pkcs12',
-      passphrase: password,
-    });
+    // Converte PFX para ASN.1
+    const pfxAsn1 = forge.asn1.fromDer(
+      pfxBuffer.toString('binary')
+    );
 
-    // Extrai a chave pública da privada
+    // Abre o PKCS#12
+    const pkcs12 = forge.pkcs12.pkcs12FromAsn1(
+      pfxAsn1,
+      false,
+      password
+    );
+
+    // ===============================
+    // Extração da chave privada
+    // ===============================
+    const keyBags = pkcs12.getBags({
+      bagType: forge.pki.oids.pkcs8ShroudedKeyBag,
+    })[forge.pki.oids.pkcs8ShroudedKeyBag];
+
+    if (!keyBags || keyBags.length === 0) {
+      throw new Error('Chave privada não encontrada no certificado');
+    }
+
+    const privateKeyPem = forge.pki.privateKeyToPem(
+      keyBags[0].key
+    );
+
+    const privateKey = createPrivateKey(privateKeyPem);
     const publicKey = createPublicKey(privateKey);
 
-    // Para extrair o certificado X.509, precisamos converter o PFX
-    // O Node.js crypto não tem suporte direto, então usamos uma abordagem alternativa
-    const pemKey = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+    // ===============================
+    // Extração do certificado X509
+    // ===============================
+    const certBags = pkcs12.getBags({
+      bagType: forge.pki.oids.certBag,
+    })[forge.pki.oids.certBag];
 
-    // Tenta extrair o certificado X.509 do PFX
-    // Nota: Esta é uma implementação simplificada
-    // Em produção, considere usar node-forge ou pkcs12 parsing
-    const certificate = extractX509FromPfx(pfxBuffer, password);
+    if (!certBags || certBags.length === 0) {
+      throw new Error('Certificado X509 não encontrado no PFX');
+    }
+
+    const certPem = forge.pki.certificateToPem(
+      certBags[0].cert
+    );
+
+    const certificate = new X509Certificate(certPem);
+
+    // Remove headers e quebras de linha (uso em XML)
+    const cleanPem = certPem
+      .replace(/-----BEGIN CERTIFICATE-----/g, '')
+      .replace(/-----END CERTIFICATE-----/g, '')
+      .replace(/\s+/g, '');
 
     return {
       privateKey,
       publicKey,
       certificate,
-      pem: certificate.toString(),
+      pem: cleanPem,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new CertificadoError(`Falha ao carregar certificado: ${message}`);
+    const message =
+      error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new CertificadoError(
+      `Falha ao carregar certificado: ${message}`
+    );
   }
 }
 
 /**
- * Extrai o certificado X.509 do arquivo PFX
- * Usa a API nativa do Node.js
+ * Carrega certificado usando cache
  */
-function extractX509FromPfx(pfxBuffer: Buffer, password: string): X509Certificate {
-  try {
-    // O Node.js 16+ suporta X509Certificate diretamente do PFX
-    // através de um workaround usando tls.createSecureContext
-    const tls = require('tls');
+export function loadCertificadoCached(
+  certificado: CertificadoA1
+): CertificadoKeys {
+  const cacheKey = generateCacheKey(certificado.pfxBuffer);
 
-    const context = tls.createSecureContext({
-      pfx: pfxBuffer,
-      passphrase: password,
-    });
-
-    // Extrai o certificado do contexto
-    const cert = context.context.getCertificate();
-    if (!cert) {
-      throw new Error('Certificado não encontrado no arquivo PFX');
-    }
-
-    return new X509Certificate(cert);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    throw new CertificadoError(`Falha ao extrair certificado X.509: ${message}`);
+  const cached = certificadoCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
+
+  const loaded = loadCertificado(certificado);
+  certificadoCache.set(cacheKey, loaded);
+
+  return loaded;
 }
 
 /**
- * Extrai informações do certificado (CNPJ, Razão Social, validade)
+ * Limpa o cache de certificados
  */
-export function getCertificadoInfo(certificado: CertificadoA1): CertificadoInfo {
-  const { certificate } = loadCertificado(certificado);
+export function clearCertificadoCache(): void {
+  certificadoCache.clear();
+}
+
+/**
+ * Extrai informações do certificado
+ */
+export function getCertificadoInfo(
+  certificado: CertificadoA1
+): CertificadoInfo {
+  const { certificate } = loadCertificadoCached(certificado);
 
   const subject = certificate.subject;
   const issuer = certificate.issuer;
+
   const validFrom = new Date(certificate.validFrom);
   const validTo = new Date(certificate.validTo);
+
   const serialNumber = certificate.serialNumber;
 
-  // Extrai CNPJ do subject (formato: CN=EMPRESA:12345678000199)
   const cnpj = extractCnpjFromSubject(subject);
   const razaoSocial = extractRazaoSocialFromSubject(subject);
 
-  // Calcula thumbprint (SHA-1 fingerprint)
   const thumbprint = certificate.fingerprint.replace(/:/g, '');
 
   return {
@@ -126,57 +189,11 @@ export function getCertificadoInfo(certificado: CertificadoA1): CertificadoInfo 
 }
 
 /**
- * Extrai CNPJ do subject do certificado
- * Formatos comuns:
- * - CN=EMPRESA LTDA:12345678000199
- * - serialNumber=12345678000199
- * - 2.5.4.5=12345678000199 (OID do serialNumber)
+ * Valida se o certificado está válido
  */
-function extractCnpjFromSubject(subject: string): string {
-  // Tenta extrair do formato CN=NOME:CNPJ
-  const cnMatch = subject.match(/CN=([^,]*):(\d{14})/);
-  if (cnMatch) {
-    return cnMatch[2];
-  }
-
-  // Tenta extrair do serialNumber
-  const snMatch = subject.match(/serialNumber=(\d{14})/i);
-  if (snMatch) {
-    return snMatch[1];
-  }
-
-  // Tenta extrair de qualquer sequência de 14 dígitos
-  const genericMatch = subject.match(/(\d{14})/);
-  if (genericMatch) {
-    return genericMatch[1];
-  }
-
-  throw new CertificadoError('CNPJ não encontrado no certificado');
-}
-
-/**
- * Extrai Razão Social do subject do certificado
- */
-function extractRazaoSocialFromSubject(subject: string): string {
-  // Tenta extrair do formato CN=NOME:CNPJ
-  const cnMatch = subject.match(/CN=([^:,]+)/);
-  if (cnMatch) {
-    return cnMatch[1].trim();
-  }
-
-  // Tenta extrair do O (Organization)
-  const orgMatch = subject.match(/O=([^,]+)/);
-  if (orgMatch) {
-    return orgMatch[1].trim();
-  }
-
-  return 'Não identificado';
-}
-
-/**
- * Valida se o certificado está dentro da validade
- */
-export function validateCertificado(certificado: CertificadoA1): {
+export function validateCertificado(
+  certificado: CertificadoA1
+): {
   valid: boolean;
   daysUntilExpiry: number;
   message: string;
@@ -201,7 +218,8 @@ export function validateCertificado(certificado: CertificadoA1): {
   }
 
   const daysUntilExpiry = Math.floor(
-    (info.validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    (info.validTo.getTime() - now.getTime()) /
+      (1000 * 60 * 60 * 24)
   );
 
   const message =
@@ -217,58 +235,69 @@ export function validateCertificado(certificado: CertificadoA1): {
 }
 
 /**
- * Exporta o certificado em formato PEM (Base64)
- * Usado para inclusão no XML assinado
+ * Retorna o certificado em Base64 (sem headers)
+ * para uso em XML assinado
  */
-export function getCertificadoPem(certificado: CertificadoA1): string {
-  const { pem } = loadCertificado(certificado);
-
-  // Remove headers e footers do PEM
-  const cleanPem = pem
-    .replace(/-----BEGIN CERTIFICATE-----/g, '')
-    .replace(/-----END CERTIFICATE-----/g, '')
-    .replace(/\s/g, '');
-
-  return cleanPem;
+export function getCertificadoPem(
+  certificado: CertificadoA1
+): string {
+  const { pem } = loadCertificadoCached(certificado);
+  return pem;
 }
 
 /**
  * Retorna a chave privada para assinatura XML
  */
-export function getPrivateKey(certificado: CertificadoA1): KeyObject {
-  const { privateKey } = loadCertificado(certificado);
+export function getPrivateKey(
+  certificado: CertificadoA1
+): KeyObject {
+  const { privateKey } = loadCertificadoCached(certificado);
   return privateKey;
 }
 
 /**
- * Cache de certificados carregados para evitar reload
+ * ================================
+ * Funções auxiliares de parsing
+ * ================================
  */
-const certificadoCache = new Map<string, CertificadoKeys>();
 
 /**
- * Carrega certificado com cache
+ * Extrai CNPJ do subject do certificado
  */
-export function loadCertificadoCached(certificado: CertificadoA1): CertificadoKeys {
-  // Cria chave de cache baseada no hash do buffer
-  const cacheKey = require('crypto')
-    .createHash('sha256')
-    .update(certificado.pfxBuffer)
-    .digest('hex');
-
-  const cached = certificadoCache.get(cacheKey);
-  if (cached) {
-    return cached;
+function extractCnpjFromSubject(subject: string): string {
+  const cnMatch = subject.match(/CN=([^,]*):(\d{14})/);
+  if (cnMatch) {
+    return cnMatch[2];
   }
 
-  const loaded = loadCertificado(certificado);
-  certificadoCache.set(cacheKey, loaded);
+  const serialMatch = subject.match(/serialNumber=(\d{14})/i);
+  if (serialMatch) {
+    return serialMatch[1];
+  }
 
-  return loaded;
+  const genericMatch = subject.match(/(\d{14})/);
+  if (genericMatch) {
+    return genericMatch[1];
+  }
+
+  throw new CertificadoError(
+    'CNPJ não encontrado no certificado'
+  );
 }
 
 /**
- * Limpa o cache de certificados
+ * Extrai Razão Social do subject
  */
-export function clearCertificadoCache(): void {
-  certificadoCache.clear();
+function extractRazaoSocialFromSubject(subject: string): string {
+  const cnMatch = subject.match(/CN=([^:,]+)/);
+  if (cnMatch) {
+    return cnMatch[1].trim();
+  }
+
+  const orgMatch = subject.match(/O=([^,]+)/);
+  if (orgMatch) {
+    return orgMatch[1].trim();
+  }
+
+  return 'Não identificado';
 }

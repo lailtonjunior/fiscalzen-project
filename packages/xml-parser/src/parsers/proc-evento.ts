@@ -1,6 +1,6 @@
-import { createParser, parseDate, extractCnpjCpf } from '../utils.js';
-import type { ProcEventoNFeData } from '../types.js';
-import { eventTypeDescriptions } from './res-evento.js';
+import { createParser, parseDate, extractCnpjCpf } from '../utils';
+import type { ProcEventoNFeData } from '../types';
+import { eventTypeDescriptions } from './res-evento';
 
 /**
  * Parser para Evento Processado (procEventoNFe_v1.00.xsd)

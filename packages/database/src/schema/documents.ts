@@ -11,7 +11,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { tenants, companies } from './tenants.js';
+import { tenants, companies } from './tenants';
 
 export const docTypeEnum = ['NFE', 'NFSE', 'CTE', 'MDFE', 'SAT', 'NFCE'] as const;
 export type DocType = (typeof docTypeEnum)[number];

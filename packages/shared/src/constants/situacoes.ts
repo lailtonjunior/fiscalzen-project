@@ -1,4 +1,4 @@
-import type { DocumentStatus } from '../types/documents.js';
+import type { DocumentStatus } from '../types/documents';
 
 export interface SituacaoInfo {
   code: DocumentStatus;

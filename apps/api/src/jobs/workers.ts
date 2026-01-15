@@ -1,10 +1,10 @@
 import { Worker } from 'bullmq';
-import { redis } from '../config/redis.js';
-import { processSefazMonitor } from './sefaz-monitor.js';
-import { processXmlProcessor } from './xml-processor.js';
-import { processSearchSync } from './search-sync.js';
-import { processNfseMonitor } from './nfse-monitor.js';
-import { setupWorkerEvents, logger, getWorkerHealth, type WorkerHealth } from './events.js';
+import { redis } from '../config/redis';
+import { processSefazMonitor } from './sefaz-monitor';
+import { processXmlProcessor } from './xml-processor';
+import { processSearchSync } from './search-sync';
+import { processNfseMonitor } from './nfse-monitor';
+import { setupWorkerEvents, logger, getWorkerHealth, type WorkerHealth } from './events';
 
 // ============================================
 // Worker Instances

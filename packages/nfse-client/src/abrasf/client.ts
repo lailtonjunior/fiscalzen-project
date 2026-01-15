@@ -11,7 +11,7 @@ import type {
   NfseConsultaResponse,
   ParsedNfse,
   NfseErro,
-} from '../types.js';
+} from '../types';
 
 // ============================================
 // XML Namespaces

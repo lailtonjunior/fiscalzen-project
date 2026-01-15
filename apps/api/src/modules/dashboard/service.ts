@@ -1,7 +1,7 @@
 import { eq, and, sql, desc, gte, lte, count } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { documents, companies, nsuControl } from '@fiscalzen/database/schema';
-import type { TimelineQuery, GapsQuery, SummaryQuery, RecentQuery } from './schemas.js';
+import type { TimelineQuery, GapsQuery, SummaryQuery, RecentQuery } from './schemas';
 
 export interface DocumentSummary {
   docType: string;

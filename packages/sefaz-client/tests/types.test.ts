@@ -5,7 +5,7 @@ import {
   TimeoutError,
   SEFAZ_STATUS,
   MANIFESTACAO_DESCRICOES,
-} from '../src/types.js';
+} from '../src/types';
 
 describe('Error Classes', () => {
   describe('SefazError', () => {

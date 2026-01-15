@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SefazError } from '../src/types.js';
+import { SefazError } from '../src/types';
 
 // Testes de validacao dos servicos (sem chamadas HTTP reais)
 

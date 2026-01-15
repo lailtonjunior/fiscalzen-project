@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { tenants } from './tenants.js';
+import { tenants } from './tenants';
 
 export const agentStatusEnum = ['online', 'offline', 'error'] as const;
 export type AgentStatus = (typeof agentStatusEnum)[number];

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { agentsService } from './service.js';
+import { agentsService } from './service';
 import {
   registerAgentSchema,
   agentIdSchema,
@@ -9,10 +9,10 @@ import {
   type AgentIdParams,
   type ListAgentsQuery,
   type AgentHeartbeatInput,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response.js';
-import { UnauthorizedError } from '../../utils/errors.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response';
+import { UnauthorizedError } from '../../utils/errors';
 
 export async function agentsRoutes(fastify: FastifyInstance) {
   // All routes except heartbeat require authentication

@@ -1,9 +1,9 @@
 import 'dotenv/config';
-import { buildApp } from './app.js';
-import { env } from './config/env.js';
-import { checkDatabaseConnection, closeDatabaseConnection } from './config/database.js';
-import { checkRedisConnection, closeRedisConnection, redis } from './config/redis.js';
-import { checkMeilisearchConnection, setupMeilisearchIndexes } from './config/meilisearch.js';
+import { buildApp } from './app';
+import { env } from './config/env';
+import { checkDatabaseConnection, closeDatabaseConnection } from './config/database';
+import { checkRedisConnection, closeRedisConnection, redis } from './config/redis';
+import { checkMeilisearchConnection, setupMeilisearchIndexes } from './config/meilisearch';
 import {
   startWorkers,
   stopWorkers,
@@ -11,7 +11,7 @@ import {
   stopScheduler,
   closeQueues,
   logger as jobLogger,
-} from './jobs/index.js';
+} from './jobs/index';
 
 async function start() {
   console.log('Starting FiscalZen API...');

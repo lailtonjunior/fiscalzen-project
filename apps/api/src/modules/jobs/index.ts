@@ -1,3 +1,3 @@
-export { jobsRoutes } from './routes.js';
-export { jobsService } from './service.js';
-export * from './schemas.js';
+export { jobsRoutes } from './routes';
+export { jobsService } from './service';
+export * from './schemas';

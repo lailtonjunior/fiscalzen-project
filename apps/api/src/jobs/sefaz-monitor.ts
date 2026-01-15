@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 import { eq, and } from 'drizzle-orm';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { companies, nsuControl } from '@fiscalzen/database/schema';
 import {
   consultarPorUltNSU,
@@ -10,9 +10,9 @@ import {
   type DistDFeResponse,
   SEFAZ_STATUS,
 } from '@fiscalzen/sefaz-client';
-import { env } from '../config/env.js';
-import { addXmlProcessorJob, addSefazMonitorJob, type SefazMonitorJobData } from './queues.js';
-import { logger } from './events.js';
+import { env } from '../config/env';
+import { addXmlProcessorJob, addSefazMonitorJob, type SefazMonitorJobData } from './queues';
+import { logger } from './events';
 
 // ============================================
 // Constants

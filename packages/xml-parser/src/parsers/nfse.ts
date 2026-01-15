@@ -1,5 +1,5 @@
-import { createParser, parseDate, parseDecimal, extractCnpjCpf, buildSearchContent } from '../utils.js';
-import type { DocumentStatus } from '../types.js';
+import { createParser, parseDate, parseDecimal, extractCnpjCpf, buildSearchContent } from '../utils';
+import type { DocumentStatus } from '../types';
 
 export type AbrasfVersion = '1.00' | '2.02' | '2.03' | '2.04' | 'unknown';
 

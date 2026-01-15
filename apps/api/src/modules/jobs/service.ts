@@ -1,16 +1,16 @@
 import { eq, and } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { companies, nsuControl } from '@fiscalzen/database/schema';
-import { NotFoundError } from '../../utils/errors.js';
+import { NotFoundError } from '../../utils/errors';
 import {
   getAllQueuesStatus,
   sefazMonitorQueue,
   xmlProcessorQueue,
   searchSyncQueue,
-} from '../../jobs/queues.js';
-import { getWorkersStatus, isWorkersRunning } from '../../jobs/workers.js';
-import { getJobMetrics } from '../../jobs/events.js';
-import { triggerCompanySync, triggerAllCompaniesSync } from '../../jobs/scheduler.js';
+} from '../../jobs/queues';
+import { getWorkersStatus, isWorkersRunning } from '../../jobs/workers';
+import { getJobMetrics } from '../../jobs/events';
+import { triggerCompanySync, triggerAllCompaniesSync } from '../../jobs/scheduler';
 
 export const jobsService = {
   async getStatus() {

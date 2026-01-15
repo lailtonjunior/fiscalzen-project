@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { companiesService } from './service.js';
+import { companiesService } from './service';
 import {
   createCompanySchema,
   updateCompanySchema,
@@ -10,10 +10,10 @@ import {
   type UpdateCompanyInput,
   type CompanyIdParams,
   type ListCompaniesQuery,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response.js';
-import { ValidationError } from '../../utils/errors.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response';
+import { ValidationError } from '../../utils/errors';
 
 export async function companiesRoutes(fastify: FastifyInstance) {
   // All routes require authentication

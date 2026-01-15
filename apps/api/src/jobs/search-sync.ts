@@ -1,10 +1,10 @@
 import type { Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { documents } from '@fiscalzen/database/schema';
-import { search, type DocumentSearchRecord } from '../services/search.js';
-import { type SearchSyncJobData } from './queues.js';
-import { logger } from './events.js';
+import { search, type DocumentSearchRecord } from '../services/search';
+import { type SearchSyncJobData } from './queues';
+import { logger } from './events';
 
 // ============================================
 // Main Job Processor

@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
-import { eventsService } from './service.js';
+import { eventsService } from './service';
 import {
   documentIdSchema,
   listEventsQuerySchema,
   type DocumentIdParams,
   type ListEventsQuery,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, paginate } from '../../utils/response.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, paginate } from '../../utils/response';
 
 export async function eventsRoutes(fastify: FastifyInstance) {
   // All routes require authentication

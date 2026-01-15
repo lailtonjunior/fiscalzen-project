@@ -1,5 +1,5 @@
-import { createParser, parseDate, extractCnpjCpf } from '../utils.js';
-import type { ResEventoData } from '../types.js';
+import { createParser, parseDate, extractCnpjCpf } from '../utils';
+import type { ResEventoData } from '../types';
 
 /**
  * Parser para Resumo de Evento (resEvento_v1.01.xsd)

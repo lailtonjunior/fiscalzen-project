@@ -16,7 +16,7 @@ export {
   type SefazMonitorJobData,
   type XmlProcessorJobData,
   type SearchSyncJobData,
-} from './queues.js';
+} from './queues';
 
 // Workers
 export {
@@ -26,7 +26,7 @@ export {
   resumeWorkers,
   getWorkersStatus,
   isWorkersRunning,
-} from './workers.js';
+} from './workers';
 
 // Scheduler
 export {
@@ -36,7 +36,7 @@ export {
   triggerCompanySync,
   triggerAllCompaniesSync,
   initializeCompanyNsuControl,
-} from './scheduler.js';
+} from './scheduler';
 
 // Events & Logging
 export {
@@ -44,9 +44,9 @@ export {
   getJobMetrics,
   onJobEvent,
   type WorkerHealth,
-} from './events.js';
+} from './events';
 
 // Job Processors
-export { processSefazMonitor } from './sefaz-monitor.js';
-export { processXmlProcessor } from './xml-processor.js';
-export { processSearchSync, reindexAllDocuments, batchIndexDocuments } from './search-sync.js';
+export { processSefazMonitor } from './sefaz-monitor';
+export { processXmlProcessor } from './xml-processor';
+export { processSearchSync, reindexAllDocuments, batchIndexDocuments } from './search-sync';

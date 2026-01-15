@@ -15,7 +15,7 @@ import {
   getMDFeDistDFeEndpoint,
   SOAP_ACTIONS,
   SCHEMA_VERSIONS,
-} from '../src/constants/endpoints.js';
+} from '../src/constants/endpoints';
 
 describe('Endpoints', () => {
   describe('NFe Endpoints', () => {

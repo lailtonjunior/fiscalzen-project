@@ -1,26 +1,26 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import helmet from '@fastify/helmet';
-import { env } from './config/env.js';
+import { env } from './config/env';
 
 // Plugins
-import authPlugin from './plugins/auth.js';
-import corsPlugin from './plugins/cors.js';
-import rateLimitPlugin from './plugins/rate-limit.js';
+import authPlugin from './plugins/auth';
+import corsPlugin from './plugins/cors';
+import rateLimitPlugin from './plugins/rate-limit';
 
 // Routes
-import { companiesRoutes } from './modules/companies/index.js';
-import { documentsRoutes } from './modules/documents/index.js';
-import { eventsRoutes } from './modules/events/index.js';
-import { dashboardRoutes } from './modules/dashboard/index.js';
-import { manifestacaoRoutes } from './modules/manifestacao/index.js';
-import { agentsRoutes } from './modules/agents/index.js';
-import { jobsRoutes } from './modules/jobs/index.js';
-import { nfseRoutes, companyNfseRoutes } from './modules/nfse/index.js';
+import { companiesRoutes } from './modules/companies/index';
+import { documentsRoutes } from './modules/documents/index';
+import { eventsRoutes } from './modules/events/index';
+import { dashboardRoutes } from './modules/dashboard/index';
+import { manifestacaoRoutes } from './modules/manifestacao/index';
+import { agentsRoutes } from './modules/agents/index';
+import { jobsRoutes } from './modules/jobs/index';
+import { nfseRoutes, companyNfseRoutes } from './modules/nfse/index';
 
 // Utils
-import { AppError } from './utils/errors.js';
-import { sendError } from './utils/response.js';
+import { AppError } from './utils/errors';
+import { sendError } from './utils/response';
 import { ZodError } from 'zod';
 
 export async function buildApp(): Promise<FastifyInstance> {

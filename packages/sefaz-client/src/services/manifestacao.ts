@@ -13,9 +13,9 @@ import type {
   SefazAmbiente,
   TipoEventoManifestacao,
   CertificadoA1,
-} from '../types.js';
-import { SefazError, SEFAZ_STATUS, MANIFESTACAO_DESCRICOES } from '../types.js';
-import { SoapClient, extractSoapBody, extractTagValue } from '../soap-client.js';
+} from '../types';
+import { SefazError, SEFAZ_STATUS, MANIFESTACAO_DESCRICOES } from '../types';
+import { SoapClient, extractSoapBody, extractTagValue } from '../soap-client';
 import {
   getNFeEventoEndpoint,
   SOAP_ACTIONS,
@@ -24,8 +24,8 @@ import {
   getAmbienteCode,
   UF_CODES,
   XML_NAMESPACES,
-} from '../constants/endpoints.js';
-import { signXml, gerarEventoId } from '../signature.js';
+} from '../constants/endpoints';
+import { signXml, gerarEventoId } from '../signature';
 
 // ============================================
 // Builders de XML

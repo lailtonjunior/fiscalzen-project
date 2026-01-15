@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { gerarEventoId, calculateDigest } from '../src/signature.js';
+import { gerarEventoId, calculateDigest } from '../src/signature';
 
 describe('Signature Utilities', () => {
   describe('gerarEventoId', () => {

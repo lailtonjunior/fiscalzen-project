@@ -1,5 +1,5 @@
 import { Queue, QueueEvents } from 'bullmq';
-import { redis } from '../config/redis.js';
+import { redis } from '../config/redis';
 
 // ============================================
 // Queue Configuration

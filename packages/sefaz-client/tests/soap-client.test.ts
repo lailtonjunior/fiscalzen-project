@@ -7,7 +7,7 @@ import {
   extractTagValue,
   extractAllElements,
   extractAttribute,
-} from '../src/soap-client.js';
+} from '../src/soap-client';
 
 const fixturesDir = join(__dirname, 'fixtures');
 

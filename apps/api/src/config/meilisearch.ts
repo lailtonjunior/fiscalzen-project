@@ -1,5 +1,5 @@
 import { MeiliSearch } from 'meilisearch';
-import { env } from './env.js';
+import { env } from './env';
 
 export const meilisearch = new MeiliSearch({
   host: env.MEILISEARCH_URL,

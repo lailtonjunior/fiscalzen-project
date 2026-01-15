@@ -1,11 +1,11 @@
 import { Job } from 'bullmq';
 import { subDays } from 'date-fns';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { companies, documents, nfseConfigs } from '@fiscalzen/database/schema';
 import { eq, and } from 'drizzle-orm';
-import type { NfseMonitorJobData } from './queues.js';
-import { addNfseMonitorJob } from './queues.js';
-import { logger } from '../utils/logger.js';
+import type { NfseMonitorJobData } from './queues';
+import { addNfseMonitorJob } from './queues';
+import { logger } from '../utils/logger';
 
 // ============================================
 // NFSe Monitor Processor

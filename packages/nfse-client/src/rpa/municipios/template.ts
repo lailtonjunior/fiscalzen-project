@@ -1,11 +1,11 @@
 import { Page } from 'playwright';
-import { BaseNfseScraper } from '../base-scraper.js';
+import { BaseNfseScraper } from '../base-scraper';
 import type {
   MunicipioConfig,
   NfseCredentials,
   NfseRpaResult,
   ConsultaParams,
-} from '../../types.js';
+} from '../../types';
 
 // ============================================
 // Template Scraper for New Municipalities

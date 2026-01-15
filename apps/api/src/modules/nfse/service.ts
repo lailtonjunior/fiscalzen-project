@@ -1,12 +1,12 @@
 import { eq, and } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { nfseConfigs, companies } from '@fiscalzen/database/schema';
-import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors.js';
-import { addNfseMonitorJob } from '../../jobs/queues.js';
+import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
+import { addNfseMonitorJob } from '../../jobs/queues';
 import type {
   CreateNfseConfigInput,
   UpdateNfseConfigInput,
-} from './schemas.js';
+} from './schemas';
 
 // Import from nfse-client package
 // We'll import dynamically to handle if package isn't installed yet

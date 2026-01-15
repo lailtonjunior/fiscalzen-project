@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { dashboardService } from './service.js';
+import { dashboardService } from './service';
 import {
   summaryQuerySchema,
   timelineQuerySchema,
@@ -9,9 +9,9 @@ import {
   type TimelineQuery,
   type GapsQuery,
   type RecentQuery,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess } from '../../utils/response.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess } from '../../utils/response';
 
 export async function dashboardRoutes(fastify: FastifyInstance) {
   // All routes require authentication

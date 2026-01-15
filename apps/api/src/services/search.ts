@@ -1,5 +1,5 @@
-import { meilisearch, INDEXES } from '../config/meilisearch.js';
-import { ExternalServiceError } from '../utils/errors.js';
+import { meilisearch, INDEXES } from '../config/meilisearch';
+import { ExternalServiceError } from '../utils/errors';
 
 export interface DocumentSearchRecord {
   id: string;

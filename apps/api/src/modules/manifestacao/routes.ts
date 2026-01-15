@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { manifestacaoService } from './service.js';
+import { manifestacaoService } from './service';
 import {
   cienciaSchema,
   confirmacaoSchema,
@@ -11,9 +11,9 @@ import {
   type DesconhecimentoInput,
   type NaoRealizadaInput,
   type PendentesQuery,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess, paginate } from '../../utils/response.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess, paginate } from '../../utils/response';
 
 export async function manifestacaoRoutes(fastify: FastifyInstance) {
   // All routes require authentication

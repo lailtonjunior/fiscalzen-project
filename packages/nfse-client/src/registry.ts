@@ -1,4 +1,4 @@
-import type { MunicipioConfig } from './types.js';
+import type { MunicipioConfig } from './types';
 
 // ============================================
 // Registro de Municípios Suportados

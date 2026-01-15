@@ -1,7 +1,7 @@
 import { eq, and, sql, desc, isNull } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { documents, companies, documentEvents } from '@fiscalzen/database/schema';
-import { NotFoundError, ValidationError, ExternalServiceError } from '../../utils/errors.js';
+import { NotFoundError, ValidationError, ExternalServiceError } from '../../utils/errors';
 import {
   registrarCiencia,
   confirmarOperacao,
@@ -10,8 +10,8 @@ import {
   type CertificadoA1,
   type SefazAmbiente,
 } from '@fiscalzen/sefaz-client';
-import { env } from '../../config/env.js';
-import type { PendentesQuery } from './schemas.js';
+import { env } from '../../config/env';
+import type { PendentesQuery } from './schemas';
 
 async function getCompanyWithCertificate(tenantId: string, companyId: string) {
   const company = await db.query.companies.findFirst({

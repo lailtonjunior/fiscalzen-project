@@ -1,11 +1,10 @@
-import { detectDocumentType } from '../detector.js';
-import { parseNFe, type NFeData } from './nfe.js';
-import { parseCTe, type CTeData } from './cte.js';
-import { parseMDFe, type MDFeData } from './mdfe.js';
-import { parseSAT, type SATData } from './sat.js';
-import { parseNFCe, type NFCeData } from './nfce.js';
-import { parseNFSe, type NFSeData } from './nfse.js';
-import type { DocType } from '../types.js';
+import { detectDocumentType } from '../detector';
+import { parseNFe, type NFeData } from './nfe';
+import { parseCTe, type CTeData } from './cte';
+import { parseMDFe, type MDFeData } from './mdfe';
+import { parseSAT, type SATData } from './sat';
+import { parseNFCe, type NFCeData } from './nfce';
+import { parseNFSe, type NFSeData } from './nfse';
 
 export type ParsedDocument = NFeData | CTeData | MDFeData | SATData | NFCeData | NFSeData;
 

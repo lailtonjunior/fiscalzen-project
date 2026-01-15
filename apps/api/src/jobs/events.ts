@@ -1,8 +1,8 @@
 import pino from 'pino';
 import type { Worker, Job } from 'bullmq';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { auditLogs } from '@fiscalzen/database/schema';
-import { env } from '../config/env.js';
+import { env } from '../config/env';
 
 // ============================================
 // Logger Configuration

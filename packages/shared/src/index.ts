@@ -1,19 +1,19 @@
 // Types
-export * from './types/documents.js';
-export * from './types/companies.js';
-export * from './types/api.js';
+export * from './types/documents';
+export * from './types/companies';
+export * from './types/api';
 
 // Validators
-export * from './validators/cnpj.js';
-export * from './validators/cpf.js';
-export * from './validators/chave-acesso.js';
+export * from './validators/cnpj';
+export * from './validators/cpf';
+export * from './validators/chave-acesso';
 
 // Formatters
-export * from './formatters/currency.js';
-export * from './formatters/date.js';
-export * from './formatters/document.js';
+export * from './formatters/currency';
+export * from './formatters/date';
+export * from './formatters/document';
 
 // Constants
-export * from './constants/estados.js';
-export * from './constants/doc-types.js';
-export * from './constants/situacoes.js';
+export * from './constants/estados';
+export * from './constants/doc-types';
+export * from './constants/situacoes';

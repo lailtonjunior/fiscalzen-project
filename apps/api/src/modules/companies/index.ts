@@ -1,3 +1,3 @@
-export { companiesRoutes } from './routes.js';
-export { companiesService } from './service.js';
-export * from './schemas.js';
+export { companiesRoutes } from './routes';
+export { companiesService } from './service';
+export * from './schemas';

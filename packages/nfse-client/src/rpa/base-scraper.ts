@@ -4,7 +4,7 @@ import type {
   NfseCredentials,
   NfseRpaResult,
   ConsultaParams,
-} from '../types.js';
+} from '../types';
 
 // ============================================
 // Base NFSe Scraper

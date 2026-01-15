@@ -1,9 +1,9 @@
 import { eq, and, ilike, sql, desc } from 'drizzle-orm';
-import { db } from '../../config/database.js';
+import { db } from '../../config/database';
 import { companies, nsuControl } from '@fiscalzen/database/schema';
-import { NotFoundError, ConflictError, ValidationError } from '../../utils/errors.js';
+import { NotFoundError, ConflictError, ValidationError } from '../../utils/errors';
 import { validateCertificado, getCertificadoInfo } from '@fiscalzen/sefaz-client';
-import type { CreateCompanyInput, UpdateCompanyInput, ListCompaniesQuery } from './schemas.js';
+import type { CreateCompanyInput, UpdateCompanyInput, ListCompaniesQuery } from './schemas';
 import type { CertificadoA1 } from '@fiscalzen/sefaz-client';
 
 export interface CompanyWithNsu {

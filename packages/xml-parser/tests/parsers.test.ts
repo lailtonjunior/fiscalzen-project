@@ -2,12 +2,12 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { parseNFe } from '../src/parsers/nfe.js';
-import { parseResNFe } from '../src/parsers/res-nfe.js';
-import { parseResEvento, isManifestacaoEvento, isCancelamentoEvento } from '../src/parsers/res-evento.js';
-import { parseProcEventoNFe, isEventoSucesso } from '../src/parsers/proc-evento.js';
-import { detectDocumentType, detectXmlSchema, parseChaveAcesso, isValidChaveAcesso } from '../src/detector.js';
-import { decodeDocZip, encodeToDocZip, isBase64Gzip } from '../src/gzip.js';
+import { parseNFe } from '../src/parsers/nfe';
+import { parseResNFe } from '../src/parsers/res-nfe';
+import { parseResEvento, isManifestacaoEvento, isCancelamentoEvento } from '../src/parsers/res-evento';
+import { parseProcEventoNFe, isEventoSucesso } from '../src/parsers/proc-evento';
+import { detectDocumentType, detectXmlSchema, parseChaveAcesso, isValidChaveAcesso } from '../src/detector';
+import { decodeDocZip, encodeToDocZip, isBase64Gzip } from '../src/gzip';
 
 // Fixtures
 const fixturesDir = join(__dirname, 'fixtures');

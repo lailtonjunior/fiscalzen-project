@@ -1,11 +1,11 @@
 import { Page } from 'playwright';
-import { AbrasfClient } from './abrasf/client.js';
-import { SaoPauloAdapter } from './abrasf/municipios/sao-paulo.js';
-import { RioDeJaneiroAdapter } from './abrasf/municipios/rio-de-janeiro.js';
-import { BeloHorizonteAdapter } from './abrasf/municipios/belo-horizonte.js';
-import { BaseNfseScraper } from './rpa/base-scraper.js';
-import { getMunicipioConfig } from './registry.js';
-import type { CertificadoA1, MunicipioConfig } from './types.js';
+import { AbrasfClient } from './abrasf/client';
+import { SaoPauloAdapter } from './abrasf/municipios/sao-paulo';
+import { RioDeJaneiroAdapter } from './abrasf/municipios/rio-de-janeiro';
+import { BeloHorizonteAdapter } from './abrasf/municipios/belo-horizonte';
+import { BaseNfseScraper } from './rpa/base-scraper';
+import { getMunicipioConfig } from './registry';
+import type { CertificadoA1, MunicipioConfig } from './types';
 
 // ============================================
 // Client Factory

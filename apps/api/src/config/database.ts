@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from '@fiscalzen/database/schema';
-import { env } from './env.js';
+import { env } from './env';
 
 const { Pool } = pg;
 

@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
-import { jobsService } from './service.js';
+import { jobsService } from './service';
 import {
   companyIdSchema,
   syncRequestSchema,
   type CompanyIdParams,
   type SyncRequestInput,
-} from './schemas.js';
-import { getTenantId } from '../../plugins/auth.js';
-import { sendSuccess } from '../../utils/response.js';
+} from './schemas';
+import { getTenantId } from '../../plugins/auth';
+import { sendSuccess } from '../../utils/response';
 
 export async function jobsRoutes(fastify: FastifyInstance) {
   // All routes require authentication

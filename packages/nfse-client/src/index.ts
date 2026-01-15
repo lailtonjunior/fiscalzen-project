@@ -23,7 +23,7 @@ export type {
   NfseCredentials,
   NfseRpaResult,
   NfseTestConnectionResult,
-} from './types.js';
+} from './types';
 
 // Registry
 export {
@@ -34,10 +34,10 @@ export {
   getMunicipiosByTipo,
   getAllMunicipios,
   searchMunicipios,
-} from './registry.js';
+} from './registry';
 
 // ABRASF Client
-export { AbrasfClient } from './abrasf/client.js';
+export { AbrasfClient } from './abrasf/client';
 export {
   SaoPauloAdapter,
   SAO_PAULO_CONFIG,
@@ -45,7 +45,7 @@ export {
   RIO_DE_JANEIRO_CONFIG,
   BeloHorizonteAdapter,
   BELO_HORIZONTE_CONFIG,
-} from './abrasf/municipios/index.js';
+} from './abrasf/municipios/index';
 
 // RPA
 export {
@@ -53,7 +53,7 @@ export {
   getBrowserManager,
   closeBrowserManager,
   BaseNfseScraper,
-} from './rpa/index.js';
+} from './rpa/index';
 
 // Factory
 export {
@@ -61,4 +61,4 @@ export {
   getRpaScraper,
   getMunicipioIntegrationType,
   getMunicipioInfo,
-} from './factory.js';
+} from './factory';

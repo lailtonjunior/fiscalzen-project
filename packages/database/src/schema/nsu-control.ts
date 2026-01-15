@@ -9,7 +9,7 @@ import {
   unique,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { companies } from './tenants.js';
+import { companies } from './tenants';
 
 /**
  * NSU Control Table

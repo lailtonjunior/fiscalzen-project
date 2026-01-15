@@ -1,12 +1,12 @@
 // Utilities
-export { cn } from './lib/utils.js';
+export { cn } from './lib/utils';
 
 // Components
-export { Button, buttonVariants, type ButtonProps } from './components/button.js';
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './components/card.js';
-export { Input, type InputProps } from './components/input.js';
-export { Label } from './components/label.js';
-export { Badge, badgeVariants, type BadgeProps } from './components/badge.js';
+export { Button, buttonVariants, type ButtonProps } from './components/button';
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './components/card';
+export { Input, type InputProps } from './components/input';
+export { Label } from './components/label';
+export { Badge, badgeVariants, type BadgeProps } from './components/badge';
 export {
   Select,
   SelectGroup,
@@ -16,7 +16,7 @@ export {
   SelectLabel,
   SelectItem,
   SelectSeparator,
-} from './components/select.js';
+} from './components/select';
 export {
   Dialog,
   DialogPortal,
@@ -28,8 +28,8 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './components/dialog.js';
-export { Separator } from './components/separator.js';
+} from './components/dialog';
+export { Separator } from './components/separator';
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -46,12 +46,12 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
-} from './components/dropdown-menu.js';
-export { Skeleton } from './components/skeleton.js';
-export { Spinner } from './components/spinner.js';
-export { Checkbox } from './components/checkbox.js';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/tabs.js';
-export { Alert, AlertTitle, AlertDescription } from './components/alert.js';
-export { Progress } from './components/progress.js';
-export { RadioGroup, RadioGroupItem } from './components/radio-group.js';
-export { Textarea, type TextareaProps } from './components/textarea.js';
+} from './components/dropdown-menu';
+export { Skeleton } from './components/skeleton';
+export { Spinner } from './components/spinner';
+export { Checkbox } from './components/checkbox';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/tabs';
+export { Alert, AlertTitle, AlertDescription } from './components/alert';
+export { Progress } from './components/progress';
+export { RadioGroup, RadioGroupItem } from './components/radio-group';
+export { Textarea, type TextareaProps } from './components/textarea';

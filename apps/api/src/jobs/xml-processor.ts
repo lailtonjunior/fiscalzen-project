@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 import { eq, and } from 'drizzle-orm';
-import { db } from '../config/database.js';
+import { db } from '../config/database';
 import { documents, documentEvents } from '@fiscalzen/database/schema';
 import {
   parseNFe,
@@ -11,9 +11,9 @@ import {
   parseProcEventoNFe,
   detectXmlType,
 } from '@fiscalzen/xml-parser';
-import { storage, type StorageKey } from '../services/storage.js';
-import { addSearchSyncJob, type XmlProcessorJobData } from './queues.js';
-import { logger } from './events.js';
+import { storage, type StorageKey } from '../services/storage';
+import { addSearchSyncJob, type XmlProcessorJobData } from './queues';
+import { logger } from './events';
 
 // ============================================
 // Main Job Processor

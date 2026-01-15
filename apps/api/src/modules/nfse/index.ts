@@ -1,3 +1,3 @@
-export { nfseRoutes, companyNfseRoutes } from './routes.js';
-export { nfseService } from './service.js';
-export * from './schemas.js';
+export { nfseRoutes, companyNfseRoutes } from './routes';
+export { nfseService } from './service';
+export * from './schemas';

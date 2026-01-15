@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createClient } from './client.js';
+import { createClient } from './client';
 import {
   tenants,
   companies,
@@ -8,13 +8,26 @@ import {
   nsuControl,
   agents,
   auditLogs,
-} from './schema/index.js';
+} from './schema/index';
 
 async function seed() {
   console.log('🌱 Starting database seed...');
   console.log('⚠️  This will create demo data for development.\n');
 
   const db = createClient();
+
+  // ============================================
+  // 0. Clear existing data (for re-seeding)
+  // ============================================
+  console.log('🧹 Clearing existing data...');
+  await db.delete(auditLogs);
+  await db.delete(documentEvents);
+  await db.delete(documents);
+  await db.delete(nsuControl);
+  await db.delete(agents);
+  await db.delete(companies);
+  await db.delete(tenants);
+  console.log('   ✅ Database cleared\n');
 
   // ============================================
   // 1. Create Demo Tenant
@@ -163,7 +176,7 @@ async function seed() {
       dataCaptura: new Date('2024-12-15T11:00:00-03:00'),
       situacao: 'autorizada' as const,
       xmlStorageKey: 'nfe/2024/12/35240111222333000144550010000001231234567890.xml',
-      xmlHashSha256: 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678',
+      xmlHashSha256: 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234',
       xmlSizeBytes: 45678,
       metadata: {
         natOp: 'VENDA DE MERCADORIA',
@@ -189,7 +202,7 @@ async function seed() {
       dataCaptura: new Date('2024-12-18T15:00:00-03:00'),
       situacao: 'autorizada' as const,
       xmlStorageKey: 'nfe/2024/12/35240111222333000144550010000001241234567891.xml',
-      xmlHashSha256: 'b2c3d4e5f67890123456789012345678901abcdef2345678901abcdef23456789',
+      xmlHashSha256: 'b2c3d4e5f67890123456789012345678901abcdef2345678901abcdef2345',
       xmlSizeBytes: 52341,
       metadata: {
         natOp: 'COMPRA PARA COMERCIALIZACAO',
@@ -216,7 +229,7 @@ async function seed() {
       dataCaptura: new Date('2024-12-20T10:00:00-03:00'),
       situacao: 'autorizada' as const,
       xmlStorageKey: 'cte/2024/12/31240199888777000166570010000005671234567892.xml',
-      xmlHashSha256: 'c3d4e5f678901234567890123456789012abcdef3456789012abcdef345678901',
+      xmlHashSha256: 'c3d4e5f678901234567890123456789012abcdef3456789012abcdef3456',
       xmlSizeBytes: 38921,
       metadata: {
         modal: '01', // Rodoviário
@@ -243,7 +256,7 @@ async function seed() {
       dataCaptura: new Date('2024-12-22T17:00:00-03:00'),
       situacao: 'autorizada' as const,
       xmlStorageKey: 'nfse/2024/12/RJ-3304557-1001.xml',
-      xmlHashSha256: 'd4e5f6789012345678901234567890123abcdef4567890123abcdef4567890123',
+      xmlHashSha256: 'd4e5f6789012345678901234567890123abcdef4567890123abcdef4567',
       xmlSizeBytes: 12456,
       metadata: {
         codigoServico: '1.05',
@@ -271,7 +284,7 @@ async function seed() {
       dataCaptura: new Date('2024-12-10T12:00:00-03:00'),
       situacao: 'cancelada' as const,
       xmlStorageKey: 'nfe/2024/12/35240111222333000144550010000001201234567893.xml',
-      xmlHashSha256: 'e5f67890123456789012345678901234abcdef5678901234abcdef56789012345',
+      xmlHashSha256: 'e5f67890123456789012345678901234abcdef5678901234abcdef5678',
       xmlSizeBytes: 41234,
       metadata: {
         natOp: 'VENDA DE MERCADORIA',

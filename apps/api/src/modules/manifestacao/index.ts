@@ -1,3 +1,3 @@
-export { manifestacaoRoutes } from './routes.js';
-export { manifestacaoService } from './service.js';
-export * from './schemas.js';
+export { manifestacaoRoutes } from './routes';
+export { manifestacaoService } from './service';
+export * from './schemas';

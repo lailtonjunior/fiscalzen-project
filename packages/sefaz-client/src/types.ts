@@ -146,25 +146,9 @@ export interface ConsultaProtocoloResponse {
 // Códigos de Status SEFAZ
 // ============================================
 
-export const SEFAZ_STATUS = {
-  // DistDFe
-  NENHUM_DOCUMENTO: '137',
-  DOCUMENTO_LOCALIZADO: '138',
-  CONSUMO_INDEVIDO: '656',
-  CNPJ_BASE_DIFERENTE: '593',
+import { SEFAZ_STATUS as ConstantsSEFAZ_STATUS } from './constants';
 
-  // Eventos
-  EVENTO_REGISTRADO: '135',
-  EVENTO_REGISTRADO_NAO_VINCULADO: '136',
-  EVENTO_DUPLICADO: '631',
-  EVENTO_CANCELAMENTO_FORA_PRAZO: '155',
-
-  // NFe
-  NFE_AUTORIZADA: '100',
-  NFE_CANCELADA: '101',
-  NFE_DENEGADA: '110',
-  NFE_INUTILIZADA: '102',
-} as const;
+export type SEFAZ_STATUS = typeof ConstantsSEFAZ_STATUS;
 
 // ============================================
 // SOAP Types

@@ -1,3 +1,3 @@
-export { agentsRoutes } from './routes.js';
-export { agentsService } from './service.js';
-export * from './schemas.js';
+export { agentsRoutes } from './routes';
+export { agentsService } from './service';
+export * from './schemas';

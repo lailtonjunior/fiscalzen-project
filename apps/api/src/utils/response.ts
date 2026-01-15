@@ -1,5 +1,5 @@
 import type { FastifyReply } from 'fastify';
-import { AppError } from './errors.js';
+import { AppError } from './errors';
 
 export interface PaginationMeta {
   page: number;
