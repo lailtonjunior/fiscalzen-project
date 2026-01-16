@@ -20,7 +20,7 @@ const defaultJobOptions = {
 // ============================================
 
 export const sefazMonitorQueue = new Queue('sefaz-monitor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
   defaultJobOptions: {
     ...defaultJobOptions,
     attempts: 3,
@@ -28,7 +28,7 @@ export const sefazMonitorQueue = new Queue('sefaz-monitor', {
 });
 
 export const xmlProcessorQueue = new Queue('xml-processor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
   defaultJobOptions: {
     ...defaultJobOptions,
     attempts: 5,
@@ -36,7 +36,7 @@ export const xmlProcessorQueue = new Queue('xml-processor', {
 });
 
 export const searchSyncQueue = new Queue('search-sync', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
   defaultJobOptions: {
     ...defaultJobOptions,
     attempts: 3,
@@ -44,7 +44,7 @@ export const searchSyncQueue = new Queue('search-sync', {
 });
 
 export const nfseMonitorQueue = new Queue('nfse-monitor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
   defaultJobOptions: {
     ...defaultJobOptions,
     attempts: 3,
@@ -56,19 +56,19 @@ export const nfseMonitorQueue = new Queue('nfse-monitor', {
 // ============================================
 
 export const sefazMonitorEvents = new QueueEvents('sefaz-monitor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
 });
 
 export const xmlProcessorEvents = new QueueEvents('xml-processor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
 });
 
 export const searchSyncEvents = new QueueEvents('search-sync', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
 });
 
 export const nfseMonitorEvents = new QueueEvents('nfse-monitor', {
-  connection: redis,
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
 });
 
 // ============================================
