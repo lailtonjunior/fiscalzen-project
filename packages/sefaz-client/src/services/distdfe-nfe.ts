@@ -22,7 +22,7 @@ export class DistDFeNFe {
   }
 
   async consultar(request: DistDFeRequest): Promise<SefazResponse<DistDFeNFeResponse>> {
-    const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
+    const envKey = this.client.environment === 'producao' ? 'producao' : 'homologacao';
     const url = SEFAZ_URLS.NFE.DISTDFE[envKey];
 
     const ufCode = UF_CODES[this.client.uf] || '35';

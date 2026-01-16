@@ -9,7 +9,7 @@ import {
   parseResNFe,
   parseResEvento,
   parseProcEventoNFe,
-  detectXmlType,
+  detectDocumentType as detectXmlType,
 } from '@fiscalzen/xml-parser';
 import { storage, type StorageKey } from '../services/storage';
 import { addSearchSyncJob, type XmlProcessorJobData } from './queues';

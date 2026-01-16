@@ -24,7 +24,7 @@ export class ConsultaProtocolo {
   }
 
   async consultar(request: ConsultaProtocoloRequest): Promise<SefazResponse<ConsultaProtocoloResponse>> {
-    const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
+    const envKey = this.client.environment === 'producao' ? 'producao' : 'homologacao';
     const url = SEFAZ_URLS.NFE.CONSULTA[envKey];
 
     const tpAmb = this.client.environment === 'producao' ? '1' : '2';
