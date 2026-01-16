@@ -23,15 +23,7 @@ export class DistDFeMDFe {
 
   async consultar(request: DistDFeRequest): Promise<SefazResponse<DistDFeMDFeResponse>> {
     const envKey = this.client.environment === 'producao' ? 'production' : 'homologation';
-    // Nota: MDFe DistDFe URL deve estar definida nas constants. Se não estiver, assumimos padrão.
-    const url = SEFAZ_URLS.MDFE?.DISTDFE?.[envKey] || ''; 
-
-    if (!url) {
-        return {
-            success: false,
-            error: { code: 'CONFIG_ERROR', message: 'URL MDFe DistDFe não configurada' }
-        };
-    }
+    const url = SEFAZ_URLS.MDFE.DISTDFE[envKey];
 
     const ufCode = UF_CODES[this.client.uf] || '35';
     const tpAmb = this.client.environment === 'producao' ? '1' : '2';

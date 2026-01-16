@@ -1,91 +1,53 @@
-// UF Codes (IBGE)
-export const UF_CODES: Record<string, string> = {
-  AC: '12',
-  AL: '27',
-  AM: '13',
-  AP: '16',
-  BA: '29',
-  CE: '23',
-  DF: '53',
-  ES: '32',
-  GO: '52',
-  MA: '21',
-  MG: '31',
-  MS: '50',
-  MT: '51',
-  PA: '15',
-  PB: '25',
-  PE: '26',
-  PI: '22',
-  PR: '41',
-  RJ: '33',
-  RN: '24',
-  RO: '11',
-  RR: '14',
-  RS: '43',
-  SC: '42',
-  SE: '28',
-  SP: '35',
-  TO: '17',
-};
+import {
+  NFE_DISTDFE_ENDPOINTS,
+  NFE_RECEPCAO_EVENTO_ENDPOINTS,
+  NFE_CONSULTA_PROTOCOLO_ENDPOINTS,
+  CTE_DISTDFE_ENDPOINTS,
+  CTE_RECEPCAO_EVENTO_ENDPOINTS,
+  MDFE_DISTDFE_ENDPOINTS,
+  MDFE_RECEPCAO_EVENTO_ENDPOINTS,
+  UF_CODES as UF_CODES_MAP,
+} from './constants/endpoints';
 
-// SEFAZ Web Service URLs
+export const UF_CODES = UF_CODES_MAP;
+
 export const SEFAZ_URLS = {
   NFE: {
-    DISTDFE: {
-      production: 'https://www1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx',
-      homologation: 'https://hom1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx',
-    },
-    MANIFESTACAO: {
-      production: 'https://www.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx',
-      homologation: 'https://hom.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx',
-    },
-    CONSULTA: {
-      production: 'https://www.nfe.fazenda.gov.br/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx',
-      homologation: 'https://hom.nfe.fazenda.gov.br/NFeConsultaProtocolo4/NFeConsultaProtocolo4.asmx',
-    },
+    DISTDFE: NFE_DISTDFE_ENDPOINTS,
+    MANIFESTACAO: NFE_RECEPCAO_EVENTO_ENDPOINTS,
+    CONSULTA: NFE_CONSULTA_PROTOCOLO_ENDPOINTS,
   },
   CTE: {
-    DISTDFE: {
-      production: 'https://www1.cte.fazenda.gov.br/CTeDistribuicaoDFe/CTeDistribuicaoDFe.asmx',
-      homologation: 'https://hom1.cte.fazenda.gov.br/CTeDistribuicaoDFe/CTeDistribuicaoDFe.asmx',
-    },
+    DISTDFE: CTE_DISTDFE_ENDPOINTS,
+    MANIFESTACAO: CTE_RECEPCAO_EVENTO_ENDPOINTS,
+  },
+  MDFE: {
+    DISTDFE: MDFE_DISTDFE_ENDPOINTS,
+    MANIFESTACAO: MDFE_RECEPCAO_EVENTO_ENDPOINTS,
   },
 };
 
-// SEFAZ Status Codes
+export const DIST_DFE_SCHEMAS = {
+  NFE: 'resNFe_v1.01.xsd',
+  CTE: 'procCTe_v4.00.xsd',
+  MDFE: 'resMDFe_v3.00.xsd',
+};
+
 export const SEFAZ_STATUS = {
-  // DistDFe Success
-  NENHUM_DOCUMENTO: '137',
-  DOCUMENTO_LOCALIZADO: '138',
-
-  // DistDFe Errors
-  CONSUMO_INDEVIDO: '656',
-  CERTIFICADO_INVALIDO: '593',
-  CERTIFICADO_REVOGADO: '594',
-
-  // NFe Status
-  NFE_AUTORIZADA: '100',
-  NFE_CANCELADA: '101',
-  NFE_DENEGADA: '110',
-
-  // Evento Status
+  AUTORIZADO: '100',
+  CANCELADO: '101',
+  INUTILIZADO: '102',
+  LOTE_RECEBIDO: '103',
+  LOTE_PROCESSADO: '104',
+  LOTE_EM_PROCESSAMENTO: '105',
+  SERVICO_EM_OPERACAO: '107',
+  USO_DENEGADO: '110',
+  CONSULTA_CADASTRO_COM_SUCESSO: '111',
+  CONSULTA_CADASTRO_COM_ERRO: '112',
+  LOTE_EVENTO_PROCESSADO: '128',
   EVENTO_REGISTRADO: '135',
   EVENTO_REGISTRADO_NAO_VINCULADO: '136',
-  EVENTO_DUPLICADO: '631',
-
-  // Manifestação
-  MANIFESTACAO_CONFIRMACAO: '210200',
-  MANIFESTACAO_CIENCIA: '210210',
-  MANIFESTACAO_CONFIRMACAO_REGISTRADA: '210220',
-  MANIFESTACAO_NAO_REALIZADA: '210240',
-  MANIFESTACAO_DESCONHECIMENTO: '210260',
+  NENHUM_DOC_LOCALIZADO: '137',
+  DOC_LOCALIZADO: '138',
+  CONSUMO_INDEVIDO: '656',
 } as const;
-
-// Document types that can be returned
-export const DIST_DFE_SCHEMAS = {
-  resNFe: 'Resumo NFe',
-  resEvento: 'Resumo Evento',
-  procNFe: 'NFe Completa',
-  procEventoNFe: 'Evento NFe',
-};
