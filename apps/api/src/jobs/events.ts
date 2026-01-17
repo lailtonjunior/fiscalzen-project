@@ -1,243 +1,220 @@
+import { EventEmitter } from 'node:events';
+
 import pino from 'pino';
-import type { Worker, Job } from 'bullmq';
-import { db } from '../config/database';
-import { auditLogs } from '@fiscalzen/database/schema';
-import { env } from '../config/env';
+export const logger = pino({ name: 'fiscalzen-jobs' });
 
-// ============================================
-// Logger Configuration
-// ============================================
+export type JobEventType = 'started' | 'progress' | 'completed' | 'failed';
 
-export const logger = pino({
-  name: 'fiscalzen-jobs',
-  level: env.LOG_LEVEL,
-  transport:
-    env.NODE_ENV === 'development'
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss Z',
-            ignore: 'pid,hostname',
-          },
-        }
-      : undefined,
-});
-
-// ============================================
-// Job Metrics
-// ============================================
-
-interface JobMetrics {
-  completed: number;
-  failed: number;
-  totalDuration: number;
-  lastCompleted?: Date;
-  lastFailed?: Date;
-}
-
-const metrics: Map<string, JobMetrics> = new Map();
-
-function getMetrics(queueName: string): JobMetrics {
-  if (!metrics.has(queueName)) {
-    metrics.set(queueName, {
-      completed: 0,
-      failed: 0,
-      totalDuration: 0,
-    });
-  }
-  return metrics.get(queueName)!;
-}
-
-export function getJobMetrics(): Record<string, JobMetrics> {
-  const result: Record<string, JobMetrics> = {};
-  for (const [name, metric] of metrics) {
-    result[name] = { ...metric };
-  }
-  return result;
-}
-
-// ============================================
-// Event Handlers
-// ============================================
-
-export function setupWorkerEvents(worker: Worker) {
-  const queueName = worker.name;
-
-  worker.on('completed', async (job: Job, result: unknown) => {
-    const duration = Date.now() - (job.timestamp ?? Date.now());
-    const m = getMetrics(queueName);
-    m.completed++;
-    m.totalDuration += duration;
-    m.lastCompleted = new Date();
-
-    logger.info({
-      event: 'job_completed',
-      queue: queueName,
-      jobId: job.id,
-      jobName: job.name,
-      duration,
-      result: typeof result === 'object' ? result : { value: result },
-    });
-  });
-
-  worker.on('failed', async (job: Job | undefined, error: Error) => {
-    const m = getMetrics(queueName);
-    m.failed++;
-    m.lastFailed = new Date();
-
-    logger.error({
-      event: 'job_failed',
-      queue: queueName,
-      jobId: job?.id,
-      jobName: job?.name,
-      error: error.message,
-      stack: error.stack,
-    });
-
-    // Record in audit log
-    if (job) {
-      await recordAuditLog({
-        action: 'job_failed',
-        resource: queueName,
-        resourceId: job.id ?? 'unknown',
-        details: {
-          jobName: job.name,
-          error: error.message,
-          data: job.data,
-          attemptsMade: job.attemptsMade,
-        },
-      });
-    }
-  });
-
-  worker.on('error', (error: Error) => {
-    logger.error({
-      event: 'worker_error',
-      queue: queueName,
-      error: error.message,
-      stack: error.stack,
-    });
-  });
-
-  worker.on('stalled', (jobId: string) => {
-    logger.warn({
-      event: 'job_stalled',
-      queue: queueName,
-      jobId,
-    });
-  });
-
-  worker.on('active', (job: Job) => {
-    logger.debug({
-      event: 'job_active',
-      queue: queueName,
-      jobId: job.id,
-      jobName: job.name,
-    });
-  });
-
-  worker.on('progress', (job: Job, progress: number | object) => {
-    logger.debug({
-      event: 'job_progress',
-      queue: queueName,
-      jobId: job.id,
-      progress,
-    });
-  });
-}
-
-// ============================================
-// Audit Log
-// ============================================
-
-interface AuditLogEntry {
-  action: string;
-  resource: string;
-  resourceId: string;
-  tenantId?: string;
-  userId?: string;
-  details?: Record<string, unknown>;
-}
-
-async function recordAuditLog(entry: AuditLogEntry) {
-  try {
-    await db.insert(auditLogs).values({
-      action: entry.action,
-      resource: entry.resource,
-      resourceId: entry.resourceId,
-      tenantId: entry.tenantId,
-      userId: entry.userId,
-      details: entry.details,
-      timestamp: new Date(),
-    });
-  } catch (error) {
-    logger.error({
-      event: 'audit_log_failed',
-      error: error instanceof Error ? error.message : 'Unknown',
-      entry,
-    });
-  }
-}
-
-// ============================================
-// Job Events for External Monitoring
-// ============================================
-
-type JobEventHandler = (event: JobEvent) => void;
-
-interface JobEvent {
-  type: 'completed' | 'failed' | 'stalled' | 'active';
+export interface JobEvent {
+  type: JobEventType;
   queue: string;
   jobId?: string;
-  jobName?: string;
-  timestamp: Date;
-  duration?: number;
-  error?: string;
-  data?: unknown;
+  ts: string;
+  // Optional values
+  progress?: number;
+  durationMs?: number;
+  errorMessage?: string;
 }
 
-const eventHandlers: JobEventHandler[] = [];
-
-export function onJobEvent(handler: JobEventHandler) {
-  eventHandlers.push(handler);
-  return () => {
-    const index = eventHandlers.indexOf(handler);
-    if (index > -1) {
-      eventHandlers.splice(index, 1);
-    }
-  };
+export interface JobMetrics {
+  running: number;
+  completed: number;
+  failed: number;
+  lastRunAt?: string;
+  lastError?: string;
+  byQueue: Record<string, { running: number; completed: number; failed: number }>;
 }
 
-function emitJobEvent(event: JobEvent) {
-  for (const handler of eventHandlers) {
-    try {
-      handler(event);
-    } catch (error) {
-      logger.error({
-        event: 'event_handler_error',
-        error: error instanceof Error ? error.message : 'Unknown',
+const emitter = new EventEmitter();
+
+const metrics: JobMetrics = {
+  running: 0,
+  completed: 0,
+  failed: 0,
+  byQueue: {},
+};
+
+function ensureQueue(queue: string) {
+  if (!metrics.byQueue[queue]) {
+    metrics.byQueue[queue] = { running: 0, completed: 0, failed: 0 };
+  }
+  return metrics.byQueue[queue];
+}
+
+function isoNow() {
+  return new Date().toISOString();
+}
+
+export function getJobMetrics(): JobMetrics {
+  // Cheap deep clone that works for our plain-object shape.
+  return JSON.parse(JSON.stringify(metrics)) as JobMetrics;
+}
+
+export function onJobEvent(listener: (event: JobEvent) => void) {
+  emitter.on('job', listener);
+  return () => emitter.off('job', listener);
+}
+
+export function emitJobStarted(queue: string, jobId?: string) {
+  metrics.running += 1;
+  ensureQueue(queue).running += 1;
+  metrics.lastRunAt = isoNow();
+
+  emitter.emit('job', {
+    type: 'started',
+    queue,
+    jobId,
+    ts: isoNow(),
+  } satisfies JobEvent);
+}
+
+export function emitJobProgress(queue: string, progress: number, jobId?: string) {
+  emitter.emit('job', {
+    type: 'progress',
+    queue,
+    jobId,
+    progress,
+    ts: isoNow(),
+  } satisfies JobEvent);
+}
+
+export function emitJobCompleted(queue: string, durationMs?: number, jobId?: string) {
+  if (metrics.running > 0) metrics.running -= 1;
+  const q = ensureQueue(queue);
+  if (q.running > 0) q.running -= 1;
+
+  metrics.completed += 1;
+  q.completed += 1;
+  metrics.lastRunAt = isoNow();
+
+  emitter.emit('job', {
+    type: 'completed',
+    queue,
+    jobId,
+    durationMs,
+    ts: isoNow(),
+  } satisfies JobEvent);
+}
+
+export function emitJobFailed(queue: string, error: unknown, jobId?: string) {
+  if (metrics.running > 0) metrics.running -= 1;
+  const q = ensureQueue(queue);
+  if (q.running > 0) q.running -= 1;
+
+  metrics.failed += 1;
+  q.failed += 1;
+  metrics.lastRunAt = isoNow();
+  metrics.lastError = error instanceof Error ? error.message : String(error);
+
+  emitter.emit('job', {
+    type: 'failed',
+    queue,
+    jobId,
+    errorMessage: metrics.lastError,
+    ts: isoNow(),
+  } satisfies JobEvent);
+}
+
+// Backwards-compatible named export some code may be using.
+export const jobsEvents = {
+  on: onJobEvent,
+  getMetrics: getJobMetrics,
+  emitStarted: emitJobStarted,
+  emitProgress: emitJobProgress,
+  emitCompleted: emitJobCompleted,
+  emitFailed: emitJobFailed,
+};
+
+
+/* FISCALZEN_JOBS_WORKER_HEALTH_COMPAT:START */
+// NOTE: This block is safe in dev/prod. It only tracks worker health in-memory.
+
+export type WorkerHealth = {
+  status: 'ok' | 'degraded' | 'down';
+  workers: Record<string, {
+    running: boolean;
+    lastHeartbeat?: string;
+    lastError?: string;
+  }>;
+  updatedAt: string;
+};
+
+const __workerState: Map<string, {
+  running: boolean;
+  lastHeartbeat?: Date;
+  lastError?: unknown;
+}> = new Map();
+
+function __toIso(d?: Date) {
+  return d ? d.toISOString() : undefined;
+}
+
+/**
+ * Attach minimal event hooks to a BullMQ Worker (or any EventEmitter-like worker).
+ * This is best-effort; if the worker does not expose these events, we still mark it as running.
+ */
+export function setupWorkerEvents(workerName: string, worker: any) {
+  try {
+    __workerState.set(workerName, { running: true, lastHeartbeat: new Date() });
+
+    if (worker && typeof worker.on === 'function') {
+      // BullMQ Worker emits: 'completed', 'failed', 'error', 'stalled', etc.
+      worker.on('completed', () => {
+        const s = __workerState.get(workerName) ?? { running: true };
+        s.running = true;
+        s.lastHeartbeat = new Date();
+        __workerState.set(workerName, s);
+      });
+      worker.on('failed', (job: any, err: any) => {
+        const s = __workerState.get(workerName) ?? { running: true };
+        s.running = true;
+        s.lastHeartbeat = new Date();
+        s.lastError = err;
+        __workerState.set(workerName, s);
+        try {
+          logger?.error?.({ worker: workerName, err }, 'Worker job failed');
+        } catch {}
+      });
+      worker.on('error', (err: any) => {
+        const s = __workerState.get(workerName) ?? { running: true };
+        s.running = false;
+        s.lastError = err;
+        __workerState.set(workerName, s);
+        try {
+          logger?.error?.({ worker: workerName, err }, 'Worker error');
+        } catch {}
       });
     }
+  } catch (err) {
+    try {
+      logger?.warn?.({ worker: workerName, err }, 'setupWorkerEvents failed');
+    } catch {}
   }
 }
 
-// ============================================
-// Health Check
-// ============================================
+export function getWorkerHealth(): WorkerHealth {
+  const workers: WorkerHealth['workers'] = {};
 
-export interface WorkerHealth {
-  name: string;
-  isRunning: boolean;
-  isPaused: boolean;
-  concurrency: number;
-}
+  for (const [name, state] of __workerState.entries()) {
+    workers[name] = {
+      running: !!state.running,
+      lastHeartbeat: __toIso(state.lastHeartbeat),
+      lastError: state.lastError ? String((state.lastError as any)?.message ?? state.lastError) : undefined,
+    };
+  }
 
-export function getWorkerHealth(worker: Worker): WorkerHealth {
+  const all = Object.values(workers);
+  const any = all.length > 0;
+  const anyDown = any && all.some((w) => !w.running);
+  const anyDegraded = any && all.some((w) => !!w.lastError);
+
+  const status: WorkerHealth['status'] = !any ? 'down' : anyDown ? 'down' : anyDegraded ? 'degraded' : 'ok';
+
   return {
-    name: worker.name,
-    isRunning: worker.isRunning(),
-    isPaused: worker.isPaused(),
-    concurrency: worker.opts.concurrency ?? 1,
+    status,
+    workers,
+    updatedAt: new Date().toISOString(),
   };
 }
+
+/* FISCALZEN_JOBS_WORKER_HEALTH_COMPAT:END */

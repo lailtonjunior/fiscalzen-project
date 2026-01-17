@@ -7,7 +7,7 @@ import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 export interface JwtPayload {
   sub: string;
   tenantId: string;
-  email?: string;
+  email: string;
   role: 'admin' | 'user' | 'viewer';
   iat?: number;
   exp?: number;

@@ -258,11 +258,12 @@ export const dashboardService = {
       day: 'YYYY-MM-DD',
       week: 'IYYY-IW',
       month: 'YYYY-MM',
-    }[query.groupBy];
+    }[groupBy] as const;
 
-    const result = await db
+    const safeDateFormat = dateFormat ?? 'YYYY-MM-DD';
+const result = await db
       .select({
-        date: sql<string>`TO_CHAR(${documents.dataEmissao}, '${sql.raw(dateFormat)}')`,
+        date: sql<string>`TO_CHAR(${documents.dataEmissao}, '${sql.raw(safeDateFormat)}')`,
         nfe: sql<number>`COUNT(*) FILTER (WHERE ${documents.docType} = 'NFE')`,
         cte: sql<number>`COUNT(*) FILTER (WHERE ${documents.docType} = 'CTE')`,
         mdfe: sql<number>`COUNT(*) FILTER (WHERE ${documents.docType} = 'MDFE')`,
@@ -272,8 +273,8 @@ export const dashboardService = {
       })
       .from(documents)
       .where(and(...conditions))
-      .groupBy(sql`TO_CHAR(${documents.dataEmissao}, '${sql.raw(dateFormat)}')`)
-      .orderBy(sql`TO_CHAR(${documents.dataEmissao}, '${sql.raw(dateFormat)}')`);
+      .groupBy(sql`TO_CHAR(${documents.dataEmissao}, '${sql.raw(safeDateFormat)}')`)
+      .orderBy(sql`TO_CHAR(${documents.dataEmissao}, '${sql.raw(safeDateFormat)}')`);
 
     return result.map((r) => ({
       date: r.date,
