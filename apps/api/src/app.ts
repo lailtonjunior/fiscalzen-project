@@ -102,6 +102,24 @@ export async function buildApp(): Promise<FastifyInstance> {
       await api.register(eventsRoutes, { prefix: '/documents' }); // Nested under documents
       await api.register(dashboardRoutes, { prefix: '/dashboard' });
       await api.register(manifestacaoRoutes, { prefix: '/manifestacao' });
+
+      // Compatibility routes expected by the web dashboard.
+      // If the real manifestacao module does not expose these endpoints yet,
+      // we provide safe defaults so the UI can render.
+      // NOTE: Once manifestacaoRoutes implements these, remove this block to avoid duplicate route errors.
+      await api.register(async function manifestacaoCompatRoutes(m) {
+        // Require auth (or DEV bypass if DISABLE_AUTH=true)
+        m.get('/count', { preHandler: [m.authenticate] }, async () => ({
+          success: true,
+          data: { count: 0 },
+        }));
+
+        m.get('/pending', { preHandler: [m.authenticate] }, async () => ({
+          success: true,
+          data: [],
+        }));
+      }, { prefix: '/manifestacao' });
+
       await api.register(agentsRoutes, { prefix: '/agents' });
       await api.register(jobsRoutes, { prefix: '/jobs' });
       await api.register(nfseRoutes, { prefix: '/nfse' });

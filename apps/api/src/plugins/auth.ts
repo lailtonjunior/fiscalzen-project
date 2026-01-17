@@ -39,6 +39,17 @@ async function authPlugin(fastify: FastifyInstance) {
     request: FastifyRequest,
     reply: FastifyReply
   ) {
+    // DEV ONLY: optional auth bypass (never enable in production)
+    if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_AUTH === 'true') {
+      // Minimal dev user payload used by downstream code
+      (request as any).user = {
+        sub: 'dev-user',
+        tenantId: 'dev-tenant',
+        role: 'admin',
+      };
+      return;
+    }
+
     try {
       await request.jwtVerify();
     } catch (err) {
