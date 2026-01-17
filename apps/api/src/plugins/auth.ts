@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
 import { env } from '../config/env';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
+import { email } from 'zod/v4';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -18,9 +19,9 @@ declare module '@fastify/jwt' {
 }
 
 export interface JwtPayload {
-  sub: string; // userId
+  sub: string;
   tenantId: string;
-  email: string;
+  email?: string;
   role: 'admin' | 'user' | 'viewer';
   iat?: number;
   exp?: number;
@@ -43,10 +44,12 @@ async function authPlugin(fastify: FastifyInstance) {
     if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_AUTH === 'true') {
       // Minimal dev user payload used by downstream code
       (request as any).user = {
-        sub: 'dev-user',
-        tenantId: 'dev-tenant',
+        sub: process.env.DEV_USER_ID ?? '00000000-0000-0000-0000-000000000001,
+        tenantId: process.env.DEV_TENANT_ID ?? '00000000-0000-0000-0000-000000000000',
         role: 'admin',
-      };
+        email: 'dev@local',
+      } satisfies JwtPayload;
+      
       return;
     }
 
