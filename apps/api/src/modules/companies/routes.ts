@@ -77,7 +77,7 @@ export async function companiesRoutes(fastify: FastifyInstance) {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
 
-    await companiesService.delete(tenantId, id);
+    await companiesService.disable(tenantId, id);
 
     return sendNoContent(reply);
   });

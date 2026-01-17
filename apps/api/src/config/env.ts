@@ -40,6 +40,25 @@ const envSchema = z.object({
 
   // SEFAZ
   SEFAZ_AMBIENTE: z.enum(['producao', 'homologacao']).default('homologacao'),
+
+  // ===========================================
+  // Certificate encryption (A1 PFX)
+  // 32 bytes key required (base64 -> 32 bytes OR hex 64 chars)
+  // ===========================================
+  CERT_ENCRYPTION_KEY: z
+    .string()
+    .min(1, 'CERT_ENCRYPTION_KEY é obrigatório')
+    .refine((v) => {
+      // Accept HEX(64) or BASE64(32 bytes)
+      const isHex = /^[0-9a-fA-F]{64}$/.test(v);
+      if (isHex) return true;
+      try {
+        const buf = Buffer.from(v, 'base64');
+        return buf.length === 32;
+      } catch {
+        return false;
+      }
+    }, 'CERT_ENCRYPTION_KEY deve ser 32 bytes (base64) ou 64 chars hex'),
 });
 
 const parsed = envSchema.safeParse(process.env);

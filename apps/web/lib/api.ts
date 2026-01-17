@@ -1,3 +1,11 @@
+// AUTO-PATCH: API base URL resolver (browser uses same-origin to allow Next proxy rewrites)
+function resolveApiBaseUrl(): string {
+  // In the browser, always use relative path to avoid CORS/preflight and rely on Next rewrites.
+  if (typeof window !== 'undefined') return '';
+  // On server-side (SSR), allow explicit env override
+  return process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? '';
+}
+
 // ============================================
 // API Client Configuration
 // ============================================

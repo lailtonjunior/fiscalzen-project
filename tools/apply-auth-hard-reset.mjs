@@ -1,4 +1,10 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import fs from "node:fs";
+import path from "node:path";
+
+const rel = "apps/api/src/plugins/auth.ts";
+const abs = path.join(process.cwd(), rel);
+
+const content = `import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import fastifyJwt from '@fastify/jwt';
 import { env } from '../config/env';
@@ -103,3 +109,12 @@ export function getUserId(request: FastifyRequest): string {
   if (!sub) throw new UnauthorizedError('Usuario nao identificado');
   return sub;
 }
+`;
+
+fs.mkdirSync(path.dirname(abs), { recursive: true });
+fs.writeFileSync(abs, content, "utf8");
+
+console.log("[OK] Replaced:", rel);
+console.log("Next steps:");
+console.log("1) apps/api/.env (DEV): set DISABLE_AUTH=true, DEV_TENANT_ID=<uuid>, DEV_USER_ID=<uuid>");
+console.log("2) Restart API: pnpm --filter @fiscalzen/api dev");
