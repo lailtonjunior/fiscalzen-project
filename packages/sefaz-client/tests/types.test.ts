@@ -57,21 +57,22 @@ describe('Error Classes', () => {
 
 describe('SEFAZ_STATUS Constants', () => {
   it('should have DistDFe status codes', () => {
-    expect(SEFAZ_STATUS.NENHUM_DOCUMENTO).toBe('137');
-    expect(SEFAZ_STATUS.DOCUMENTO_LOCALIZADO).toBe('138');
+    expect(SEFAZ_STATUS.NENHUM_DOC_LOCALIZADO).toBe('137');
+    expect(SEFAZ_STATUS.DOC_LOCALIZADO).toBe('138');
     expect(SEFAZ_STATUS.CONSUMO_INDEVIDO).toBe('656');
   });
 
   it('should have evento status codes', () => {
     expect(SEFAZ_STATUS.EVENTO_REGISTRADO).toBe('135');
     expect(SEFAZ_STATUS.EVENTO_REGISTRADO_NAO_VINCULADO).toBe('136');
-    expect(SEFAZ_STATUS.EVENTO_DUPLICADO).toBe('631');
+    // EVENTO_DUPLICADO não é mais uma constante definida
   });
 
-  it('should have NFe status codes', () => {
-    expect(SEFAZ_STATUS.NFE_AUTORIZADA).toBe('100');
-    expect(SEFAZ_STATUS.NFE_CANCELADA).toBe('101');
-    expect(SEFAZ_STATUS.NFE_DENEGADA).toBe('110');
+  it('should have general status codes', () => {
+    expect(SEFAZ_STATUS.AUTORIZADO).toBe('100');
+    expect(SEFAZ_STATUS.CANCELADO).toBe('101');
+    expect(SEFAZ_STATUS.USO_DENEGADO).toBe('110');
+    expect(SEFAZ_STATUS.INUTILIZADO).toBe('102');
   });
 });
 

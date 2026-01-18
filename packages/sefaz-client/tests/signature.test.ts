@@ -10,7 +10,8 @@ describe('Signature Utilities', () => {
 
       const id = gerarEventoId(tipoEvento, chave, sequencia);
 
-      expect(id).toBe('ID21021035240112345678000199550010000001231234567890001');
+      // Format: ID + tipoEvento(6) + chave(44) + sequencia(2)
+      expect(id).toBe(`ID${tipoEvento}${chave}01`);
       expect(id).toMatch(/^ID\d{6}\d{44}\d{2}$/);
     });
 

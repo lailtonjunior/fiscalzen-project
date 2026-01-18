@@ -1,11 +1,34 @@
 import { XMLParser } from 'fast-xml-parser';
 
+// Tags that should never be parsed as numbers (access keys, protocols, CNPJ, etc)
+const alwaysStringTags = new Set([
+  'chNFe', 'chCTe', 'chMDFe', 'chNFCe', 'chave',
+  'CNPJ', 'CPF', 'IE', 'IM', 'SUFRAMA',
+  'nProt', 'nRec', 'NSU', 'ultNSU', 'maxNSU',
+  'cProd', 'cEAN', 'cEANTrib', 'NCM', 'CEST', 'CFOP',
+  'CEP', 'cMun', 'cPais', 'cUF', 'fone',
+  'digVal', 'Id', 'nItem',
+]);
+
 export const defaultParserOptions = {
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   removeNSPrefix: true,
   parseTagValue: true,
   trimValues: true,
+  // Prevent large numbers from being converted to scientific notation
+  numberParseOptions: {
+    leadingZeros: false,
+    hex: false,
+    skipLike: /^\d{11,}$/, // Numbers with 11+ digits stay as strings
+  },
+  // Force specific tags to always be strings
+  tagValueProcessor: (tagName: string, tagValue: string) => {
+    if (alwaysStringTags.has(tagName)) {
+      return tagValue;
+    }
+    return undefined; // Let default parsing handle it
+  },
 };
 
 export function createParser() {
@@ -42,13 +65,14 @@ export function ensureArray<T>(value: T | T[] | undefined): T[] {
 }
 
 export function extractCnpjCpf(obj: Record<string, unknown>): string {
-  return (obj?.CNPJ as string) || (obj?.CPF as string) || '';
+  const value = obj?.CNPJ ?? obj?.CPF ?? '';
+  return String(value);
 }
 
-export function buildSearchContent(parts: (string | undefined | null)[]): string {
+export function buildSearchContent(parts: (string | number | undefined | null)[]): string {
   return parts
-    .filter((p): p is string => !!p)
-    .map((p) => p.trim())
+    .filter((p): p is string | number => p !== undefined && p !== null && p !== '')
+    .map((p) => String(p).trim())
     .filter((p) => p.length > 0)
     .join(' ');
 }
