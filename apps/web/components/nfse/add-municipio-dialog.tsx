@@ -9,7 +9,7 @@ import {
   DialogDescription,
   Button,
 } from '@fiscalzen/ui';
-import { Plus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { MunicipioSelector } from './municipio-selector';
 import { NfseConfigForm } from './nfse-config-form';
 import type { MunicipioInfo, NfseConfigFormData } from '@/lib/types';
@@ -18,7 +18,7 @@ interface AddMunicipioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: NfseConfigFormData) => Promise<void>;
-  onTest?: (codigoMunicipio: string) => Promise<{ success: boolean; message: string }>;
+  onTest?: (codigoMunicipio: string) => Promise<{ success: boolean; message: string } | undefined>;
   excludeCodigos?: string[];
   loading?: boolean;
   testLoading?: boolean;

@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, Button, Skeleton, Badge, Alert, AlertDescription } from '@fiscalzen/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Skeleton, Alert, AlertDescription } from '@fiscalzen/ui';
 import { ArrowLeft, Building2, Plus, FileText, Globe, Bot, Info } from 'lucide-react';
 import { useCompany } from '@/lib/hooks/use-companies';
 import {

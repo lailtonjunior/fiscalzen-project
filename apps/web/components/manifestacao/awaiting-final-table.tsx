@@ -13,11 +13,11 @@ import {
   Skeleton,
 } from '@fiscalzen/ui';
 import { Clock, Eye, FileCheck } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useAwaitingFinal, useManifestar } from '@/lib/hooks/use-manifestacao';
 import { ManifestacaoModal } from './manifestacao-modal';
 import { BatchManifestacaoDialog } from './batch-manifestacao-dialog';
-import type { Document, ManifestacaoTipo, AwaitingFinal } from '@/lib/types';
+import type { Document, ManifestacaoTipo } from '@/lib/types';
 
 function formatCurrency(value: string | number) {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;

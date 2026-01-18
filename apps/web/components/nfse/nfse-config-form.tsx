@@ -20,7 +20,7 @@ interface NfseConfigFormProps {
   municipio: MunicipioInfo;
   initialData?: Partial<NfseConfigFormData>;
   onSubmit: (data: NfseConfigFormData) => Promise<void>;
-  onTest?: () => Promise<{ success: boolean; message: string }>;
+  onTest?: () => Promise<{ success: boolean; message: string } | undefined>;
   loading?: boolean;
   testLoading?: boolean;
 }
@@ -56,7 +56,7 @@ export function NfseConfigForm({
     setTestResult(null);
     try {
       const result = await onTest();
-      setTestResult(result);
+      setTestResult(result ?? null);
     } catch (error) {
       setTestResult({
         success: false,

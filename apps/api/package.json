@@ -20,6 +20,7 @@
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/websocket": "^10.0.1",
     "@fiscalzen/database": "workspace:*",
+    "@fiscalzen/nfse-client": "workspace:*",
     "@fiscalzen/sefaz-client": "workspace:*",
     "@fiscalzen/shared": "workspace:*",
     "@fiscalzen/xml-parser": "workspace:*",

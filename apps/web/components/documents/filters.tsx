@@ -11,7 +11,7 @@ import {
   SelectValue,
   Badge,
 } from '@fiscalzen/ui';
-import { Search, X, Filter, Calendar } from 'lucide-react';
+import { Search, X, Calendar } from 'lucide-react';
 import { useFiltersStore, selectActiveFiltersCount } from '@/lib/stores/filters';
 import { useCompanies } from '@/lib/hooks/use-companies';
 import { useDebounce } from '@/lib/hooks/use-debounce';

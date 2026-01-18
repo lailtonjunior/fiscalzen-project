@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   Badge,
-  Button,
 } from '@fiscalzen/ui';
 import { Search, MapPin, Globe, Bot, Check } from 'lucide-react';
 import { useMunicipios } from '@/lib/hooks/use-nfse';

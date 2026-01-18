@@ -55,3 +55,4 @@ export { Alert, AlertTitle, AlertDescription } from './components/alert';
 export { Progress } from './components/progress';
 export { RadioGroup, RadioGroupItem } from './components/radio-group';
 export { Textarea, type TextareaProps } from './components/textarea';
+export { Switch } from './components/switch';

@@ -19,7 +19,7 @@ function formatXml(xml: string): string {
       indent = indent.substring(tab.length);
     }
     formatted += indent + '<' + node + '>\n';
-    if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('?')) {
+    if (node.match(/^<?\w[^>]*[^/]$/) && !node.startsWith('?')) {
       indent += tab;
     }
   });

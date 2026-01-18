@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type ApiResponse } from '../api';
+import { api } from '../api';
 import type { Document, DocumentWithEvents, DocumentFilters } from '../types';
 
 // ============================================

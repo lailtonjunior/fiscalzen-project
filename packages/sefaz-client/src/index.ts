@@ -70,9 +70,35 @@ export {
   gerarEventoId,
 } from './signature';
 
-// Services
-export * from './services/manifestacao';
-export * from './services/consulta';
-export * from './services/distdfe-nfe';
-export * from './services/distdfe-cte';
-export * from './services/mdfe-distdfe';
+// Services - NFe
+export {
+  consultarDistDFe,
+  consultarPorUltNSU,
+  consultarPorNSU,
+  consultarPorChave,
+} from './services/nfe-distdfe';
+
+// Services - CTe
+export {
+  consultarCTeDistDFe,
+  consultarCTePorUltNSU,
+  consultarCTePorNSU,
+  consultarCTePorChave,
+} from './services/cte-distdfe';
+
+// Services - MDFe
+export {
+  consultarMDFeDistDFe,
+  consultarMDFePorUltNSU,
+  consultarMDFePorNSU,
+  consultarMDFePorChave,
+} from './services/mdfe-distdfe';
+
+// Services - Manifestacao
+export {
+  enviarManifestacao,
+  confirmarOperacao,
+  registrarCiencia,
+  desconhecerOperacao,
+  operacaoNaoRealizada,
+} from './services/manifestacao';

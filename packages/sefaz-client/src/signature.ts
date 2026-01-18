@@ -3,6 +3,15 @@ import { createHash } from 'crypto';
 import type { CertificadoA1 } from './types';
 import { loadCertificadoCached } from './certificate';
 
+// Extensão de tipos para xml-crypto (propriedades internas usadas pela API)
+interface SignedXmlExtended extends SignedXml {
+  signingKey: string | Buffer;
+  keyInfoProvider: {
+    getKeyInfo(): string;
+    getKey?(keyInfo?: unknown): Buffer;
+  };
+}
+
 /**
  * Calcula o digest SHA-1 de um conteúdo (para compatibilidade)
  */
@@ -68,9 +77,10 @@ export function signXml(
     ]
   } as any);
 
-  (sig as any).signingKey = privateKeyPem;
+  const sigExt = sig as SignedXmlExtended;
+  sigExt.signingKey = privateKeyPem;
 
-  (sig as any).keyInfoProvider = {
+  sigExt.keyInfoProvider = {
     getKeyInfo(): string {
       const cleanCert = pem
         .replace(/-----BEGIN CERTIFICATE-----/g, '')
@@ -111,9 +121,10 @@ export function signXmlLegacy(
     ]
   } as any);
 
-  (sig as any).signingKey = privateKey;
+  const sigExt = sig as SignedXmlExtended;
+  sigExt.signingKey = privateKey;
 
-  (sig as any).keyInfoProvider = {
+  sigExt.keyInfoProvider = {
     getKeyInfo(): string {
       const cleanCert = certificate
         .replace(/-----BEGIN CERTIFICATE-----/g, '')
@@ -137,7 +148,11 @@ export function validateSignature(signedXml: string, publicCert: string): boolea
   try {
     const sig = new SignedXml();
 
-    (sig as any).keyInfoProvider = {
+    const sigExt = sig as SignedXmlExtended;
+    sigExt.keyInfoProvider = {
+      getKeyInfo(): string {
+        return '';
+      },
       getKey(): Buffer {
         return Buffer.from(publicCert);
       }

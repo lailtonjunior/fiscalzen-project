@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, FileSpreadsheet, Truck, DollarSign } from 'lucide-react';
+import { FileText, Truck, DollarSign } from 'lucide-react';
 import {
   StatsCard,
   IntegritySemaphore,

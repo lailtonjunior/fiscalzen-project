@@ -15,7 +15,7 @@ interface EditNfseDialogProps {
   onOpenChange: (open: boolean) => void;
   config: NfseConfig | null;
   onSubmit: (data: Partial<NfseConfigFormData>) => Promise<void>;
-  onTest?: () => Promise<{ success: boolean; message: string }>;
+  onTest?: () => Promise<{ success: boolean; message: string } | undefined>;
   loading?: boolean;
   testLoading?: boolean;
 }

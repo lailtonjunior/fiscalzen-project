@@ -30,7 +30,7 @@ import {
 export default function ManifestacaoPage() {
   const [selectedCompany, setSelectedCompany] = useState<string | undefined>();
 
-  const { data: counts, isLoading: countsLoading } = usePendingCount();
+  const { data: _counts, isLoading: countsLoading } = usePendingCount();
   const { data: pendingItems } = usePendingManifestations(selectedCompany);
   const { data: awaitingItems } = useAwaitingFinal(selectedCompany);
   const { data: companies } = useCompanies();

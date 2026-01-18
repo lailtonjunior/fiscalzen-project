@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Skeleton } from '@fiscalzen/ui';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import type { PendingManifestation } from '@/lib/types';
 
 interface PendingAlertsProps {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -12,7 +11,7 @@ import {
   Checkbox,
   Skeleton,
 } from '@fiscalzen/ui';
-import { AlertTriangle, Eye, FileCheck, XCircle } from 'lucide-react';
+import { AlertTriangle, Eye, FileCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { usePendingManifestations, useDarCiencia, useManifestar } from '@/lib/hooks/use-manifestacao';
 import { UrgencyBadge } from './manifestacao-badge';

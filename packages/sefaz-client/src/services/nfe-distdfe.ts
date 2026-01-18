@@ -13,7 +13,7 @@ import type {
 } from '../types';
 import { SefazError } from '../types';
 import { SEFAZ_STATUS } from '../constants';
-import { SoapClient, extractSoapBody, extractTagValue, extractAllElements } from '../soap-client';
+import { SoapClient, extractSoapBody, extractTagValue } from '../soap-client';
 import {
   getNFeDistDFeEndpoint,
   SOAP_ACTIONS,
@@ -127,11 +127,11 @@ function parseDistDFeResponse(soapResponse: string): DistDFeResponse {
     const ultNSU = extractTagValue(body, 'ultNSU') ?? '000000000000000';
     const maxNSU = extractTagValue(body, 'maxNSU') ?? '000000000000000';
     const dhResp = extractTagValue(body, 'dhResp');
-    const versaoApp = extractTagValue(body, 'verAplic');
+    const versaoApp = extractTagValue(body, 'verAplic') ?? undefined;
 
     // Verifica status de sucesso
-    const sucesso = cStat === SEFAZ_STATUS.DOCUMENTO_LOCALIZADO ||
-                    cStat === SEFAZ_STATUS.NENHUM_DOCUMENTO;
+    const sucesso = cStat === SEFAZ_STATUS.DOC_LOCALIZADO ||
+                    cStat === SEFAZ_STATUS.NENHUM_DOC_LOCALIZADO;
 
     // Extrai documentos
     const documentos = parseDocumentos(body);

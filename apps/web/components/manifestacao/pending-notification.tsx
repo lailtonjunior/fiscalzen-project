@@ -13,8 +13,6 @@ import {
 } from '@fiscalzen/ui';
 import { Bell, FileText, AlertTriangle, ChevronRight } from 'lucide-react';
 import { usePendingCount, usePendingManifestations } from '@/lib/hooks/use-manifestacao';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 function formatCurrency(value: string | number) {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;

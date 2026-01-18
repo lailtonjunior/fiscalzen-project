@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogFooter,
   Button,
-  Progress,
   Alert,
   AlertDescription,
 } from '@fiscalzen/ui';
@@ -47,7 +46,6 @@ export function BatchManifestacaoDialog({
   const manifestarBatch = useManifestarBatch();
 
   const isCiencia = tipo === '210210';
-  const mutation = isCiencia ? batchCiencia : manifestarBatch;
 
   const handleConfirm = async () => {
     setIsProcessing(true);
@@ -62,9 +60,9 @@ export function BatchManifestacaoDialog({
         });
       }
       setResult({
-        processed: response.processed ?? selectedIds.length,
-        failed: (response as any).failed ?? 0,
-        errors: (response as any).errors ?? [],
+        processed: response?.processed ?? selectedIds.length,
+        failed: (response as Record<string, unknown>)?.failed as number ?? 0,
+        errors: (response as Record<string, unknown>)?.errors as Array<{ documentId: string; error: string }> ?? [],
       });
     } catch (error) {
       setResult({

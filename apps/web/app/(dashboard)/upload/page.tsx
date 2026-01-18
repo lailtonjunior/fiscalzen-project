@@ -85,7 +85,7 @@ export default function UploadPage() {
     );
 
     try {
-      const result = await uploadDocuments.mutateAsync(
+      await uploadDocuments.mutateAsync(
         pendingFiles.map((f) => f.file)
       );
 
