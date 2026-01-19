@@ -51,7 +51,7 @@ export function getAbrasfClient(
  */
 export function getRpaScraper(
   codigoMunicipio: string,
-  page: Page
+  _page: Page
 ): BaseNfseScraper {
   const config = getMunicipioConfig(codigoMunicipio);
 

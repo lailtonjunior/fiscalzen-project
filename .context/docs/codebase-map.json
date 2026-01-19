@@ -1,0 +1,1941 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-01-18T06:04:03.036Z",
+  "stack": {
+    "primaryLanguage": "typescript",
+    "languages": [
+      "javascript",
+      "typescript"
+    ],
+    "frameworks": [],
+    "buildTools": [
+      "turborepo",
+      "pnpm-workspace"
+    ],
+    "testFrameworks": [],
+    "packageManager": "pnpm",
+    "isMonorepo": true,
+    "hasDocker": false,
+    "hasCI": false
+  },
+  "structure": {
+    "totalFiles": 320,
+    "topDirectories": [
+      {
+        "name": "apply-next-dev-cache-fix.mjs",
+        "fileCount": 1
+      },
+      {
+        "name": "apps",
+        "fileCount": 135
+      },
+      {
+        "name": "Checklist de QA.pdf",
+        "fileCount": 1
+      },
+      {
+        "name": "clean-web-next-cache.mjs",
+        "fileCount": 1
+      },
+      {
+        "name": "docker",
+        "fileCount": 2
+      },
+      {
+        "name": "kill-port.mjs",
+        "fileCount": 1
+      },
+      {
+        "name": "mnt",
+        "fileCount": 4
+      },
+      {
+        "name": "package.json",
+        "fileCount": 1
+      },
+      {
+        "name": "packages",
+        "fileCount": 136
+      },
+      {
+        "name": "pnpm-lock.yaml",
+        "fileCount": 1
+      },
+      {
+        "name": "pnpm-workspace.yaml",
+        "fileCount": 1
+      },
+      {
+        "name": "README.md",
+        "fileCount": 1
+      },
+      {
+        "name": "README.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "tools",
+        "fileCount": 32
+      },
+      {
+        "name": "tsconfig.base.json",
+        "fileCount": 1
+      },
+      {
+        "name": "turbo.json",
+        "fileCount": 1
+      }
+    ],
+    "languageDistribution": [
+      {
+        "extension": ".ts",
+        "count": 171
+      },
+      {
+        "extension": ".tsx",
+        "count": 61
+      },
+      {
+        "extension": ".mjs",
+        "count": 37
+      },
+      {
+        "extension": ".json",
+        "count": 21
+      },
+      {
+        "extension": ".js",
+        "count": 11
+      },
+      {
+        "extension": ".xml",
+        "count": 6
+      },
+      {
+        "extension": ".yaml",
+        "count": 2
+      },
+      {
+        "extension": ".txt",
+        "count": 2
+      },
+      {
+        "extension": ".bak",
+        "count": 2
+      },
+      {
+        "extension": ".sql",
+        "count": 2
+      }
+    ]
+  },
+  "architecture": {
+    "layers": [
+      {
+        "name": "Config",
+        "description": "Configuration and constants",
+        "directories": [
+          "packages\\xml-parser",
+          "packages\\sefaz-client",
+          "apps\\web",
+          "packages\\sefaz-client\\src",
+          "packages\\sefaz-client\\src\\constants"
+        ],
+        "symbolCount": 7,
+        "dependsOn": []
+      },
+      {
+        "name": "Repositories",
+        "description": "Data access and persistence",
+        "directories": [
+          "packages\\database",
+          "packages\\database\\src",
+          "apps\\web\\components\\documents",
+          "mnt\\data\\fiscalzen_local_dev_fixes_v2"
+        ],
+        "symbolCount": 18,
+        "dependsOn": [
+          "Models"
+        ]
+      },
+      {
+        "name": "Controllers",
+        "description": "Request handling and routing",
+        "directories": [
+          "apps\\api",
+          "apps\\web\\lib",
+          "apps\\api\\tests",
+          "apps\\api\\test",
+          "apps\\api\\src",
+          "packages\\shared\\src\\types",
+          "apps\\api\\src\\utils",
+          "apps\\api\\src\\plugins",
+          "apps\\api\\src\\jobs",
+          "apps\\api\\src\\config",
+          "apps\\api\\src\\modules\\nfse",
+          "apps\\api\\src\\modules\\manifestacao",
+          "apps\\api\\src\\modules\\jobs",
+          "apps\\api\\src\\modules\\events",
+          "apps\\api\\src\\modules\\documents",
+          "apps\\api\\src\\modules\\dashboard",
+          "apps\\api\\src\\modules\\companies",
+          "apps\\api\\src\\modules\\agents",
+          "tools"
+        ],
+        "symbolCount": 171,
+        "dependsOn": [
+          "Services"
+        ]
+      },
+      {
+        "name": "Utils",
+        "description": "Shared utilities and helpers",
+        "directories": [
+          "packages\\xml-parser\\src",
+          "packages\\shared\\src",
+          "apps\\web\\lib",
+          "packages\\ui\\src\\lib",
+          "packages\\shared\\src\\validators",
+          "packages\\shared\\src\\types",
+          "packages\\shared\\src\\formatters",
+          "packages\\shared\\src\\constants",
+          "apps\\web\\lib\\stores",
+          "apps\\web\\lib\\hooks"
+        ],
+        "symbolCount": 139,
+        "dependsOn": []
+      },
+      {
+        "name": "Services",
+        "description": "Business logic and orchestration",
+        "directories": [
+          "packages\\sefaz-client\\tests",
+          "packages\\sefaz-client\\src\\services",
+          "apps\\api\\src\\services",
+          "apps\\api\\src\\modules\\nfse",
+          "apps\\api\\src\\modules\\manifestacao",
+          "apps\\api\\src\\modules\\jobs",
+          "apps\\api\\src\\modules\\events",
+          "apps\\api\\src\\modules\\documents",
+          "apps\\api\\src\\modules\\dashboard",
+          "apps\\api\\src\\modules\\companies",
+          "apps\\api\\src\\modules\\agents"
+        ],
+        "symbolCount": 64,
+        "dependsOn": [
+          "Config",
+          "Controllers"
+        ]
+      },
+      {
+        "name": "Models",
+        "description": "Data structures and domain objects",
+        "directories": [
+          "packages\\database\\src\\schema"
+        ],
+        "symbolCount": 27,
+        "dependsOn": []
+      },
+      {
+        "name": "Components",
+        "description": "UI components and views",
+        "directories": [
+          "apps\\web\\components\\nfse",
+          "apps\\web\\components\\manifestacao",
+          "apps\\web\\components\\layout",
+          "apps\\web\\components\\documents",
+          "apps\\web\\components\\dashboard",
+          "apps\\web\\components\\companies",
+          "apps\\web\\app",
+          "packages\\ui\\src\\components",
+          "apps\\web\\app\\(dashboard)\\upload",
+          "apps\\web\\app\\(dashboard)\\manifestacao",
+          "apps\\web\\app\\(dashboard)\\empresas",
+          "apps\\web\\app\\(dashboard)\\documentos",
+          "apps\\web\\app\\(dashboard)\\dashboard",
+          "apps\\web\\app\\(dashboard)\\empresas\\[id]",
+          "apps\\web\\app\\(dashboard)\\empresas\\nova",
+          "apps\\web\\app\\(dashboard)\\documentos\\[id]",
+          "apps\\web\\app\\(dashboard)\\empresas\\[id]\\nfse"
+        ],
+        "symbolCount": 70,
+        "dependsOn": [
+          "Utils"
+        ]
+      }
+    ],
+    "patterns": [],
+    "entryPoints": [
+      "packages\\xml-parser\\src\\index.ts",
+      "packages\\ui\\src\\index.ts",
+      "packages\\shared\\src\\index.ts",
+      "packages\\sefaz-client\\src\\index.ts",
+      "packages\\nfse-client\\src\\index.ts",
+      "packages\\database\\src\\index.ts",
+      "apps\\api\\src\\index.ts",
+      "apps\\api\\src\\app.ts",
+      "packages\\nfse-client\\src\\rpa\\index.ts",
+      "packages\\database\\src\\schema\\index.ts",
+      "apps\\web\\lib\\stores\\index.ts",
+      "apps\\web\\lib\\hooks\\index.ts",
+      "apps\\web\\components\\nfse\\index.ts",
+      "apps\\web\\components\\manifestacao\\index.ts",
+      "apps\\web\\components\\layout\\index.ts",
+      "apps\\web\\components\\documents\\index.ts",
+      "apps\\web\\components\\dashboard\\index.ts",
+      "apps\\web\\components\\companies\\index.ts",
+      "apps\\api\\src\\jobs\\index.ts",
+      "packages\\nfse-client\\src\\abrasf\\municipios\\index.ts",
+      "apps\\api\\src\\modules\\nfse\\index.ts",
+      "apps\\api\\src\\modules\\manifestacao\\index.ts",
+      "apps\\api\\src\\modules\\jobs\\index.ts",
+      "apps\\api\\src\\modules\\events\\index.ts",
+      "apps\\api\\src\\modules\\documents\\index.ts",
+      "apps\\api\\src\\modules\\dashboard\\index.ts",
+      "apps\\api\\src\\modules\\companies\\index.ts",
+      "apps\\api\\src\\modules\\agents\\index.ts"
+    ]
+  },
+  "symbols": {
+    "classes": [
+      {
+        "name": "AbrasfClient",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\abrasf\\client.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "ApiClientError",
+        "kind": "class",
+        "file": "apps\\web\\lib\\api.ts",
+        "line": 110,
+        "exported": true
+      },
+      {
+        "name": "AppError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 1,
+        "exported": true
+      },
+      {
+        "name": "BeloHorizonteAdapter",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\abrasf\\municipios\\belo-horizonte.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "BrowserManager",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\rpa\\browser.ts",
+        "line": 7,
+        "exported": true
+      },
+      {
+        "name": "CertificadoError",
+        "kind": "class",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 206,
+        "exported": true
+      },
+      {
+        "name": "ConflictError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 41,
+        "exported": true
+      },
+      {
+        "name": "ExternalServiceError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 53,
+        "exported": true
+      },
+      {
+        "name": "ForbiddenError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "NotFoundError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 16,
+        "exported": true
+      },
+      {
+        "name": "RateLimitError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
+        "name": "RioDeJaneiroAdapter",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\abrasf\\municipios\\rio-de-janeiro.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "SaoPauloAdapter",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\abrasf\\municipios\\sao-paulo.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "SefazClient",
+        "kind": "class",
+        "file": "packages\\sefaz-client\\src\\client.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "SefazError",
+        "kind": "class",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 194,
+        "exported": true
+      },
+      {
+        "name": "SoapClient",
+        "kind": "class",
+        "file": "packages\\sefaz-client\\src\\soap-client.ts",
+        "line": 28,
+        "exported": true
+      },
+      {
+        "name": "TemplateScraper",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\rpa\\municipios\\template.ts",
+        "line": 35,
+        "exported": true
+      },
+      {
+        "name": "TimeoutError",
+        "kind": "class",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 213,
+        "exported": true
+      },
+      {
+        "name": "UnauthorizedError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 23,
+        "exported": true
+      },
+      {
+        "name": "ValidationError",
+        "kind": "class",
+        "file": "apps\\api\\src\\utils\\errors.ts",
+        "line": 35,
+        "exported": true
+      }
+    ],
+    "interfaces": [
+      {
+        "name": "ApiError",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\api.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "ApiError",
+        "kind": "interface",
+        "file": "packages\\shared\\src\\types\\api.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "ApiResponse",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\api.ts",
+        "line": 11,
+        "exported": true
+      },
+      {
+        "name": "ApiResponse",
+        "kind": "interface",
+        "file": "packages\\shared\\src\\types\\api.ts",
+        "line": 3,
+        "exported": true
+      },
+      {
+        "name": "AwaitingFinal",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 213,
+        "exported": true
+      },
+      {
+        "name": "BadgeProps",
+        "kind": "interface",
+        "file": "packages\\ui\\src\\components\\badge.tsx",
+        "line": 25,
+        "exported": true
+      },
+      {
+        "name": "ButtonProps",
+        "kind": "interface",
+        "file": "packages\\ui\\src\\components\\button.tsx",
+        "line": 32,
+        "exported": true
+      },
+      {
+        "name": "CertificadoA1",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "CertificadoA1",
+        "kind": "interface",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 35,
+        "exported": true
+      },
+      {
+        "name": "CertificadoInfo",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\certificate.ts",
+        "line": 22,
+        "exported": true
+      },
+      {
+        "name": "CertificadoKeys",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\certificate.ts",
+        "line": 36,
+        "exported": true
+      },
+      {
+        "name": "CertificateUploadData",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 258,
+        "exported": true
+      },
+      {
+        "name": "ChaveAcessoInfo",
+        "kind": "interface",
+        "file": "packages\\shared\\src\\validators\\chave-acesso.ts",
+        "line": 43,
+        "exported": true
+      },
+      {
+        "name": "Company",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 62,
+        "exported": true
+      },
+      {
+        "name": "CompanyFormData",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 246,
+        "exported": true
+      },
+      {
+        "name": "CompanySyncStatus",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 170,
+        "exported": true
+      },
+      {
+        "name": "CompanyWithNsu",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\companies\\service.ts",
+        "line": 10,
+        "exported": true
+      },
+      {
+        "name": "CompanyWithStats",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 81,
+        "exported": true
+      },
+      {
+        "name": "ConsultaNfsePorFaixaParams",
+        "kind": "interface",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 148,
+        "exported": true
+      },
+      {
+        "name": "ConsultaNfseServicoPrestadoParams",
+        "kind": "interface",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 142,
+        "exported": true
+      },
+      {
+        "name": "ConsultaNfseServicoTomadoParams",
+        "kind": "interface",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 136,
+        "exported": true
+      },
+      {
+        "name": "ConsultaParams",
+        "kind": "interface",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 130,
+        "exported": true
+      },
+      {
+        "name": "ConsultaProtocoloParams",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 151,
+        "exported": true
+      },
+      {
+        "name": "ConsultaProtocoloResponse",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 157,
+        "exported": true
+      },
+      {
+        "name": "CTeData",
+        "kind": "interface",
+        "file": "packages\\xml-parser\\src\\parsers\\cte.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "DashboardSummary",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 102,
+        "exported": true
+      },
+      {
+        "name": "DecodeResult",
+        "kind": "interface",
+        "file": "packages\\xml-parser\\src\\types.ts",
+        "line": 182,
+        "exported": true
+      },
+      {
+        "name": "DistDFeParams",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 60,
+        "exported": true
+      },
+      {
+        "name": "DistDFeRequest",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
+        "name": "DistDFeResponse",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 81,
+        "exported": true
+      },
+      {
+        "name": "DocTypeInfo",
+        "kind": "interface",
+        "file": "packages\\shared\\src\\constants\\doc-types.ts",
+        "line": 3,
+        "exported": true
+      },
+      {
+        "name": "Document",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "DocumentEvent",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 39,
+        "exported": true
+      },
+      {
+        "name": "DocumentFilters",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 231,
+        "exported": true
+      },
+      {
+        "name": "DocumentItem",
+        "kind": "interface",
+        "file": "packages\\xml-parser\\src\\types.ts",
+        "line": 78,
+        "exported": true
+      },
+      {
+        "name": "DocumentoDistDFe",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 71,
+        "exported": true
+      },
+      {
+        "name": "DocumentoZip",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\types.ts",
+        "line": 53,
+        "exported": true
+      },
+      {
+        "name": "DocumentSearchRecord",
+        "kind": "interface",
+        "file": "apps\\api\\src\\services\\search.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "DocumentSummary",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "DocumentWithEvents",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 54,
+        "exported": true
+      },
+      {
+        "name": "ErrorResponse",
+        "kind": "interface",
+        "file": "apps\\api\\src\\utils\\response.ts",
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "Estado",
+        "kind": "interface",
+        "file": "packages\\shared\\src\\constants\\estados.ts",
+        "line": 1,
+        "exported": true
+      },
+      {
+        "name": "Gap",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
+        "line": 36,
+        "exported": true
+      },
+      {
+        "name": "InputProps",
+        "kind": "interface",
+        "file": "packages\\ui\\src\\components\\input.tsx",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "IntegrityGap",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 127,
+        "exported": true
+      },
+      {
+        "name": "IntegrityStatus",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 120,
+        "exported": true
+      },
+      {
+        "name": "IntegrityStatus",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "JobEvent",
+        "kind": "interface",
+        "file": "apps\\api\\src\\jobs\\events.ts",
+        "line": 8,
+        "exported": true
+      },
+      {
+        "name": "JobMetrics",
+        "kind": "interface",
+        "file": "apps\\api\\src\\jobs\\events.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "JobsStatus",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 165,
+        "exported": true
+      }
+    ],
+    "functions": [
+      {
+        "name": "addNfseMonitorJob",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 139,
+        "exported": true
+      },
+      {
+        "name": "addSearchSyncJob",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 131,
+        "exported": true
+      },
+      {
+        "name": "addSefazMonitorJob",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 112,
+        "exported": true
+      },
+      {
+        "name": "addXmlProcessorJob",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 123,
+        "exported": true
+      },
+      {
+        "name": "agentsRoutes",
+        "kind": "function",
+        "file": "apps\\api\\src\\modules\\agents\\routes.ts",
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "batchIndexDocuments",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\search-sync.ts",
+        "line": 111,
+        "exported": true
+      },
+      {
+        "name": "buildApp",
+        "kind": "function",
+        "file": "apps\\api\\src\\app.ts",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "buildSearchContent",
+        "kind": "function",
+        "file": "packages\\xml-parser\\src\\utils.ts",
+        "line": 72,
+        "exported": true
+      },
+      {
+        "name": "buildSoapEnvelope",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\soap\\envelope.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "calculateDigest",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\signature.ts",
+        "line": 18,
+        "exported": true
+      },
+      {
+        "name": "calculateDigestSha256",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\signature.ts",
+        "line": 25,
+        "exported": true
+      },
+      {
+        "name": "calculateNextSyncTime",
+        "kind": "function",
+        "file": "packages\\database\\src\\schema\\nsu-control.ts",
+        "line": 123,
+        "exported": true
+      },
+      {
+        "name": "checkDatabaseConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\database.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "checkMeilisearchConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\meilisearch.ts",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "checkRedisConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\redis.ts",
+        "line": 21,
+        "exported": true
+      },
+      {
+        "name": "cleanCnpj",
+        "kind": "function",
+        "file": "packages\\shared\\src\\validators\\cnpj.ts",
+        "line": 66,
+        "exported": true
+      },
+      {
+        "name": "cleanCpf",
+        "kind": "function",
+        "file": "packages\\shared\\src\\validators\\cpf.ts",
+        "line": 61,
+        "exported": true
+      },
+      {
+        "name": "clearCertificadoCache",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\certificate.ts",
+        "line": 154,
+        "exported": true
+      },
+      {
+        "name": "closeBrowserManager",
+        "kind": "function",
+        "file": "packages\\nfse-client\\src\\rpa\\browser.ts",
+        "line": 106,
+        "exported": true
+      },
+      {
+        "name": "closeDatabaseConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\database.ts",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "closeQueues",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 186,
+        "exported": true
+      },
+      {
+        "name": "closeRedisConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\redis.ts",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "cn",
+        "kind": "function",
+        "file": "apps\\web\\lib\\utils.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "cn",
+        "kind": "function",
+        "file": "packages\\ui\\src\\lib\\utils.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "companiesRoutes",
+        "kind": "function",
+        "file": "apps\\api\\src\\modules\\companies\\routes.ts",
+        "line": 18,
+        "exported": true
+      },
+      {
+        "name": "companyNfseRoutes",
+        "kind": "function",
+        "file": "apps\\api\\src\\modules\\nfse\\routes.ts",
+        "line": 41,
+        "exported": true
+      },
+      {
+        "name": "confirmarOperacao",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\manifestacao.ts",
+        "line": 224,
+        "exported": true
+      },
+      {
+        "name": "consultarCTeDistDFe",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\cte-distdfe.ts",
+        "line": 198,
+        "exported": true
+      },
+      {
+        "name": "consultarCTePorChave",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\cte-distdfe.ts",
+        "line": 270,
+        "exported": true
+      },
+      {
+        "name": "consultarCTePorNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\cte-distdfe.ts",
+        "line": 251,
+        "exported": true
+      },
+      {
+        "name": "consultarCTePorUltNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\cte-distdfe.ts",
+        "line": 232,
+        "exported": true
+      },
+      {
+        "name": "consultarDistDFe",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
+        "line": 206,
+        "exported": true
+      },
+      {
+        "name": "consultarMDFeDistDFe",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
+        "line": 198,
+        "exported": true
+      },
+      {
+        "name": "consultarMDFePorChave",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
+        "line": 270,
+        "exported": true
+      },
+      {
+        "name": "consultarMDFePorNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
+        "line": 251,
+        "exported": true
+      },
+      {
+        "name": "consultarMDFePorUltNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
+        "line": 232,
+        "exported": true
+      },
+      {
+        "name": "consultarPorChave",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
+        "line": 287,
+        "exported": true
+      },
+      {
+        "name": "consultarPorNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
+        "line": 268,
+        "exported": true
+      },
+      {
+        "name": "consultarPorUltNSU",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
+        "line": 249,
+        "exported": true
+      },
+      {
+        "name": "createClient",
+        "kind": "function",
+        "file": "packages\\database\\src\\client.ts",
+        "line": 7,
+        "exported": true
+      },
+      {
+        "name": "createParser",
+        "kind": "function",
+        "file": "packages\\xml-parser\\src\\utils.ts",
+        "line": 34,
+        "exported": true
+      },
+      {
+        "name": "createSoapClient",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\soap-client.ts",
+        "line": 266,
+        "exported": true
+      },
+      {
+        "name": "DashboardLayout",
+        "kind": "function",
+        "file": "apps\\web\\app\\(dashboard)\\layout.tsx",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "dashboardRoutes",
+        "kind": "function",
+        "file": "apps\\api\\src\\modules\\dashboard\\routes.ts",
+        "line": 16,
+        "exported": true
+      },
+      {
+        "name": "decodeDocZip",
+        "kind": "function",
+        "file": "packages\\xml-parser\\src\\gzip.ts",
+        "line": 20,
+        "exported": true
+      },
+      {
+        "name": "decryptFromBase64",
+        "kind": "function",
+        "file": "apps\\api\\src\\utils\\encryption.ts",
+        "line": 67,
+        "exported": true
+      },
+      {
+        "name": "decryptFromBuffer",
+        "kind": "function",
+        "file": "apps\\api\\src\\utils\\encryption.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
+        "name": "desconhecerOperacao",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\manifestacao.ts",
+        "line": 263,
+        "exported": true
+      },
+      {
+        "name": "detectAbrasfVersion",
+        "kind": "function",
+        "file": "packages\\xml-parser\\src\\parsers\\nfse.ts",
+        "line": 168,
+        "exported": true
+      },
+      {
+        "name": "detectDocTypeFromChave",
+        "kind": "function",
+        "file": "packages\\xml-parser\\src\\detector.ts",
+        "line": 279,
+        "exported": true
+      }
+    ],
+    "types": [
+      {
+        "name": "AbrasfVersion",
+        "kind": "type",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 5,
+        "exported": true
+      },
+      {
+        "name": "AbrasfVersion",
+        "kind": "type",
+        "file": "packages\\xml-parser\\src\\parsers\\nfse.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "Agent",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\agents.ts",
+        "line": 39,
+        "exported": true
+      },
+      {
+        "name": "AgentHeartbeatInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\agents\\schemas.ts",
+        "line": 32,
+        "exported": true
+      },
+      {
+        "name": "AgentIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\agents\\schemas.ts",
+        "line": 30,
+        "exported": true
+      },
+      {
+        "name": "AgentStatus",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\agents.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "ApiResponse",
+        "kind": "type",
+        "file": "apps\\api\\src\\utils\\response.ts",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "AuditLog",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\audit.ts",
+        "line": 71,
+        "exported": true
+      },
+      {
+        "name": "CienciaInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "Company",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\companies.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "Company",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\tenants.ts",
+        "line": 44,
+        "exported": true
+      },
+      {
+        "name": "CompanyIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\nfse\\schemas.ts",
+        "line": 41,
+        "exported": true
+      },
+      {
+        "name": "CompanyIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\jobs\\schemas.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "CompanyIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\companies\\schemas.ts",
+        "line": 44,
+        "exported": true
+      },
+      {
+        "name": "ConfirmacaoInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+        "line": 28,
+        "exported": true
+      },
+      {
+        "name": "CreateCompany",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\companies.ts",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "CreateCompanyInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\companies\\schemas.ts",
+        "line": 42,
+        "exported": true
+      },
+      {
+        "name": "CreateDocument",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\documents.ts",
+        "line": 59,
+        "exported": true
+      },
+      {
+        "name": "CreateNfseConfigInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\nfse\\schemas.ts",
+        "line": 43,
+        "exported": true
+      },
+      {
+        "name": "Database",
+        "kind": "type",
+        "file": "apps\\api\\src\\config\\database.ts",
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "DesconhecimentoInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "DocType",
+        "kind": "type",
+        "file": "packages\\xml-parser\\src\\types.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "DocType",
+        "kind": "type",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 5,
+        "exported": true
+      },
+      {
+        "name": "DocType",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\documents.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "DocType",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\documents.ts",
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "Document",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\documents.ts",
+        "line": 35,
+        "exported": true
+      },
+      {
+        "name": "Document",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\documents.ts",
+        "line": 120,
+        "exported": true
+      },
+      {
+        "name": "DocumentByChaveParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\documents\\schemas.ts",
+        "line": 50,
+        "exported": true
+      },
+      {
+        "name": "DocumentEvent",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\documents.ts",
+        "line": 50,
+        "exported": true
+      },
+      {
+        "name": "DocumentEvent",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\documents.ts",
+        "line": 122,
+        "exported": true
+      },
+      {
+        "name": "DocumentFilters",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\api.ts",
+        "line": 43,
+        "exported": true
+      },
+      {
+        "name": "DocumentIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\events\\schemas.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "DocumentIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\documents\\schemas.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
+        "name": "DocumentStatus",
+        "kind": "type",
+        "file": "packages\\xml-parser\\src\\types.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "DocumentStatus",
+        "kind": "type",
+        "file": "packages\\shared\\src\\types\\documents.ts",
+        "line": 7,
+        "exported": true
+      },
+      {
+        "name": "Env",
+        "kind": "type",
+        "file": "apps\\api\\src\\config\\env.ts",
+        "line": 74,
+        "exported": true
+      },
+      {
+        "name": "GapsQuery",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\dashboard\\schemas.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "JobEventType",
+        "kind": "type",
+        "file": "apps\\api\\src\\jobs\\events.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "JobIdParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\jobs\\schemas.ts",
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "ListAgentsQuery",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\agents\\schemas.ts",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "ListCompaniesQuery",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\companies\\schemas.ts",
+        "line": 46,
+        "exported": true
+      },
+      {
+        "name": "ListDocumentsQuery",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\documents\\schemas.ts",
+        "line": 46,
+        "exported": true
+      },
+      {
+        "name": "ListEventsQuery",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\events\\schemas.ts",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "ManifestacaoEventCode",
+        "kind": "type",
+        "file": "packages\\xml-parser\\src\\types.ts",
+        "line": 49,
+        "exported": true
+      },
+      {
+        "name": "ManifestacaoStatus",
+        "kind": "type",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 180,
+        "exported": true
+      },
+      {
+        "name": "ManifestacaoTipo",
+        "kind": "type",
+        "file": "apps\\web\\lib\\types.ts",
+        "line": 7,
+        "exported": true
+      },
+      {
+        "name": "MonitorJob",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\audit.ts",
+        "line": 69,
+        "exported": true
+      },
+      {
+        "name": "MunicipioCodigoParams",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\nfse\\schemas.ts",
+        "line": 42,
+        "exported": true
+      },
+      {
+        "name": "MunicipioTipo",
+        "kind": "type",
+        "file": "packages\\nfse-client\\src\\types.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "NaoRealizadaInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+        "line": 30,
+        "exported": true
+      }
+    ],
+    "enums": []
+  },
+  "publicAPI": [
+    {
+      "name": "AbrasfClient",
+      "kind": "class",
+      "file": "packages\\nfse-client\\src\\abrasf\\client.ts",
+      "line": 27,
+      "exported": true
+    },
+    {
+      "name": "AbrasfVersion",
+      "kind": "type",
+      "file": "packages\\nfse-client\\src\\types.ts",
+      "line": 5,
+      "exported": true
+    },
+    {
+      "name": "AbrasfVersion",
+      "kind": "type",
+      "file": "packages\\xml-parser\\src\\parsers\\nfse.ts",
+      "line": 4,
+      "exported": true
+    },
+    {
+      "name": "addNfseMonitorJob",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 139,
+      "exported": true
+    },
+    {
+      "name": "addSearchSyncJob",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 131,
+      "exported": true
+    },
+    {
+      "name": "addSefazMonitorJob",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 112,
+      "exported": true
+    },
+    {
+      "name": "addXmlProcessorJob",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 123,
+      "exported": true
+    },
+    {
+      "name": "Agent",
+      "kind": "type",
+      "file": "packages\\database\\src\\schema\\agents.ts",
+      "line": 39,
+      "exported": true
+    },
+    {
+      "name": "AgentHeartbeatInput",
+      "kind": "type",
+      "file": "apps\\api\\src\\modules\\agents\\schemas.ts",
+      "line": 32,
+      "exported": true
+    },
+    {
+      "name": "AgentIdParams",
+      "kind": "type",
+      "file": "apps\\api\\src\\modules\\agents\\schemas.ts",
+      "line": 30,
+      "exported": true
+    },
+    {
+      "name": "agentsRoutes",
+      "kind": "function",
+      "file": "apps\\api\\src\\modules\\agents\\routes.ts",
+      "line": 17,
+      "exported": true
+    },
+    {
+      "name": "AgentStatus",
+      "kind": "type",
+      "file": "packages\\database\\src\\schema\\agents.ts",
+      "line": 6,
+      "exported": true
+    },
+    {
+      "name": "ApiClientError",
+      "kind": "class",
+      "file": "apps\\web\\lib\\api.ts",
+      "line": 110,
+      "exported": true
+    },
+    {
+      "name": "ApiError",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\api.ts",
+      "line": 27,
+      "exported": true
+    },
+    {
+      "name": "ApiError",
+      "kind": "interface",
+      "file": "packages\\shared\\src\\types\\api.ts",
+      "line": 9,
+      "exported": true
+    },
+    {
+      "name": "ApiResponse",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\api.ts",
+      "line": 11,
+      "exported": true
+    },
+    {
+      "name": "ApiResponse",
+      "kind": "interface",
+      "file": "packages\\shared\\src\\types\\api.ts",
+      "line": 3,
+      "exported": true
+    },
+    {
+      "name": "ApiResponse",
+      "kind": "type",
+      "file": "apps\\api\\src\\utils\\response.ts",
+      "line": 26,
+      "exported": true
+    },
+    {
+      "name": "AppError",
+      "kind": "class",
+      "file": "apps\\api\\src\\utils\\errors.ts",
+      "line": 1,
+      "exported": true
+    },
+    {
+      "name": "AuditLog",
+      "kind": "type",
+      "file": "packages\\database\\src\\schema\\audit.ts",
+      "line": 71,
+      "exported": true
+    },
+    {
+      "name": "AwaitingFinal",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\types.ts",
+      "line": 213,
+      "exported": true
+    },
+    {
+      "name": "BadgeProps",
+      "kind": "interface",
+      "file": "packages\\ui\\src\\components\\badge.tsx",
+      "line": 25,
+      "exported": true
+    },
+    {
+      "name": "batchIndexDocuments",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\search-sync.ts",
+      "line": 111,
+      "exported": true
+    },
+    {
+      "name": "BeloHorizonteAdapter",
+      "kind": "class",
+      "file": "packages\\nfse-client\\src\\abrasf\\municipios\\belo-horizonte.ts",
+      "line": 24,
+      "exported": true
+    },
+    {
+      "name": "BrowserManager",
+      "kind": "class",
+      "file": "packages\\nfse-client\\src\\rpa\\browser.ts",
+      "line": 7,
+      "exported": true
+    },
+    {
+      "name": "buildApp",
+      "kind": "function",
+      "file": "apps\\api\\src\\app.ts",
+      "line": 26,
+      "exported": true
+    },
+    {
+      "name": "buildSearchContent",
+      "kind": "function",
+      "file": "packages\\xml-parser\\src\\utils.ts",
+      "line": 72,
+      "exported": true
+    },
+    {
+      "name": "buildSoapEnvelope",
+      "kind": "function",
+      "file": "packages\\sefaz-client\\src\\soap\\envelope.ts",
+      "line": 4,
+      "exported": true
+    },
+    {
+      "name": "ButtonProps",
+      "kind": "interface",
+      "file": "packages\\ui\\src\\components\\button.tsx",
+      "line": 32,
+      "exported": true
+    },
+    {
+      "name": "calculateDigest",
+      "kind": "function",
+      "file": "packages\\sefaz-client\\src\\signature.ts",
+      "line": 18,
+      "exported": true
+    },
+    {
+      "name": "calculateDigestSha256",
+      "kind": "function",
+      "file": "packages\\sefaz-client\\src\\signature.ts",
+      "line": 25,
+      "exported": true
+    },
+    {
+      "name": "calculateNextSyncTime",
+      "kind": "function",
+      "file": "packages\\database\\src\\schema\\nsu-control.ts",
+      "line": 123,
+      "exported": true
+    },
+    {
+      "name": "CertificadoA1",
+      "kind": "interface",
+      "file": "packages\\sefaz-client\\src\\types.ts",
+      "line": 9,
+      "exported": true
+    },
+    {
+      "name": "CertificadoA1",
+      "kind": "interface",
+      "file": "packages\\nfse-client\\src\\types.ts",
+      "line": 35,
+      "exported": true
+    },
+    {
+      "name": "CertificadoError",
+      "kind": "class",
+      "file": "packages\\sefaz-client\\src\\types.ts",
+      "line": 206,
+      "exported": true
+    },
+    {
+      "name": "CertificadoInfo",
+      "kind": "interface",
+      "file": "packages\\sefaz-client\\src\\certificate.ts",
+      "line": 22,
+      "exported": true
+    },
+    {
+      "name": "CertificadoKeys",
+      "kind": "interface",
+      "file": "packages\\sefaz-client\\src\\certificate.ts",
+      "line": 36,
+      "exported": true
+    },
+    {
+      "name": "CertificateUploadData",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\types.ts",
+      "line": 258,
+      "exported": true
+    },
+    {
+      "name": "ChaveAcessoInfo",
+      "kind": "interface",
+      "file": "packages\\shared\\src\\validators\\chave-acesso.ts",
+      "line": 43,
+      "exported": true
+    },
+    {
+      "name": "checkDatabaseConnection",
+      "kind": "function",
+      "file": "apps\\api\\src\\config\\database.ts",
+      "line": 19,
+      "exported": true
+    },
+    {
+      "name": "checkMeilisearchConnection",
+      "kind": "function",
+      "file": "apps\\api\\src\\config\\meilisearch.ts",
+      "line": 13,
+      "exported": true
+    },
+    {
+      "name": "checkRedisConnection",
+      "kind": "function",
+      "file": "apps\\api\\src\\config\\redis.ts",
+      "line": 21,
+      "exported": true
+    },
+    {
+      "name": "CienciaInput",
+      "kind": "type",
+      "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+      "line": 27,
+      "exported": true
+    },
+    {
+      "name": "cleanCnpj",
+      "kind": "function",
+      "file": "packages\\shared\\src\\validators\\cnpj.ts",
+      "line": 66,
+      "exported": true
+    },
+    {
+      "name": "cleanCpf",
+      "kind": "function",
+      "file": "packages\\shared\\src\\validators\\cpf.ts",
+      "line": 61,
+      "exported": true
+    },
+    {
+      "name": "clearCertificadoCache",
+      "kind": "function",
+      "file": "packages\\sefaz-client\\src\\certificate.ts",
+      "line": 154,
+      "exported": true
+    },
+    {
+      "name": "closeBrowserManager",
+      "kind": "function",
+      "file": "packages\\nfse-client\\src\\rpa\\browser.ts",
+      "line": 106,
+      "exported": true
+    },
+    {
+      "name": "closeDatabaseConnection",
+      "kind": "function",
+      "file": "apps\\api\\src\\config\\database.ts",
+      "line": 31,
+      "exported": true
+    },
+    {
+      "name": "closeQueues",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 186,
+      "exported": true
+    },
+    {
+      "name": "closeRedisConnection",
+      "kind": "function",
+      "file": "apps\\api\\src\\config\\redis.ts",
+      "line": 31,
+      "exported": true
+    }
+  ],
+  "dependencies": {
+    "mostImported": [
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\ui\\src\\lib\\utils.ts",
+        "importedBy": 18
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\types.ts",
+        "importedBy": 17
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\utils\\errors.ts",
+        "importedBy": 15
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\database.ts",
+        "importedBy": 14
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\xml-parser\\src\\types.ts",
+        "importedBy": 11
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\env.ts",
+        "importedBy": 11
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\plugins\\auth.ts",
+        "importedBy": 9
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\utils\\response.ts",
+        "importedBy": 9
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\xml-parser\\src\\utils.ts",
+        "importedBy": 9
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\nfse-client\\src\\types.ts",
+        "importedBy": 8
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\jobs\\queues.ts",
+        "importedBy": 8
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\constants\\endpoints.ts",
+        "importedBy": 7
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\web\\lib\\types.ts",
+        "importedBy": 7
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\web\\lib\\api.ts",
+        "importedBy": 6
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\jobs\\events.ts",
+        "importedBy": 6
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\constants.ts",
+        "importedBy": 5
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\soap-client.ts",
+        "importedBy": 5
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\redis.ts",
+        "importedBy": 5
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\database\\src\\schema\\tenants.ts",
+        "importedBy": 5
+      },
+      {
+        "file": "C:\\FiscalZen\\fiscalzen\\packages\\nfse-client\\src\\abrasf\\client.ts",
+        "importedBy": 4
+      }
+    ]
+  },
+  "stats": {
+    "totalSymbols": 712,
+    "exportedSymbols": 487,
+    "analysisTimeMs": 1055
+  }
+}

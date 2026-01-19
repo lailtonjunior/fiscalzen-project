@@ -173,7 +173,9 @@ export function setupWorkerEvents(workerName: string, worker: any) {
         __workerState.set(workerName, s);
         try {
           logger?.error?.({ worker: workerName, err }, 'Worker job failed');
-        } catch {}
+        } catch {
+          // Ignore logging errors
+        }
       });
       worker.on('error', (err: any) => {
         const s = __workerState.get(workerName) ?? { running: true };
@@ -182,13 +184,17 @@ export function setupWorkerEvents(workerName: string, worker: any) {
         __workerState.set(workerName, s);
         try {
           logger?.error?.({ worker: workerName, err }, 'Worker error');
-        } catch {}
+        } catch {
+          // Ignore logging errors
+        }
       });
     }
   } catch (err) {
     try {
       logger?.warn?.({ worker: workerName, err }, 'setupWorkerEvents failed');
-    } catch {}
+    } catch {
+      // Ignore logging errors
+    }
   }
 }
 

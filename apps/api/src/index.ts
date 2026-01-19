@@ -91,27 +91,39 @@ async function start() {
 
     try {
       stopScheduler();
-    } catch {}
+    } catch {
+      // Ignore scheduler stop errors during shutdown
+    }
 
     try {
       await stopWorkers();
-    } catch {}
+    } catch {
+      // Ignore worker stop errors during shutdown
+    }
 
     try {
       await closeQueues();
-    } catch {}
+    } catch {
+      // Ignore queue close errors during shutdown
+    }
 
     try {
       await app.close();
-    } catch {}
+    } catch {
+      // Ignore app close errors during shutdown
+    }
 
     try {
       await closeDatabaseConnection();
-    } catch {}
+    } catch {
+      // Ignore database close errors during shutdown
+    }
 
     try {
       await closeRedisConnection();
-    } catch {}
+    } catch {
+      // Ignore redis close errors during shutdown
+    }
 
     app.log.info("Shutdown complete");
     process.exit(0);

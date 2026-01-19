@@ -1,4 +1,4 @@
-import { eq, and, lte, ne, sql } from 'drizzle-orm';
+import { eq, and, ne, sql } from 'drizzle-orm';
 import { db } from '../config/database';
 import { companies, nsuControl } from '@fiscalzen/database/schema';
 import { addSefazMonitorJob } from './queues';
@@ -32,8 +32,6 @@ export async function runScheduler() {
   logger.info(`Running scheduler check`);
 
   try {
-    const now = new Date();
-
     // Find all NSU control entries that need sync
     const pendingEntries = await db
       .select({

@@ -101,7 +101,7 @@ export const dashboardService = {
     // Get NSU control status
     const companyIds = companiesData.map((c) => c.id);
 
-    let nsuStatus = { hasError: false, hasWarning: false, lastSyncAge: null as number | null };
+    const nsuStatus = { hasError: false, hasWarning: false, lastSyncAge: null as number | null };
 
     if (companyIds.length > 0) {
       const nsuData = await db

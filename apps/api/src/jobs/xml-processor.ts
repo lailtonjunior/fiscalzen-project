@@ -20,7 +20,7 @@ import { logger } from './events';
 // ============================================
 
 export async function processXmlProcessor(job: Job<XmlProcessorJobData>) {
-  const { companyId, tenantId, nsu, schema, xmlContent, docType, isResumo, isEvento } = job.data;
+  const { companyId, nsu, schema, xmlContent, isResumo, isEvento } = job.data;
 
   logger.info(`Processing XML`, {
     jobId: job.id,
@@ -67,7 +67,7 @@ export async function processXmlProcessor(job: Job<XmlProcessorJobData>) {
 async function processFullDocument(
   data: XmlProcessorJobData,
   xmlContent: string,
-  detection: ReturnType<typeof detectXmlType>
+  _detection: ReturnType<typeof detectXmlType>
 ) {
   const { companyId, tenantId, nsu, docType } = data;
 
@@ -168,7 +168,7 @@ async function processFullDocument(
 async function processResumo(
   data: XmlProcessorJobData,
   xmlContent: string,
-  detection: ReturnType<typeof detectXmlType>
+  _detection: ReturnType<typeof detectXmlType>
 ) {
   const { companyId, tenantId, nsu, docType } = data;
 
@@ -232,11 +232,10 @@ async function processResumo(
 // ============================================
 
 async function processEvento(
-  data: XmlProcessorJobData,
+  _data: XmlProcessorJobData,
   xmlContent: string,
-  detection: ReturnType<typeof detectXmlType>
+  _detection: ReturnType<typeof detectXmlType>
 ) {
-  const { companyId, tenantId, nsu } = data;
 
   // Try to parse as resEvento first
   let eventoData: EventoData;

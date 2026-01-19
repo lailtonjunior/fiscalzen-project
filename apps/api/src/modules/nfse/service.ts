@@ -239,7 +239,7 @@ export const nfseService = {
     companyId: string,
     codigoMunicipio: string
   ) {
-    const company = await verifyCompanyAccess(tenantId, companyId);
+    await verifyCompanyAccess(tenantId, companyId);
 
     const config = await db.query.nfseConfigs.findFirst({
       where: and(

@@ -1,10 +1,9 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { companiesService } from './service';
 import {
   createCompanySchema,
   updateCompanySchema,
   companyIdSchema,
-  uploadCertificateSchema,
   listCompaniesQuerySchema,
   type CreateCompanyInput,
   type UpdateCompanyInput,

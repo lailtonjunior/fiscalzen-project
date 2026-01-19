@@ -1,6 +1,5 @@
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import * as https from 'https';
-import * as crypto from 'crypto';
 import { format } from 'date-fns';
 import type {
   MunicipioConfig,
@@ -18,7 +17,6 @@ import type {
 // ============================================
 
 const ABRASF_NAMESPACE = 'http://www.abrasf.org.br/nfse.xsd';
-const DSIG_NAMESPACE = 'http://www.w3.org/2000/09/xmldsig#';
 
 // ============================================
 // ABRASF Client

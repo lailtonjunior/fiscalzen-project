@@ -48,7 +48,7 @@ export async function processSearchSync(job: Job<SearchSyncJobData>) {
 // Index Document
 // ============================================
 
-async function indexDocument(documentId: string, tenantId: string) {
+async function indexDocument(documentId: string, _tenantId: string) {
   // Fetch document from database
   const document = await db.query.documents.findFirst({
     where: eq(documents.id, documentId),
@@ -110,7 +110,7 @@ async function deleteDocument(documentId: string) {
 
 export async function batchIndexDocuments(
   documentIds: string[],
-  tenantId: string
+  _tenantId: string
 ): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
@@ -165,8 +165,9 @@ export async function reindexAllDocuments(tenantId: string): Promise<{ total: nu
   const batchSize = 100;
   let offset = 0;
   let total = 0;
+  let hasMore = true;
 
-  while (true) {
+  while (hasMore) {
     const batch = await db.query.documents.findMany({
       where: eq(documents.tenantId, tenantId),
       limit: batchSize,
@@ -174,7 +175,8 @@ export async function reindexAllDocuments(tenantId: string): Promise<{ total: nu
     });
 
     if (batch.length === 0) {
-      break;
+      hasMore = false;
+      continue;
     }
 
     const searchRecords: DocumentSearchRecord[] = batch.map((doc) => ({
@@ -203,6 +205,10 @@ export async function reindexAllDocuments(tenantId: string): Promise<{ total: nu
     offset += batchSize;
 
     logger.info(`Reindex progress`, { processed: total });
+
+    if (batch.length < batchSize) {
+      hasMore = false;
+    }
   }
 
   logger.info(`Full reindex completed`, { tenantId, total });
