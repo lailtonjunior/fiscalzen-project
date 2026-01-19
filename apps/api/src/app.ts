@@ -30,23 +30,25 @@ export async function buildApp(): Promise<FastifyInstance> {
       transport:
         env.NODE_ENV === 'development'
           ? {
-              target: 'pino-pretty',
-              options: {
-                translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
-              },
-            }
+            target: 'pino-pretty',
+            options: {
+              translateTime: 'HH:MM:ss Z',
+              ignore: 'pid,hostname',
+            },
+          }
           : undefined,
     },
     trustProxy: true,
   });
 
   // Register plugins
+  // CORS must be registered FIRST to handle preflight OPTIONS requests
+  await app.register(corsPlugin);
+
   await app.register(helmet, {
     contentSecurityPolicy: env.NODE_ENV === 'production',
   });
 
-  await app.register(corsPlugin);
   await app.register(rateLimitPlugin);
   await app.register(authPlugin);
 

@@ -1,25 +1,18 @@
----
-status: filled
-generated: 2026-01-18
----
+# Security & Compliance
 
-# Security & Compliance Notes
-
-Políticas e práticas de segurança do FiscalZen.
+This document outlines the security architecture, data protection measures, and compliance standards implemented in the FiscalZen platform.
 
 ## Authentication & Authorization
 
 ### JWT Authentication
 
-O sistema utiliza JSON Web Tokens (JWT) para autenticação stateless.
+The system implements stateless authentication using JSON Web Tokens (JWT). All requests to protected resources must include a valid Bearer token.
 
-**Configuração**:
-```env
-JWT_SECRET=<min-32-caracteres>
-JWT_EXPIRES_IN=1d
-```
+**Configuration**:
+- `JWT_SECRET`: Minimum 32-character random string (stored in Environment Variables).
+- `JWT_EXPIRES_IN`: Default is `1d`.
 
-**Payload do Token**:
+**Token Payload**:
 ```typescript
 interface JwtPayload {
   userId: string;
@@ -30,252 +23,98 @@ interface JwtPayload {
 }
 ```
 
-**Fluxo de Autenticação**:
-1. Usuário envia credenciais para `/api/auth/login`
-2. API valida credenciais contra banco de dados
-3. Se válido, gera JWT com payload acima
-4. Cliente armazena token e envia no header `Authorization: Bearer <token>`
-5. Middleware `fastify.authenticate` valida token em cada request
-
 ### Authorization Model
 
-**Multi-tenancy**:
-- Todo dado é isolado por `tenant_id`
-- Token JWT inclui `tenantId` do usuário
-- Todas as queries filtram por `tenant_id`
+FiscalZen uses a strict multi-tenancy model. Authorization is enforced at several levels:
 
-**Extração do Tenant**:
-```typescript
-// apps/api/src/plugins/auth.ts
-export function getTenantId(request: FastifyRequest): string {
-  return (request.user as JwtPayload).tenantId;
-}
-```
+1.  **Route Level**: Middleware verifies the JWT signature and expiration.
+2.  **Tenant Level**: The `tenantId` is extracted from the JWT and used as a mandatory filter in all database queries.
+3.  **Ownership Level**: Operations on specific entities (e.g., updating a company or viewing a document) verify that the resource belongs to the active `tenantId`.
 
-**Verificação de Acesso**:
+**Example Pattern**:
 ```typescript
-// Verifica se company pertence ao tenant do usuário
-async function verifyCompanyAccess(tenantId: string, companyId: string) {
+// apps/api/src/utils/auth.ts
+export async function verifyCompanyAccess(tenantId: string, companyId: string) {
   const company = await db.query.companies.findFirst({
     where: and(
       eq(companies.id, companyId),
       eq(companies.tenantId, tenantId)
     ),
   });
-  if (!company) throw new NotFoundError('Company not found');
+  if (!company) throw new ForbiddenError('Access denied to this company');
   return company;
-}
-```
-
-### Route Protection
-
-Todas as rotas da API (exceto `/health` e `/api/auth/*`) requerem autenticação:
-
-```typescript
-// apps/api/src/modules/*/routes.ts
-export async function companiesRoutes(fastify: FastifyInstance) {
-  fastify.addHook('preHandler', fastify.authenticate);
-  // ... routes
 }
 ```
 
 ## Secrets & Sensitive Data
 
-### Variáveis de Ambiente Sensíveis
+### Encryption at Rest
 
-| Variável | Propósito | Requisitos |
-|----------|-----------|------------|
-| `JWT_SECRET` | Assinatura de tokens | Mínimo 32 caracteres, aleatório |
-| `CERT_ENCRYPTION_KEY` | Criptografia de certificados | 64 caracteres hex (32 bytes) |
-| `DATABASE_URL` | Conexão PostgreSQL | Contém credenciais |
-| `S3_SECRET_KEY` | Acesso ao storage | Credencial MinIO/S3 |
+Sensitive information, specifically **Certificado Digital A1 (PFX)**, is never stored in plain text.
 
-### Criptografia de Certificados A1
+1.  **Algorithm**: AES-256-GCM.
+2.  **Key Management**: Uses a `CERT_ENCRYPTION_KEY` (32 bytes / 64 hex chars) defined in the environment variables.
+3.  **Process**:
+    *   When a certificate is uploaded, the API encrypts the buffer.
+    *   The encrypted string is stored in the database in the format `iv:authTag:encryptedContent`.
+    *   The certificate password is **never** stored; it must be provided by the user/agent when performing SEFAZ operations and is kept only in memory during the request.
 
-Certificados digitais são criptografados em repouso usando AES-256-GCM.
+### Sensitive Environment Variables
 
-**Implementação** ([apps/api/src/services/certificate.ts](apps/api/src/services/certificate.ts)):
-
-```typescript
-// Criptografia
-function encryptCertificate(pfxBuffer: Buffer, password: string): string {
-  const key = Buffer.from(process.env.CERT_ENCRYPTION_KEY!, 'hex');
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-
-  const encrypted = Buffer.concat([
-    cipher.update(pfxBuffer),
-    cipher.final()
-  ]);
-  const authTag = cipher.getAuthTag();
-
-  // Formato: iv:authTag:encrypted (base64)
-  return `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted.toString('base64')}`;
-}
-
-// Descriptografia (apenas quando necessário)
-function decryptCertificate(encryptedData: string): Buffer {
-  const [ivB64, authTagB64, encryptedB64] = encryptedData.split(':');
-  const key = Buffer.from(process.env.CERT_ENCRYPTION_KEY!, 'hex');
-  const iv = Buffer.from(ivB64, 'base64');
-  const authTag = Buffer.from(authTagB64, 'base64');
-  const encrypted = Buffer.from(encryptedB64, 'base64');
-
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-  decipher.setAuthTag(authTag);
-
-  return Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final()
-  ]);
-}
-```
-
-**Armazenamento**:
-- Certificado criptografado no campo `certificate` da tabela `companies`
-- Senha do certificado nunca é armazenada (informada pelo usuário quando necessário)
-
-### Classificação de Dados
-
-| Classificação | Exemplos | Tratamento |
-|---------------|----------|------------|
-| **Confidencial** | Certificados A1, senhas | Criptografado, acesso restrito |
-| **Sensível** | CNPJ, dados fiscais | Isolamento por tenant |
-| **Interno** | Logs, métricas | Sem PII em logs |
-| **Público** | Documentação API | Pode ser exposto |
+| Variable | Purpose | Security Note |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | PostgreSQL Connection | Contains credentials; must be restricted to VPC. |
+| `JWT_SECRET` | Token Signing | Rotated periodically. |
+| `CERT_ENCRYPTION_KEY` | PFX Encryption | Critical; loss means certificates cannot be decrypted. |
+| `S3_SECRET_KEY` | XML Storage | Used for MinIO/S3 access. |
 
 ## Data Protection
 
-### Isolamento Multi-tenant
+### Multi-tenant Isolation
 
-```sql
--- Toda query inclui filtro de tenant
-SELECT * FROM documents
-WHERE tenant_id = $1    -- Sempre filtrado
-AND company_id = $2;
+Data isolation is guaranteed at the application layer through the Drizzle ORM.
 
--- Índices compostos para performance
-CREATE INDEX idx_documents_tenant_company
-ON documents(tenant_id, company_id);
-```
+*   **Database Schema**: Almost all tables (documents, companies, audit_logs, jobs) contain a `tenant_id` column.
+*   **Query Safety**: Developers must include `eq(table.tenantId, ctx.tenantId)` in all `where` clauses.
+*   **Indices**: Composite indices on `(tenant_id, id)` ensure performant and secure lookups.
 
-### Validação de Input
+### Validation & Sanitization
 
-Todas as entradas são validadas usando Zod:
+*   **Input Validation**: Every API endpoint uses **Zod** schemas to validate structure and types, preventing injection of malformed data.
+*   **SQL Injection**: Prevented by using Drizzle ORM's parameterized queries.
+*   **XSS Protection**: The React frontend (Next.js) automatically escapes content. Content Security Policy (CSP) headers are enabled.
 
-```typescript
-// apps/api/src/modules/companies/schemas.ts
-export const createCompanySchema = z.object({
-  cnpj: z.string().regex(/^\d{14}$/, 'CNPJ inválido'),
-  razaoSocial: z.string().min(3).max(200),
-  // ...
-});
-```
+## Infrastructure Security
 
-### SQL Injection Prevention
+### SEFAZ Communication
 
-- Uso exclusivo de Drizzle ORM com queries parametrizadas
-- Nenhuma concatenação de strings em SQL
+*   **Mutual TLS (mTLS)**: Communication with SEFAZ (Secretaria da Fazenda) uses the client's A1 certificate for two-way SSL authentication.
+*   **Signature**: Outgoing XML messages (Manifestação, etc.) are signed using the `sefaz-client` package with the user's private key.
 
-### XSS Prevention
+### Rate Limiting
 
-- React escapa automaticamente outputs
-- Content-Type headers definidos corretamente
-- CSP headers configurados no Next.js
+To prevent abuse and comply with external provider limits:
+
+1.  **API Level**: Configured via `fastify-rate-limit` (default 100 requests per minute per IP).
+2.  **SEFAZ Level**: The system monitors "Consumo Indevido" (Rejection 656). If SEFAZ returns a rate limit error, the `nsu_control` status is set to `rate_limited` and syncing is paused for the specific CNPJ for 60 minutes.
 
 ## Compliance
 
-### Requisitos Fiscais Brasileiros
+### LGPD (Brazil Data Protection Law)
 
-| Requisito | Implementação |
-|-----------|---------------|
-| Armazenamento de XML por 5 anos | Storage S3 com retenção |
-| Manifestação em até 180 dias | Dashboard com alertas |
-| Certificado A1 válido | Verificação de expiração |
+*   **Access Control**: Users can only see data from their own Organization/Tenant.
+*   **Audit Logging**: Critical actions (login, certificate upload, document deletion) are logged in the `audit_logs` table, recording the timestamp, user ID, IP address, and action performed.
+*   **Data Portability**: Users can export their XML files at any time through the S3 storage interface or API.
 
-### LGPD (Lei Geral de Proteção de Dados)
+### Fiscal Requirements
 
-- **Minimização**: Apenas dados necessários são coletados
-- **Finalidade**: Dados usados apenas para gestão fiscal
-- **Segurança**: Criptografia em trânsito (HTTPS) e em repouso
-- **Acesso**: Isolamento por tenant
-
-### Auditoria
-
-Tabela `audit_logs` registra ações sensíveis:
-
-```typescript
-// packages/database/src/schema/audit.ts
-export const auditLogs = pgTable('audit_logs', {
-  id: uuid('id').primaryKey(),
-  tenantId: uuid('tenant_id').notNull(),
-  userId: uuid('user_id'),
-  action: varchar('action', { length: 50 }).notNull(),
-  entityType: varchar('entity_type', { length: 50 }),
-  entityId: uuid('entity_id'),
-  details: jsonb('details'),
-  ipAddress: varchar('ip_address', { length: 45 }),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-```
-
-## Security Headers
-
-Configurados no Next.js (`next.config.js`):
-
-```javascript
-const securityHeaders = [
-  { key: 'X-DNS-Prefetch-Control', value: 'on' },
-  { key: 'Strict-Transport-Security', value: 'max-age=63072000' },
-  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
-];
-```
-
-## Rate Limiting
-
-### API Rate Limits
-
-```typescript
-// apps/api/src/plugins/rate-limit.ts
-fastify.register(rateLimitPlugin, {
-  max: 100,           // requests
-  timeWindow: 60000,  // per minute
-});
-```
-
-### SEFAZ Rate Limits
-
-- DistDFe: Máximo 20 consultas/hora por CNPJ
-- Controlado via `syncStatus: 'rate_limited'` na tabela `nsu_control`
+*   **XML Integrity**: The system stores the original XML as received from SEFAZ/City Halls to ensure legal validity.
+*   **Storage Duration**: Documents are stored in S3-compatible storage designed for long-term retention (minimum 5 years as required by Brazilian law).
 
 ## Incident Response
 
-### Contatos
+In case of a suspected security breach:
 
-| Papel | Responsabilidade |
-|-------|------------------|
-| Dev Lead | Primeira resposta técnica |
-| DBA | Problemas de banco de dados |
-| Security | Incidentes de segurança |
-
-### Procedimentos
-
-1. **Detecção**: Monitoramento de logs e métricas
-2. **Contenção**: Isolar sistema afetado
-3. **Erradicação**: Corrigir vulnerabilidade
-4. **Recuperação**: Restaurar serviço normal
-5. **Post-mortem**: Documentar e prevenir recorrência
-
-### Logs de Segurança
-
-```typescript
-// Exemplo de log de evento de segurança
-logger.warn({
-  event: 'auth_failure',
-  ip: request.ip,
-  email: body.email,
-  reason: 'invalid_credentials'
-}, 'Authentication failed');
-```
+1.  **Isolation**: The affected `tenantId` can be suspended via the database `tenants.status` field.
+2.  **Credential Rotation**: Reset the `JWT_SECRET` to invalidate all active sessions.
+3.  **Logs**: Analyze the `audit_logs` and Fastify application logs (stored in JSON format for easy parsing) to identify the scope of the breach.

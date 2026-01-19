@@ -1,228 +1,144 @@
----
-status: filled
-generated: 2026-01-18
----
-
 # Development Workflow
 
-Outline the day-to-day engineering process for this repository.
+This document outlines the day-to-day engineering processes and standards for the FiscalZen repository. It serves as a guide for setting up the local environment, following branching strategies, and implementing new features.
 
 ## Prerequisites
 
-- Node.js 20+
-- pnpm 9+
-- Docker (for local infrastructure)
+Before starting, ensure you have the following installed:
+- **Node.js**: Version 20.x or higher
+- **pnpm**: Version 9.x or higher
+- **Docker**: For running local infrastructure (PostgreSQL, Redis, Meilisearch)
+- **Git**: For version control
 
 ## Initial Setup
 
+Follow these steps to get the project running locally:
+
 ```bash
-# Clone and install
+# 1. Clone the repository
 git clone <repo-url>
-cd fiscalzen
+cd fiscalzen-project
+
+# 2. Install dependencies
 pnpm install
 
-# Start infrastructure (Postgres, Redis, Meilisearch, MinIO)
+# 3. Setup environment variables
+# Copy .env.example from root and apps/api, apps/web to .env
+cp .env.example .env
+
+# 4. Start infrastructure
 docker compose -f docker/docker-compose.yml up -d
 
-# Run database migrations
+# 5. Initialize the database
 pnpm --filter @fiscalzen/database db:push
 
-# Start development servers
+# 6. Start development servers
 pnpm dev
 ```
 
-## Branching & Releases
+## Branching & Release Model
 
-### Branching Model
-- `main` - Production-ready code
-- `develop` - Integration branch for features
-- `feature/*` - Feature branches
-- `fix/*` - Bug fix branches
-- `hotfix/*` - Production hotfixes
+We use a structured branching strategy to maintain stability.
 
-### Branch Naming
-```
-feature/add-nfse-support
-fix/xml-parser-number-overflow
-hotfix/security-patch
-```
+### Branching Strategy
+- `main`: Reflects the current production state. Only merged from `develop` or `hotfix/*`.
+- `develop`: The main integration branch. Feature branches are merged here.
+- `feature/`: New features (e.g., `feature/nfse-abrasf-v2`).
+- `fix/`: Bug fixes (e.g., `fix/xml-parsing-date-format`).
+- `hotfix/`: Emergency fixes for production.
 
-### Release Process
-1. Create release branch from `develop`
-2. Bump version in `package.json`
-3. Update CHANGELOG.md
-4. Merge to `main` and tag
+### Pull Request (PR) Requirements
+Before a PR is merged into `develop`:
+- All tests must pass (`pnpm test`).
+- Linting must pass (`pnpm lint`).
+- The build must succeed (`pnpm build`).
+- At least one approval from the engineering team.
 
-## Local Development
+## Local Development Commands
 
-### Common Commands
-
-```bash
-# Install all dependencies
-pnpm install
-
-# Start all apps in development mode
-pnpm dev
-
-# Start specific app
-pnpm --filter @fiscalzen/api dev
-pnpm --filter @fiscalzen/web dev
-
-# Build all packages
-pnpm build
-
-# Run linter
-pnpm lint
-
-# Run tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test -- --watch
-```
+### Global Commands (Root)
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Starts all applications (API, Web) in watch mode |
+| `pnpm build` | Builds all packages and applications |
+| `pnpm test` | Runs the entire test suite across the monorepo |
+| `pnpm lint` | Runs ESLint and Prettier checks |
 
 ### Package-Specific Commands
+Use the `--filter` flag to target specific components:
 
 ```bash
-# Database
-pnpm --filter @fiscalzen/database db:push      # Apply schema changes
-pnpm --filter @fiscalzen/database db:generate  # Generate migrations
-pnpm --filter @fiscalzen/database db:studio    # Open Drizzle Studio
+# Database management
+pnpm --filter @fiscalzen/database db:push      # Sync schema to DB
+pnpm --filter @fiscalzen/database db:studio    # Open GUI to view data
 
-# API
-pnpm --filter @fiscalzen/api dev     # Start API server
-pnpm --filter @fiscalzen/api test    # Run API tests
+# API Development
+pnpm --filter @fiscalzen/api dev               # Run only the API
+pnpm --filter @fiscalzen/api test:watch        # TDD mode for API
 
-# Web
-pnpm --filter @fiscalzen/web dev     # Start Next.js dev server
-pnpm --filter @fiscalzen/web build   # Build for production
+# Web UI Development
+pnpm --filter @fiscalzen/web dev               # Run only the Next.js app
 ```
 
-## Docker Services
+## Local Infrastructure (Docker)
 
-Local development uses Docker for infrastructure:
+The project relies on several services defined in `docker/docker-compose.yml`:
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| PostgreSQL | 5432 | Database |
-| Redis | 6379 | Job queues, caching |
-| Meilisearch | 7700 | Full-text search |
-| MinIO | 9000 (API), 9001 (Console) | S3-compatible storage |
+| **PostgreSQL** | `5432` | Primary relational data store |
+| **Redis** | `6379` | BullMQ queues and caching |
+| **Meilisearch** | `7700` | Full-text search for documents |
+| **MinIO** | `9000` | S3-compatible storage for XML files |
 
-### Docker Commands
+## Development Patterns
 
-```bash
-# Start all services
-docker compose -f docker/docker-compose.yml up -d
+### 1. Adding a New Database Schema
+1. Create a new file in `packages/database/src/schema/`.
+2. Define your table using Drizzle ORM syntax.
+3. Export the schema in `packages/database/src/schema/index.ts`.
+4. Run `pnpm --filter @fiscalzen/database db:push` to update your local instance.
 
-# Stop all services
-docker compose -f docker/docker-compose.yml down
+### 2. Creating an API Endpoint
+The API is organized by modules. To add a feature:
+1. **Schema**: Define Zod validators in `apps/api/src/modules/<module>/schemas.ts`.
+2. **Service**: Implement business logic in `apps/api/src/modules/<module>/service.ts`.
+3. **Routes**: Register Fastify routes in `apps/api/src/modules/<module>/routes.ts`.
 
-# View logs
-docker compose -f docker/docker-compose.yml logs -f
+### 3. Background Jobs
+Jobs are managed via BullMQ in `apps/api/src/jobs/`:
+1. Add the job name to the `Queue` definitions.
+2. Implement the processor logic in a dedicated file.
+3. Register the worker in `apps/api/src/jobs/workers.ts`.
 
-# Reset database
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d
-```
+## Code Quality Standards
 
-## Code Review Expectations
+### TypeScript
+- Avoid `any`. Use `unknown` or specific interfaces.
+- Export shared types from `packages/shared/src/types/` to ensure frontend-backend synchronization.
 
-### PR Checklist
-- [ ] Tests pass (`pnpm test`)
-- [ ] Lint passes (`pnpm lint`)
-- [ ] Build succeeds (`pnpm build`)
-- [ ] Code follows existing patterns
-- [ ] Documentation updated if needed
+### Error Handling
+- Use the `AppError` class in the API for consistent HTTP responses.
+- Wrap external service calls (like SEFAZ or NFSe cities) in `try/catch` blocks that map to `ExternalServiceError`.
 
-### Review Guidelines
-- Check for security issues (SQL injection, XSS, etc.)
-- Verify multi-tenant isolation
-- Ensure proper error handling
-- Check for TypeScript type safety
-
-## Adding New Features
-
-### 1. Adding an API Endpoint
-
-```
-apps/api/src/modules/<module>/
-├── index.ts       # Module exports
-├── routes.ts      # Route handlers
-├── service.ts     # Business logic
-└── schemas.ts     # Zod validation schemas
-```
-
-### 2. Adding a Database Table
-
-1. Add schema in `packages/database/src/schema/`
-2. Export from `packages/database/src/schema/index.ts`
-3. Run `pnpm --filter @fiscalzen/database db:push`
-
-### 3. Adding a Background Job
-
-1. Define job data type in `apps/api/src/jobs/queues.ts`
-2. Create processor function in `apps/api/src/jobs/<job-name>.ts`
-3. Register worker in `apps/api/src/jobs/workers.ts`
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-```env
-# Database
-DATABASE_URL=postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# S3/MinIO
-S3_ENDPOINT=http://localhost:9000
-S3_ACCESS_KEY=fiscalzen
-S3_SECRET_KEY=fiscalzen_minio_dev
-S3_BUCKET=fiscalzen-docs
-
-# Search
-MEILISEARCH_URL=http://localhost:7700
-MEILISEARCH_KEY=fiscalzen_meilisearch_dev_key
-
-# SEFAZ
-SEFAZ_AMBIENTE=homologacao
-
-# Security
-JWT_SECRET=<min-32-chars>
-CERT_ENCRYPTION_KEY=<64-hex-chars>
-```
+### Testing
+- **Unit Tests**: Place `.test.ts` files next to the source code.
+- **Integration Tests**: Focus on API endpoints in `apps/api/tests/`.
+- **Fixtures**: Use `packages/xml-parser/tests/fixtures/` for raw XML samples.
 
 ## Troubleshooting
 
-### Port Already in Use
-```bash
-# Kill process on port
-node kill-port.mjs 3000
-```
+### Common Issues
 
-### Next.js Cache Issues
-```bash
-# Clear Next.js cache
-node clean-web-next-cache.mjs
-```
+**Database out of sync?**
+Run `pnpm --filter @fiscalzen/database db:push --force`. Note: This might data-loss on local dev if columns are deleted.
 
-### Database Connection Issues
-```bash
-# Check PostgreSQL is running
-docker ps | grep postgres
+**Redis connection errors?**
+Ensure Docker is running and the `REDIS_URL` in your `.env` matches the port in `docker-compose.yml`.
 
-# Test connection
-psql postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen
-```
+**Type errors in Web/API after changing Shared?**
+Run `pnpm build` from the root to ensure all package distributions are updated.
 
-## CI/CD
+---
 
-GitHub Actions runs on every push and PR:
-- **Lint**: ESLint checks
-- **Build**: TypeScript compilation
-- **Test**: Vitest test suites
-- **Type Check**: TypeScript type validation
-
-See `.github/workflows/ci.yml` for configuration.
+*For architectural overview, refer to [Architecture Documentation](./architecture-overview.md).*

@@ -11,6 +11,8 @@ async function corsPlugin(fastify: FastifyInstance) {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
     exposedHeaders: ['X-Total-Count', 'X-Request-Id'],
     maxAge: 86400, // 24 hours
+    preflight: true,
+    strictPreflight: false,
   });
 }
 

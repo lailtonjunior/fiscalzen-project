@@ -1,147 +1,87 @@
----
-status: filled
-generated: 2026-01-18
----
+# Project Overview: FiscalZen
 
-# FiscalZen - Project Overview
+FiscalZen is a distributed platform designed to automate the lifecycle of Brazilian electronic fiscal documents (DF-e). It handles the synchronization, parsing, storage, and legal compliance of NFe, CTe, MDFe, and NFSe documents by integrating directly with SEFAZ (Secretaria da Fazenda) and municipal web services.
 
-## What is FiscalZen?
+## Core Purpose
 
-FiscalZen is a Brazilian fiscal document management platform that automates the synchronization, storage, and management of electronic tax documents (NFe, CTe, MDFe, NFSe) with SEFAZ (Secretaria da Fazenda) web services.
+The platform solves the complexity of managing fiscal documents in Brazil by providing:
+- **Automated Monitoring**: Real-time polling of national and municipal tax authorities.
+- **Data Centralization**: A single source of truth for all XML documents and their associated events (Cancellation, Correction, etc.).
+- **Legal Compliance**: Ensuring documents are stored for the mandatory period and that "Manifestação do Destinatário" (Recipient Acknowledgment) is performed correctly.
+- **Searchability**: Full-text search across XML contents (items, values, participants).
 
-## Problem Statement
+## System Architecture
 
-Brazilian companies are legally required to:
-1. Monitor and download tax documents issued against them (as recipients)
-2. Respond to NFe documents with "manifestação do destinatário" (recipient acknowledgment)
-3. Store XML documents for 5+ years
-4. Track document status and events
+The project is organized as a monorepo using Turborepo and pnpm, separating concerns into specialized packages and applications.
 
-Manual processes are error-prone, time-consuming, and non-compliant with SEFAZ requirements.
+### 1. Applications (`apps/`)
+- **`api`**: A Fastify-based REST API that handles business logic, tenant management, and job scheduling.
+- **`web`**: A Next.js dashboard providing a user interface for document visualization, manifestação workflows, and configuration.
 
-## Solution
+### 2. Core Packages (`packages/`)
+- **`sefaz-client`**: Handles SOAP communication with SEFAZ, digital signature of XMLs using A1 certificates, and protocol management.
+- **`nfse-client`**: Specialized client for Municipal invoices (NFSe), supporting ABRASF standards and RPA (Robotic Process Automation) for non-standard cities.
+- **`xml-parser`**: High-performance parser that converts complex SEFAZ XML structures into standardized TypeScript objects and detects document types.
+- **`database`**: Centralized schema using Drizzle ORM (PostgreSQL), managing tenants, companies, documents, and audit logs.
+- **`shared`**: Common TypeScript interfaces, Zod schemas, and utility functions used across both frontend and backend.
+- **`ui`**: Shared React component library based on TailwindCSS and shadcn/ui.
 
-FiscalZen provides:
-- **Automated SEFAZ Sync**: Periodic polling of DistDFe services for NFe, CTe, and MDFe
-- **Document Management**: Storage, search, and retrieval of fiscal documents
-- **Manifestação Workflow**: UI for acknowledging received documents (Ciência, Confirmação, etc.)
-- **Multi-tenant Architecture**: Multiple companies per tenant with isolated data
-- **Real-time Dashboard**: Document statistics, sync status, and integrity monitoring
+## Key Technical Workflows
 
-## Target Users
+### Document Synchronization (SEFAZ)
+1. **Trigger**: A BullMQ worker (`sefaz-monitor`) runs periodically.
+2. **Fetch**: The `SefazClient` calls the `distDFe` service using the company's A1 certificate.
+3. **Queue**: New documents are placed in the `xml-processor` queue.
+4. **Parse & Store**: The `xml-parser` extracts data, and the `api` saves it to PostgreSQL and indexes it in Meilisearch.
 
-- **Accountants**: Managing multiple client companies
-- **Finance Teams**: Tracking incoming/outgoing fiscal documents
-- **IT Departments**: Integrating with ERP systems
+### Manifestação do Destinatário
+1. **User Action**: User selects a document in the `web` dashboard and chooses an action (e.g., `Confirmação da Operação`).
+2. **Execution**: The API sends a signed event to SEFAZ via `SefazClient`.
+3. **Update**: Upon SEFAZ approval, the document status is updated, and the full XML is automatically queued for download if it wasn't available yet.
 
-## Quick Facts
+## Infrastructure Stack
 
-- Root path: `C:\FiscalZen\fiscalzen`
-- Primary languages:
-  - TypeScript (.ts): 171 files
-  - React/TSX (.tsx): 61 files
-  - JavaScript (.mjs): 37 files
+| Component | Technology |
+| :--- | :--- |
+| **Runtime** | Node.js 20+ |
+| **Language** | TypeScript |
+| **Primary Database** | PostgreSQL 16 |
+| **Cache & Queues** | Redis |
+| **Search Engine** | Meilisearch |
+| **Object Storage** | S3-compatible (MinIO / AWS S3) |
+| **Communication** | SOAP (SEFAZ) / REST (Internal) |
 
-## Technology Stack
+## Development Environment Entry Points
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14, React 18, TailwindCSS, shadcn/ui |
-| Backend | Fastify, Node.js 20 |
-| Database | PostgreSQL 16 (Drizzle ORM) |
-| Queue | Redis + BullMQ |
-| Search | Meilisearch |
-| Storage | S3-compatible (MinIO for dev) |
-| Monorepo | Turborepo + pnpm |
-| Testing | Vitest |
+- **API Entry**: `apps/api/src/index.ts`
+- **Frontend Entry**: `apps/web/app/page.tsx`
+- **Database Schema**: `packages/database/src/schema/`
+- **Job Definitions**: `apps/api/src/jobs/workers.ts`
 
-## Project Structure
+## Getting Started Summary
 
-```
-fiscalzen/
-├── apps/
-│   ├── api/          # Fastify REST API
-│   └── web/          # Next.js frontend
-├── packages/
-│   ├── database/     # Drizzle schema and migrations
-│   ├── sefaz-client/ # SEFAZ web service integration
-│   ├── xml-parser/   # NFe/CTe/MDFe XML parsing
-│   ├── nfse-client/  # NFSe (municipal) integration
-│   ├── shared/       # Common types, validators, formatters
-│   └── ui/           # Shared UI components
-├── docker/           # Local development infrastructure
-└── tools/            # Development utilities
-```
+To initialize the project locally:
 
-## Key Entry Points
+1.  **Infrastructure**: Start the local services (DB, Redis, Meilisearch) via Docker.
+    ```bash
+    docker compose -f docker/docker-compose.yml up -d
+    ```
+2.  **Installation**: Install dependencies from the root.
+    ```bash
+    pnpm install
+    ```
+3.  **Database**: Push the schema to your local instance.
+    ```bash
+    pnpm --filter @fiscalzen/database db:push
+    ```
+4.  **Launch**: Run all applications in development mode.
+    ```bash
+    pnpm dev
+    ```
 
-| Package | Entry Point |
-|---------|-------------|
-| API | [`apps/api/src/index.ts`](apps/api/src/index.ts) |
-| Web | [`apps/web/app/page.tsx`](apps/web/app/page.tsx) |
-| Database | [`packages/database/src/index.ts`](packages/database/src/index.ts) |
-| SEFAZ Client | [`packages/sefaz-client/src/index.ts`](packages/sefaz-client/src/index.ts) |
-| XML Parser | [`packages/xml-parser/src/index.ts`](packages/xml-parser/src/index.ts) |
+## Document Types Supported
 
-## Key Features
-
-### 1. SEFAZ Integration
-- DistDFe (Distribuição de DFe) for NFe, CTe, MDFe
-- Manifestação do Destinatário events
-- Automatic retry and rate limiting
-- Certificate (A1) management
-
-### 2. Document Processing
-- XML parsing with validation
-- Full-text search indexing
-- Event tracking (cancelamento, carta correção, etc.)
-
-### 3. Background Jobs
-- `sefaz-monitor`: Polls SEFAZ for new documents
-- `xml-processor`: Parses and stores downloaded XMLs
-- `search-sync`: Indexes documents in Meilisearch
-- `nfse-monitor`: NFSe synchronization
-
-### 4. Security
-- JWT authentication
-- Multi-tenant data isolation (tenant_id on all queries)
-- Certificate encryption at rest
-- Rate limiting
-
-## Getting Started
-
-```bash
-# Start infrastructure
-docker compose -f docker/docker-compose.yml up -d
-
-# Install dependencies
-pnpm install
-
-# Run migrations
-pnpm --filter @fiscalzen/database db:push
-
-# Start development
-pnpm dev
-```
-
-## Core Classes
-
-### Error Handling
-- [`AppError`](apps/api/src/utils/errors.ts#L1) - Base error class
-- [`NotFoundError`](apps/api/src/utils/errors.ts#L16)
-- [`ValidationError`](apps/api/src/utils/errors.ts#L35)
-- [`SefazError`](packages/sefaz-client/src/types.ts#L194)
-
-### SEFAZ Integration
-- [`SefazClient`](packages/sefaz-client/src/client.ts#L4) - Main SEFAZ client
-- [`SoapClient`](packages/sefaz-client/src/soap-client.ts#L28) - SOAP communication
-
-### NFSe Integration
-- [`AbrasfClient`](packages/nfse-client/src/abrasf/client.ts#L27) - ABRASF standard client
-- [`BrowserManager`](packages/nfse-client/src/rpa/browser.ts#L7) - RPA automation
-
-## Next Steps
-
-1. Review [Architecture](./architecture.md) for system design
-2. See [Development Workflow](./development-workflow.md) for day-to-day tasks
-3. Check [Testing Strategy](./testing-strategy.md) for quality guidelines
+- **NFe** (Nota Fiscal Eletrônica - Models 55)
+- **CTe** (Conhecimento de Transporte Eletrônico - Model 57)
+- **MDFe** (Manifesto Eletrônico de Documentos Fiscais - Model 58)
+- **NFSe** (Nota Fiscal de Serviço Eletrônica - Municipal)

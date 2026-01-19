@@ -1,19 +1,14 @@
----
-status: filled
-generated: 2026-01-18
----
-
 # Data Flow & Integrations
 
-Como os dados entram, fluem e saem do sistema FiscalZen.
+This document describes how data enters, flows through, and exits the FiscalZen system. It covers the lifecycle of fiscal documents from external discovery to storage and search indexing.
 
-## High-level Flow
+## High-Level Architecture
 
 ```mermaid
 flowchart TB
-    subgraph External["Serviços Externos"]
+    subgraph External["External Services"]
         SEFAZ[SEFAZ DistDFe]
-        PREFEITURA[Prefeituras NFSe]
+        PREFEITURA[Municipalities NFSe]
     end
 
     subgraph API["FiscalZen API"]
@@ -24,7 +19,7 @@ flowchart TB
         ROUTES[API Routes]
     end
 
-    subgraph Storage["Armazenamento"]
+    subgraph Storage["Storage & Persistence"]
         PG[(PostgreSQL)]
         REDIS[(Redis/BullMQ)]
         MEILI[(Meilisearch)]
@@ -35,239 +30,102 @@ flowchart TB
         WEB[Next.js Web App]
     end
 
-    %% Fluxo de sincronização SEFAZ
-    SCHEDULER -->|30min| REDIS
+    %% SEFAZ Sync Flow
+    SCHEDULER -->|Cron| REDIS
     REDIS -->|job| WORKER_SEFAZ
-    WORKER_SEFAZ -->|consulta| SEFAZ
-    SEFAZ -->|XMLs gzip| WORKER_SEFAZ
-    WORKER_SEFAZ -->|job| WORKER_XML
-    WORKER_XML -->|parse & save| PG
-    WORKER_XML -->|store XML| S3
-    WORKER_XML -->|job| WORKER_SEARCH
-    WORKER_SEARCH -->|index| MEILI
+    WORKER_SEFAZ -->|SOAP Request| SEFAZ
+    SEFAZ -->|Gzip XMLs| WORKER_SEFAZ
+    WORKER_SEFAZ -->|Enqueue| WORKER_XML
+    WORKER_XML -->|Parse & Save| PG
+    WORKER_XML -->|Upload| S3
+    WORKER_XML -->|Enqueue| WORKER_SEARCH
+    WORKER_SEARCH -->|Index| MEILI
 
-    %% Fluxo de usuário
-    WEB -->|API calls| ROUTES
-    ROUTES -->|query| PG
-    ROUTES -->|search| MEILI
-    ROUTES -->|files| S3
+    %% User Flow
+    WEB -->|API Calls| ROUTES
+    ROUTES -->|Query| PG
+    ROUTES -->|Search| MEILI
+    ROUTES -->|Get File| S3
 ```
 
-## Fluxo Principal: Sincronização SEFAZ
+---
 
-### 1. Scheduler Trigger
-```
-[Scheduler] --cada 30min--> [Redis Queue: sefaz-monitor]
-```
+## Core Data Flows
 
-O scheduler ([scheduler.ts](apps/api/src/jobs/scheduler.ts)) consulta a tabela `nsu_control` para encontrar empresas que precisam de sincronização:
+### 1. Automated SEFAZ Synchronization
+The primary method for obtaining documents (NFe, CTe, MDFe) is the automatic synchronization with SEFAZ Distribution Web Services.
 
-```sql
-SELECT company_id, doc_type, tenant_id
-FROM nsu_control
-JOIN companies ON companies.id = nsu_control.company_id
-WHERE companies.ativo = true
-  AND companies.certificate IS NOT NULL
-  AND companies.certificate_expiry > NOW()
-  AND (next_sync IS NULL OR next_sync <= NOW())
-  AND sync_status NOT IN ('syncing', 'rate_limited')
-```
+1.  **Scheduler Trigger**: The `Scheduler` (`apps/api/src/jobs/scheduler.ts`) runs periodically (every 30-60 mins). It queries the `nsu_control` table to identify companies that are active, have valid certificates, and are due for a sync.
+2.  **SEFAZ Monitor**: A job is added to the `sefaz-monitor` queue. The worker (`apps/api/src/jobs/sefaz-monitor.ts`):
+    *   Retrieves and decrypts the company's A1 certificate.
+    *   Calls the `SefazClient` to request documents starting from the last known NSU (Sequential Number).
+    *   Receives a batch of documents (typically up to 50 per request).
+3.  **NSU Update**: The worker updates the `last_nsu` in the database to ensure subsequent syncs pick up where this one left off.
 
-### 2. SEFAZ Monitor Worker
-```
-[Redis Queue] --> [SEFAZ Monitor Worker] --> [SEFAZ DistDFe]
-```
+### 2. XML Processing Pipeline
+Once a raw document (XML or compressed GZIP) is received from SEFAZ or via manual upload:
 
-O worker ([sefaz-monitor.ts](apps/api/src/jobs/sefaz-monitor.ts)):
-1. Carrega certificado da empresa (descriptografa)
-2. Consulta SEFAZ DistDFe com último NSU
-3. Recebe XMLs compactados (GZIP + Base64)
-4. Para cada documento, cria job no `xml-processor`
-5. Atualiza `nsu_control` com novo último NSU
+1.  **Decoding**: The `xml-processor` worker (`apps/api/src/jobs/xml-processor.ts`) decompresses the GZIP content and decodes the Base64 string.
+2.  **Detection & Parsing**: 
+    *   The `detector` identifies the document type (NFe, CTe, MDFe, or Event).
+    *   The `@fiscalzen/xml-parser` library converts the raw XML into a structured JSON object.
+3.  **Persistence**:
+    *   **PostgreSQL**: The structured data is saved to the `documents` table. If the XML is an event (like a cancellation or correction), it's saved to `document_events`.
+    *   **S3**: The raw original XML file is stored in Object Storage for legal compliance.
+4.  **Indexing**: A job is triggered for the `search-sync` worker.
 
-### 3. XML Processor Worker
-```
-[Redis Queue] --> [XML Processor] --> [PostgreSQL + S3]
-```
+### 3. Search Indexing
+To provide fast filtering and full-text search:
 
-O worker ([xml-processor.ts](apps/api/src/jobs/xml-processor.ts)):
-1. Decodifica e descompacta XML
-2. Detecta tipo de documento (NFe, CTe, MDFe, Evento)
-3. Parseia usando `@fiscalzen/xml-parser`
-4. Salva no PostgreSQL (tabela `documents` ou `document_events`)
-5. Armazena XML original no S3
-6. Cria job no `search-sync`
+1.  The `search-sync` worker (`apps/api/src/jobs/search-sync.ts`) prepares a document for Meilisearch.
+2.  It creates a searchable payload containing keys like `chave`, `numero`, `emitente`, and `destinatario`.
+3.  The document is indexed in the `documents` Meilisearch index, scoped by `tenantId`.
 
-### 4. Search Sync Worker
-```
-[Redis Queue] --> [Search Sync] --> [Meilisearch]
-```
-
-O worker ([search-sync.ts](apps/api/src/jobs/search-sync.ts)):
-1. Carrega documento do PostgreSQL
-2. Prepara registro para indexação
-3. Envia para Meilisearch
-
-## Fluxo: Manifestação do Destinatário
-
-```mermaid
-sequenceDiagram
-    participant U as Usuário
-    participant W as Web App
-    participant A as API
-    participant S as SEFAZ
-    participant D as Database
-
-    U->>W: Seleciona NFe para manifestar
-    W->>A: POST /api/manifestacao/ciencia
-    A->>D: Busca documento e certificado
-    A->>A: Gera XML de evento assinado
-    A->>S: Envia evento de manifestação
-    S-->>A: Retorno (sucesso/erro)
-    A->>D: Salva evento em document_events
-    A-->>W: Resposta
-    W-->>U: Confirmação
-```
-
-## Fluxo: Upload de Documento Manual
-
-```mermaid
-sequenceDiagram
-    participant U as Usuário
-    participant W as Web App
-    participant A as API
-    participant P as XML Parser
-    participant D as Database
-    participant S as S3
-    participant M as Meilisearch
-
-    U->>W: Upload XML
-    W->>A: POST /api/documents/upload
-    A->>P: Detecta e parseia XML
-    P-->>A: Dados estruturados
-    A->>D: Salva documento
-    A->>S: Armazena XML
-    A->>M: Indexa documento
-    A-->>W: Documento criado
-    W-->>U: Sucesso
-```
+---
 
 ## External Integrations
 
-### SEFAZ Web Services
+### SEFAZ (National/State Level)
+Integrations use the `SefazClient` from `packages/sefaz-client`.
 
-| Serviço | Endpoint | Propósito |
-|---------|----------|-----------|
-| NFeDistribuicaoDFe | AN (Ambiente Nacional) | Consultar NFe destinadas |
-| CTeDistribuicaoDFe | SVRS | Consultar CTe destinados |
-| MDFeDistribuicaoDFe | SVRS | Consultar MDFe |
-| RecepcaoEvento | UF do emitente | Enviar manifestação |
+| Service | Protocol | Content |
+| :--- | :--- | :--- |
+| **DistDFe** | SOAP 1.2 / mTLS | Retrieval of NFe, CTe, MDFe and Events via NSU sequence. |
+| **Manifestação** | SOAP 1.2 / mTLS | Sending "Science of Operation" or "Confirmation" events. |
+| **Status Serviço** | SOAP 1.2 / mTLS | Checking if SEFAZ nodes are online. |
 
-**Autenticação**: Certificado digital A1 (mTLS)
+### Municipalities (NFSe)
+Integration for Service Invoices varies by city, managed via `packages/nfse-client`.
 
-**Payload**: SOAP/XML com envelope padrão SEFAZ
+*   **ABRASF (Standard)**: Most modern cities use the ABRASF XML standard via SOAP Web Services.
+*   **RPA (Fallback)**: For cities without Web Services, a `BrowserManager` (using Playwright) performs automated scraping of the municipality's portal.
 
-**Retry Strategy**:
-- Timeout: 30 segundos
-- Retries: 3 tentativas com backoff exponencial
-- Rate limit: Respeita código 656 (consumo indevido)
+---
 
-### Prefeituras (NFSe)
+## Internal Communication (BullMQ)
 
-| Integração | Método | Municípios |
-|------------|--------|------------|
-| ABRASF WebService | SOAP/XML | São Paulo, Rio, BH, etc. |
-| RPA (Playwright) | Scraping | Municípios sem WS |
+The system uses Redis-backed queues to handle long-running or external-facing tasks.
 
-**Autenticação**: Certificado A1 ou login/senha (RPA)
+| Queue | Producer | Consumer | Purpose |
+| :--- | :--- | :--- | :--- |
+| `sefaz-monitor` | Scheduler | `sefaz-monitor.ts` | Poll SEFAZ for new documents. |
+| `xml-processor` | `sefaz-monitor` / API | `xml-processor.ts` | Parse XML, save to DB and S3. |
+| `search-sync` | `xml-processor` / API | `search-sync.ts` | Update Meilisearch indexes. |
+| `nfse-monitor` | Scheduler | `nfse-monitor.ts` | Poll municipal portals for NFSe. |
 
-## Internal Communication
+---
 
-### BullMQ Queues
+## Data Consistency & Failure Handling
 
-| Queue | Producer | Consumer | Payload |
-|-------|----------|----------|---------|
-| `sefaz-monitor` | Scheduler, API | sefaz-monitor worker | `{companyId, tenantId, docType}` |
-| `xml-processor` | sefaz-monitor | xml-processor worker | `{companyId, tenantId, nsu, xmlContent, docType}` |
-| `search-sync` | xml-processor, API | search-sync worker | `{documentId, tenantId, action}` |
-| `nfse-monitor` | Scheduler | nfse-monitor worker | `{companyId, configId}` |
+### Backoff and Retries
+Jobs interacting with external APIs (SEFAZ/Municipalities) use **Exponential Backoff**. If a service is down or rate-limited (e.g., SEFAZ Error 656), the job remains in the queue to be retried later.
 
-### Event Flow
+### Atomic Transactions
+Document creation and NSU updates are performed within SQL transactions. If the XML fails to save to the database, the NSU is not advanced, ensuring no data is "skipped" during synchronization.
 
-```typescript
-// Job lifecycle events
-type JobEvent = {
-  type: 'started' | 'completed' | 'failed' | 'progress';
-  queue: string;
-  jobId: string;
-  data?: any;
-  error?: string;
-};
-```
+### Data Storage Summary
 
-## Data Stores
-
-### PostgreSQL Tables
-
-| Tabela | Propósito | Relacionamentos |
-|--------|-----------|-----------------|
-| `tenants` | Organizações | - |
-| `companies` | Empresas | → tenants |
-| `documents` | Documentos fiscais | → companies, tenants |
-| `document_events` | Eventos de documentos | → documents |
-| `nsu_control` | Estado de sincronização | → companies |
-| `nfse_configs` | Configurações NFSe | → companies |
-| `audit_logs` | Auditoria | → tenants |
-
-### Redis Keys
-
-| Pattern | Propósito | TTL |
-|---------|-----------|-----|
-| `bull:sefaz-monitor:*` | Jobs de sync SEFAZ | Até processamento |
-| `bull:xml-processor:*` | Jobs de parsing | Até processamento |
-| `rate-limit:*` | Contadores de rate limit | 1 minuto |
-| `session:*` | Sessões (se aplicável) | Configurável |
-
-### Meilisearch Indexes
-
-| Index | Campos Pesquisáveis | Filtráveis |
-|-------|---------------------|------------|
-| `documents` | chave, numero, emitRazaoSocial, destRazaoSocial, natOp | tenantId, companyId, docType, situacao, dataEmissao |
-
-### S3 Buckets
-
-| Bucket | Conteúdo | Estrutura |
-|--------|----------|-----------|
-| `fiscalzen-docs` | XMLs originais | `{tenantId}/{companyId}/{docType}/{chave}.xml` |
-
-## Observability
-
-### Logs
-
-```typescript
-// Structured logging com pino
-logger.info({
-  queue: 'sefaz-monitor',
-  companyId,
-  nsu: lastNsu,
-  documentsFound: docs.length
-}, 'SEFAZ sync completed');
-```
-
-### Metrics (Planejado)
-
-| Métrica | Tipo | Descrição |
-|---------|------|-----------|
-| `sefaz_sync_duration_seconds` | Histogram | Tempo de sincronização |
-| `documents_processed_total` | Counter | Documentos processados |
-| `queue_depth` | Gauge | Tamanho das filas |
-
-### Failure Modes
-
-| Falha | Detecção | Ação |
-|-------|----------|------|
-| SEFAZ timeout | Erro no worker | Retry com backoff |
-| Rate limit (656) | Código de retorno | Marca `rate_limited`, aguarda |
-| Certificado expirado | Verificação pré-sync | Notifica usuário |
-| XML inválido | Erro de parsing | Log, pula documento |
-| Meilisearch down | Erro de conexão | Retry, fila de fallback |
+*   **PostgreSQL**: Source of truth for all structured data, user settings, and relationships.
+*   **Redis**: Real-time job state, rate-limiting counters, and caching for decrypted certificates.
+*   **S3 (MinIO)**: Permanent storage for original XML files (required for 5 years by Brazilian law).
+*   **Meilisearch**: Performance-optimized read layer for document listing and searching.

@@ -1,334 +1,180 @@
----
-status: filled
-generated: 2026-01-18
----
-
 # Tooling & Productivity Guide
 
-Scripts, automação e configurações para desenvolvimento eficiente no FiscalZen.
+Este guia detalha as ferramentas, scripts e configurações recomendadas para desenvolver no ecossistema FiscalZen de forma eficiente.
 
-## Required Tooling
+## Requisitos de Sistema
 
-### Runtime & Package Manager
+Para garantir a compatibilidade entre todos os pacotes do monorepo, utilize as seguintes versões:
 
-| Ferramenta | Versão | Instalação |
-|------------|--------|------------|
-| Node.js | 20+ | [nodejs.org](https://nodejs.org) ou `nvm install 20` |
-| pnpm | 9+ | `npm install -g pnpm` |
-| Docker | 24+ | [docker.com](https://docker.com) |
+| Ferramenta | Versão Recomendada | Instalação |
+| :--- | :--- | :--- |
+| **Node.js** | `v20.x` (LTS) | [nodejs.org](https://nodejs.org) ou `nvm install 20` |
+| **pnpm** | `v9.x` | `npm install -g pnpm` |
+| **Docker** | `v24.x`+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) |
+| **PostgreSQL** | `v16.x` | Via Docker Compose |
 
-### Verificar Instalação
+---
+
+## Monorepo Management (Turborepo)
+
+O FiscalZen utiliza [Turborepo](https://turbo.build/repo) para gerenciar o pipeline de build e execução.
+
+### Comandos Globais
+Executados na raiz do projeto:
 
 ```bash
-node --version    # v20.x.x
-pnpm --version    # 9.x.x
-docker --version  # 24.x.x
+# Iniciar ambiente de desenvolvimento (API + Web + Workers)
+pnpm dev
+
+# Gerar build de produção de todos os pacotes
+pnpm build
+
+# Executar lint em todo o repositório
+pnpm lint
+
+# Executar todos os testes unitários e de integração
+pnpm test
 ```
 
-## Monorepo Tools
-
-### Turborepo
-
-Gerenciador de builds para monorepo. Configurado em [turbo.json](turbo.json).
+### Filtros de Workspace
+Para focar em um projeto específico e economizar recursos:
 
 ```bash
-# Comandos via turbo (executados pelo pnpm)
-pnpm build      # Build de todos os pacotes
-pnpm dev        # Dev mode de todos os apps
-pnpm lint       # Lint de todos os pacotes
-pnpm test       # Testes de todos os pacotes
-```
-
-### Workspace Filters
-
-```bash
-# Executar comando em pacote específico
+# Apenas a API
 pnpm --filter @fiscalzen/api dev
-pnpm --filter @fiscalzen/web build
-pnpm --filter @fiscalzen/database db:push
 
-# Executar em múltiplos pacotes
-pnpm --filter "./packages/*" build
+# Apenas o Frontend Web
+pnpm --filter @fiscalzen/web dev
+
+# Rodar testes apenas do parser de XML
+pnpm --filter @fiscalzen/xml-parser test
 ```
 
-## Scripts Úteis
+---
 
-### Utilitários na Raiz
+## Banco de Dados & Drizzle
 
-| Script | Propósito | Uso |
-|--------|-----------|-----|
-| [kill-port.mjs](kill-port.mjs) | Mata processo em porta | `node kill-port.mjs 3000` |
-| [clean-web-next-cache.mjs](clean-web-next-cache.mjs) | Limpa cache Next.js | `node clean-web-next-cache.mjs` |
-| [apply-next-dev-cache-fix.mjs](apply-next-dev-cache-fix.mjs) | Fix de cache dev | `node apply-next-dev-cache-fix.mjs` |
+O projeto utiliza **Drizzle ORM** para manipulação do PostgreSQL.
 
-### Scripts do package.json
-
-```json
-{
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "clean": "turbo clean && rm -rf node_modules"
-  }
-}
-```
-
-## Database Tools
-
-### Drizzle ORM
+### Scripts de Banco (na raiz ou em `packages/database`)
 
 ```bash
-# Aplicar schema ao banco
-pnpm --filter @fiscalzen/database db:push
+# Sincronizar schema com o banco local (sem migrations)
+pnpm db:push
 
-# Gerar migrations
-pnpm --filter @fiscalzen/database db:generate
+# Gerar nova migration baseada em mudanças no schema.ts
+pnpm db:generate
 
-# Abrir Drizzle Studio (GUI)
-pnpm --filter @fiscalzen/database db:studio
+# Abrir interface gráfica (Studio) para visualizar dados
+pnpm db:studio
 ```
 
-### PostgreSQL CLI
+### Conexão Local
+Por padrão, o Docker expõe o banco em:
+- **Host:** `localhost:5432`
+- **User:** `fiscalzen`
+- **Pass:** `fiscalzen_dev`
+- **DB:** `fiscalzen`
+
+---
+
+## Infraestrutura Local (Docker)
+
+O arquivo `docker/docker-compose.yml` contém todos os serviços necessários para rodar a aplicação localmente.
+
+### Gerenciamento de Serviços
 
 ```bash
-# Conectar ao banco local
-psql postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen
-
-# Backup
-pg_dump -h localhost -U fiscalzen fiscalzen > backup.sql
-
-# Restore
-psql -h localhost -U fiscalzen fiscalzen < backup.sql
-```
-
-## Docker Development
-
-### Comandos Básicos
-
-```bash
-# Subir infraestrutura
+# Subir infra (Postgres, Redis, Meilisearch, MinIO)
 docker compose -f docker/docker-compose.yml up -d
 
-# Ver logs
-docker compose -f docker/docker-compose.yml logs -f
+# Visualizar logs de um serviço específico
+docker compose -f docker/docker-compose.yml logs -f postgres
 
-# Parar
-docker compose -f docker/docker-compose.yml down
-
-# Reset completo (apaga dados)
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d
+# Resetar volumes (Limpar banco e filas)
+docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d
 ```
 
-### Serviços Locais
+### Dashboard de Serviços
 
-| Serviço | Porta | Acesso |
-|---------|-------|--------|
-| PostgreSQL | 5432 | `psql -h localhost -U fiscalzen` |
-| Redis | 6379 | `redis-cli` |
-| Meilisearch | 7700 | http://localhost:7700 |
-| MinIO Console | 9001 | http://localhost:9001 |
-| MinIO API | 9000 | S3 endpoint |
+| Serviço | Porta | URL de Acesso |
+| :--- | :--- | :--- |
+| **Meilisearch** | 7700 | `http://localhost:7700` |
+| **MinIO (Console)** | 9001 | `http://localhost:9001` (User: `minioadmin` / Pass: `minioadmin`) |
+| **Redis (BullMQ)** | 6379 | `redis://localhost:6379` |
 
-## IDE / Editor Setup
+---
 
-### VSCode Extensions (Recomendadas)
+## Scripts Utilitários
+
+Existem utilitários na raiz para resolver problemas comuns de ambiente:
+
+| Script | Descrição | Uso |
+| :--- | :--- | :--- |
+| `kill-port.mjs` | Finaliza processos travados em portas específicas. | `node kill-port.mjs 3000` |
+| `clean-web-next-cache.mjs` | Limpa o cache `.next` que pode causar erros de build. | `node clean-web-next-cache.mjs` |
+| `apply-next-dev-cache-fix.mjs` | Aplica patches em problemas conhecidos de HMR do Next.js. | `node apply-next-dev-cache-fix.mjs` |
+
+---
+
+## Configuração do VS Code
+
+Para uma melhor experiência de desenvolvimento, instale as extensões recomendadas em `.vscode/extensions.json`:
+
+1. **ESLint & Prettier**: Formatação automática ao salvar.
+2. **Tailwind CSS IntelliSense**: Autocomplete para estilos no pacote `web`.
+3. **Drizzle-specific highlighter**: Melhora a leitura de queries SQL in TS.
+4. **Vitest**: Integração de testes diretamente no editor.
+
+### Settings Recomendados
+Adicione ao seu `settings.json` para garantir consistência:
 
 ```json
-// .vscode/extensions.json
-{
-  "recommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "bradlc.vscode-tailwindcss",
-    "prisma.prisma",
-    "ms-azuretools.vscode-docker",
-    "mikestead.dotenv",
-    "yoavbls.pretty-ts-errors"
-  ]
-}
-```
-
-### VSCode Settings
-
-```json
-// .vscode/settings.json
 {
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
   },
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.updateImportsOnFileMove.enabled": "always"
+  "typescript.tsdk": "node_modules/typescript/lib"
 }
 ```
 
-### Snippets Úteis
+---
 
-```json
-// .vscode/fiscalzen.code-snippets
-{
-  "Fastify Route": {
-    "prefix": "froute",
-    "body": [
-      "fastify.${1:get}('/${2:path}', {",
-      "  schema: {",
-      "    ${3:querystring}: ${4:schema},",
-      "  },",
-      "}, async (request, reply) => {",
-      "  const tenantId = getTenantId(request);",
-      "  $0",
-      "  return sendSuccess(reply, data);",
-      "});"
-    ]
-  },
-  "Zod Schema": {
-    "prefix": "zschema",
-    "body": [
-      "export const ${1:name}Schema = z.object({",
-      "  ${2:field}: z.string(),",
-      "});",
-      "",
-      "export type ${1:name} = z.infer<typeof ${1:name}Schema>;"
-    ]
-  }
-}
-```
+## Troubleshooting de Desenvolvimento
 
-## Linting & Formatting
-
-### ESLint
-
+### Erros de "Module not found" após trocar de branch
+Sempre que mudar de branch ou atualizar o repositório:
 ```bash
-# Lint todos os pacotes
-pnpm lint
-
-# Lint com fix automático
-pnpm lint -- --fix
-
-# Lint de pacote específico
-pnpm --filter @fiscalzen/api lint
-```
-
-### Prettier
-
-```bash
-# Formatar todos os arquivos
-pnpm exec prettier --write "**/*.{ts,tsx,json,md}"
-
-# Verificar formatação
-pnpm exec prettier --check "**/*.{ts,tsx,json,md}"
-```
-
-## Testing
-
-### Vitest
-
-```bash
-# Rodar todos os testes
-pnpm test
-
-# Modo watch
-pnpm test -- --watch
-
-# Com coverage
-pnpm test -- --coverage
-
-# Testes de pacote específico
-pnpm --filter @fiscalzen/xml-parser test
-```
-
-### Debug de Testes
-
-```bash
-# Rodar teste específico
-pnpm --filter @fiscalzen/api test -- --testNamePattern="error handling"
-
-# Verbose output
-pnpm test -- --reporter=verbose
-```
-
-## Productivity Tips
-
-### Aliases de Terminal
-
-```bash
-# ~/.bashrc ou ~/.zshrc
-alias fz="cd ~/projects/fiscalzen"
-alias fzdev="cd ~/projects/fiscalzen && pnpm dev"
-alias fzapi="pnpm --filter @fiscalzen/api"
-alias fzweb="pnpm --filter @fiscalzen/web"
-alias fzdb="pnpm --filter @fiscalzen/database"
-alias dcup="docker compose -f docker/docker-compose.yml up -d"
-alias dcdown="docker compose -f docker/docker-compose.yml down"
-alias dclogs="docker compose -f docker/docker-compose.yml logs -f"
-```
-
-### Git Hooks (Husky)
-
-Se configurado, hooks rodam automaticamente:
-
-```bash
-# pre-commit
-pnpm lint-staged
-
-# commit-msg
-# Valida formato de commit message
-```
-
-### Desenvolvimento Local
-
-```bash
-# Setup inicial (uma vez)
-git clone <repo>
-cd fiscalzen
 pnpm install
-cp .env.example .env
-docker compose -f docker/docker-compose.yml up -d
-pnpm --filter @fiscalzen/database db:push
-
-# Dia a dia
-docker compose -f docker/docker-compose.yml up -d  # Se não estiver rodando
-pnpm dev
+pnpm build --filter "@fiscalzen/*" # Garante que as dependências internas estejam compiladas
 ```
 
-### Troubleshooting
-
+### Portas em conflito
+Se a porta 3000 ou 4000 estiver ocupada:
 ```bash
-# Limpar tudo e recomeçar
-pnpm clean
-rm -rf node_modules
-pnpm install
-
-# Problemas com Next.js cache
-node clean-web-next-cache.mjs
-
-# Porta em uso
 node kill-port.mjs 3000
-node kill-port.mjs 3001
-
-# Reset do banco
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d
-pnpm --filter @fiscalzen/database db:push
+node kill-port.mjs 4000
 ```
 
-## CI/CD
+### Reset de Cache do Turborepo
+Se os builds estiverem inconsistentes:
+```bash
+rm -rf .turbo
+pnpm clean
+pnpm install
+```
 
-### GitHub Actions
+---
 
-Workflows em [.github/workflows/](.github/workflows/):
-
-| Workflow | Trigger | Jobs |
-|----------|---------|------|
-| `ci.yml` | push, PR | lint, build, test, typecheck |
-
-### Verificar Localmente (Pré-Push)
+## Fluxo de CI/CD Local
+Antes de realizar um `git push`, é recomendável rodar o check completo que o GitHub Actions executará:
 
 ```bash
-# Rodar todos os checks do CI localmente
-pnpm build && pnpm lint && pnpm test --run
+# Check rápido
+pnpm lint && pnpm test
+
+# Check completo (inclui builds de produção)
+pnpm build && pnpm lint && pnpm test
 ```
