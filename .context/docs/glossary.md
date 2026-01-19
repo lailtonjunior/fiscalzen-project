@@ -1,232 +1,172 @@
 ---
-status: unfilled
+status: filled
 generated: 2026-01-18
 ---
 
 # Glossary & Domain Concepts
 
-List project-specific terminology, acronyms, domain entities, and user personas.
+Termos específicos do domínio fiscal brasileiro e conceitos técnicos do FiscalZen.
 
-## Type Definitions
-- **AbrasfVersion** (type) — [`AbrasfVersion`](packages\nfse-client\src\types.ts#L5)
-- **AbrasfVersion** (type) — [`AbrasfVersion`](packages\xml-parser\src\parsers\nfse.ts#L4)
-- **Agent** (type) — [`Agent`](packages\database\src\schema\agents.ts#L39)
-- **AgentHeartbeatInput** (type) — [`AgentHeartbeatInput`](apps\api\src\modules\agents\schemas.ts#L32)
-- **AgentIdParams** (type) — [`AgentIdParams`](apps\api\src\modules\agents\schemas.ts#L30)
-- **AgentStatus** (type) — [`AgentStatus`](packages\database\src\schema\agents.ts#L6)
-- **ApiError** (interface) — [`ApiError`](apps\web\lib\api.ts#L27)
-- **ApiError** (interface) — [`ApiError`](packages\shared\src\types\api.ts#L9)
-- **ApiResponse** (type) — [`ApiResponse`](apps\api\src\utils\response.ts#L26)
-- **ApiResponse** (interface) — [`ApiResponse`](apps\web\lib\api.ts#L11)
-- **ApiResponse** (interface) — [`ApiResponse`](packages\shared\src\types\api.ts#L3)
-- **AuditLog** (type) — [`AuditLog`](packages\database\src\schema\audit.ts#L71)
-- **AwaitingFinal** (interface) — [`AwaitingFinal`](apps\web\lib\types.ts#L213)
-- **BadgeProps** (interface) — [`BadgeProps`](packages\ui\src\components\badge.tsx#L25)
-- **ButtonProps** (interface) — [`ButtonProps`](packages\ui\src\components\button.tsx#L32)
-- **CertificadoA1** (interface) — [`CertificadoA1`](packages\sefaz-client\src\types.ts#L9)
-- **CertificadoA1** (interface) — [`CertificadoA1`](packages\nfse-client\src\types.ts#L35)
-- **CertificadoInfo** (interface) — [`CertificadoInfo`](packages\sefaz-client\src\certificate.ts#L22)
-- **CertificadoKeys** (interface) — [`CertificadoKeys`](packages\sefaz-client\src\certificate.ts#L36)
-- **CertificateUploadData** (interface) — [`CertificateUploadData`](apps\web\lib\types.ts#L258)
-- **ChaveAcessoInfo** (interface) — [`ChaveAcessoInfo`](packages\shared\src\validators\chave-acesso.ts#L43)
-- **CienciaInput** (type) — [`CienciaInput`](apps\api\src\modules\manifestacao\schemas.ts#L27)
-- **Company** (type) — [`Company`](packages\shared\src\types\companies.ts#L19)
-- **Company** (type) — [`Company`](packages\database\src\schema\tenants.ts#L44)
-- **Company** (interface) — [`Company`](apps\web\lib\types.ts#L62)
-- **CompanyFormData** (interface) — [`CompanyFormData`](apps\web\lib\types.ts#L246)
-- **CompanyIdParams** (type) — [`CompanyIdParams`](apps\api\src\modules\nfse\schemas.ts#L41)
-- **CompanyIdParams** (type) — [`CompanyIdParams`](apps\api\src\modules\jobs\schemas.ts#L15)
-- **CompanyIdParams** (type) — [`CompanyIdParams`](apps\api\src\modules\companies\schemas.ts#L44)
-- **CompanySyncStatus** (interface) — [`CompanySyncStatus`](apps\web\lib\types.ts#L170)
-- **CompanyWithNsu** (interface) — [`CompanyWithNsu`](apps\api\src\modules\companies\service.ts#L10)
-- **CompanyWithStats** (interface) — [`CompanyWithStats`](apps\web\lib\types.ts#L81)
-- **ConfirmacaoInput** (type) — [`ConfirmacaoInput`](apps\api\src\modules\manifestacao\schemas.ts#L28)
-- **ConsultaNfsePorFaixaParams** (interface) — [`ConsultaNfsePorFaixaParams`](packages\nfse-client\src\types.ts#L148)
-- **ConsultaNfseServicoPrestadoParams** (interface) — [`ConsultaNfseServicoPrestadoParams`](packages\nfse-client\src\types.ts#L142)
-- **ConsultaNfseServicoTomadoParams** (interface) — [`ConsultaNfseServicoTomadoParams`](packages\nfse-client\src\types.ts#L136)
-- **ConsultaParams** (interface) — [`ConsultaParams`](packages\nfse-client\src\types.ts#L130)
-- **ConsultaProtocoloParams** (interface) — [`ConsultaProtocoloParams`](packages\sefaz-client\src\types.ts#L151)
-- **ConsultaProtocoloResponse** (interface) — [`ConsultaProtocoloResponse`](packages\sefaz-client\src\types.ts#L157)
-- **CreateCompany** (type) — [`CreateCompany`](packages\shared\src\types\companies.ts#L31)
-- **CreateCompanyInput** (type) — [`CreateCompanyInput`](apps\api\src\modules\companies\schemas.ts#L42)
-- **CreateDocument** (type) — [`CreateDocument`](packages\shared\src\types\documents.ts#L59)
-- **CreateNfseConfigInput** (type) — [`CreateNfseConfigInput`](apps\api\src\modules\nfse\schemas.ts#L43)
-- **CTeData** (interface) — [`CTeData`](packages\xml-parser\src\parsers\cte.ts#L4)
-- **DashboardSummary** (interface) — [`DashboardSummary`](apps\web\lib\types.ts#L102)
-- **Database** (type) — [`Database`](apps\api\src\config\database.ts#L17)
-- **DecodeResult** (interface) — [`DecodeResult`](packages\xml-parser\src\types.ts#L182)
-- **DesconhecimentoInput** (type) — [`DesconhecimentoInput`](apps\api\src\modules\manifestacao\schemas.ts#L29)
-- **DistDFeParams** (interface) — [`DistDFeParams`](packages\sefaz-client\src\types.ts#L60)
-- **DistDFeRequest** (interface) — [`DistDFeRequest`](packages\sefaz-client\src\types.ts#L47)
-- **DistDFeResponse** (interface) — [`DistDFeResponse`](packages\sefaz-client\src\types.ts#L81)
-- **DocType** (type) — [`DocType`](packages\xml-parser\src\types.ts#L6)
-- **DocType** (type) — [`DocType`](apps\web\lib\types.ts#L5)
-- **DocType** (type) — [`DocType`](packages\shared\src\types\documents.ts#L4)
-- **DocType** (type) — [`DocType`](packages\database\src\schema\documents.ts#L17)
-- **DocTypeInfo** (interface) — [`DocTypeInfo`](packages\shared\src\constants\doc-types.ts#L3)
-- **Document** (type) — [`Document`](packages\shared\src\types\documents.ts#L35)
-- **Document** (type) — [`Document`](packages\database\src\schema\documents.ts#L120)
-- **Document** (interface) — [`Document`](apps\web\lib\types.ts#L13)
-- **DocumentByChaveParams** (type) — [`DocumentByChaveParams`](apps\api\src\modules\documents\schemas.ts#L50)
-- **DocumentEvent** (type) — [`DocumentEvent`](packages\shared\src\types\documents.ts#L50)
-- **DocumentEvent** (type) — [`DocumentEvent`](packages\database\src\schema\documents.ts#L122)
-- **DocumentEvent** (interface) — [`DocumentEvent`](apps\web\lib\types.ts#L39)
-- **DocumentFilters** (type) — [`DocumentFilters`](packages\shared\src\types\api.ts#L43)
-- **DocumentFilters** (interface) — [`DocumentFilters`](apps\web\lib\types.ts#L231)
-- **DocumentIdParams** (type) — [`DocumentIdParams`](apps\api\src\modules\events\schemas.ts#L12)
-- **DocumentIdParams** (type) — [`DocumentIdParams`](apps\api\src\modules\documents\schemas.ts#L47)
-- **DocumentItem** (interface) — [`DocumentItem`](packages\xml-parser\src\types.ts#L78)
-- **DocumentoDistDFe** (interface) — [`DocumentoDistDFe`](packages\sefaz-client\src\types.ts#L71)
-- **DocumentoZip** (interface) — [`DocumentoZip`](packages\sefaz-client\src\types.ts#L53)
-- **DocumentSearchRecord** (interface) — [`DocumentSearchRecord`](apps\api\src\services\search.ts#L4)
-- **DocumentStatus** (type) — [`DocumentStatus`](packages\xml-parser\src\types.ts#L9)
-- **DocumentStatus** (type) — [`DocumentStatus`](packages\shared\src\types\documents.ts#L7)
-- **DocumentSummary** (interface) — [`DocumentSummary`](apps\api\src\modules\dashboard\service.ts#L6)
-- **DocumentWithEvents** (interface) — [`DocumentWithEvents`](apps\web\lib\types.ts#L54)
-- **Env** (type) — [`Env`](apps\api\src\config\env.ts#L74)
-- **ErrorResponse** (interface) — [`ErrorResponse`](apps\api\src\utils\response.ts#L17)
-- **Estado** (interface) — [`Estado`](packages\shared\src\constants\estados.ts#L1)
-- **Gap** (interface) — [`Gap`](apps\api\src\modules\dashboard\service.ts#L36)
-- **GapsQuery** (type) — [`GapsQuery`](apps\api\src\modules\dashboard\schemas.ts#L29)
-- **InputProps** (interface) — [`InputProps`](packages\ui\src\components\input.tsx#L4)
-- **IntegrityGap** (interface) — [`IntegrityGap`](apps\web\lib\types.ts#L127)
-- **IntegrityStatus** (interface) — [`IntegrityStatus`](apps\web\lib\types.ts#L120)
-- **IntegrityStatus** (interface) — [`IntegrityStatus`](apps\api\src\modules\dashboard\service.ts#L15)
-- **JobEvent** (interface) — [`JobEvent`](apps\api\src\jobs\events.ts#L8)
-- **JobEventType** (type) — [`JobEventType`](apps\api\src\jobs\events.ts#L6)
-- **JobIdParams** (type) — [`JobIdParams`](apps\api\src\modules\jobs\schemas.ts#L17)
-- **JobMetrics** (interface) — [`JobMetrics`](apps\api\src\jobs\events.ts#L19)
-- **JobsStatus** (interface) — [`JobsStatus`](apps\web\lib\types.ts#L165)
-- **JwtPayload** (interface) — [`JwtPayload`](apps\api\src\plugins\auth.ts#L7)
-- **ListAgentsQuery** (type) — [`ListAgentsQuery`](apps\api\src\modules\agents\schemas.ts#L31)
-- **ListCompaniesQuery** (type) — [`ListCompaniesQuery`](apps\api\src\modules\companies\schemas.ts#L46)
-- **ListDocumentsQuery** (type) — [`ListDocumentsQuery`](apps\api\src\modules\documents\schemas.ts#L46)
-- **ListEventsQuery** (type) — [`ListEventsQuery`](apps\api\src\modules\events\schemas.ts#L13)
-- **ManifestacaoEventCode** (type) — [`ManifestacaoEventCode`](packages\xml-parser\src\types.ts#L49)
-- **ManifestacaoHistoryItem** (interface) — [`ManifestacaoHistoryItem`](apps\web\lib\types.ts#L220)
-- **ManifestacaoParams** (interface) — [`ManifestacaoParams`](packages\sefaz-client\src\types.ts#L118)
-- **ManifestacaoRequest** (interface) — [`ManifestacaoRequest`](apps\web\lib\types.ts#L188)
-- **ManifestacaoResponse** (interface) — [`ManifestacaoResponse`](packages\sefaz-client\src\types.ts#L128)
-- **ManifestacaoStatus** (type) — [`ManifestacaoStatus`](apps\web\lib\types.ts#L180)
-- **ManifestacaoTipo** (type) — [`ManifestacaoTipo`](apps\web\lib\types.ts#L7)
-- **MDFeData** (interface) — [`MDFeData`](packages\xml-parser\src\parsers\mdfe.ts#L4)
-- **MonitorJob** (type) — [`MonitorJob`](packages\database\src\schema\audit.ts#L69)
-- **MunicipioCodigoParams** (type) — [`MunicipioCodigoParams`](apps\api\src\modules\nfse\schemas.ts#L42)
-- **MunicipioConfig** (interface) — [`MunicipioConfig`](packages\nfse-client\src\types.ts#L21)
-- **MunicipioEndpoints** (interface) — [`MunicipioEndpoints`](packages\nfse-client\src\types.ts#L8)
-- **MunicipioInfo** (interface) — [`MunicipioInfo`](apps\web\lib\types.ts#L271)
-- **MunicipioParticularidades** (interface) — [`MunicipioParticularidades`](packages\nfse-client\src\types.ts#L13)
-- **MunicipioTipo** (type) — [`MunicipioTipo`](packages\nfse-client\src\types.ts#L6)
-- **NaoRealizadaInput** (type) — [`NaoRealizadaInput`](apps\api\src\modules\manifestacao\schemas.ts#L30)
-- **NewAgent** (type) — [`NewAgent`](packages\database\src\schema\agents.ts#L40)
-- **NewAuditLog** (type) — [`NewAuditLog`](packages\database\src\schema\audit.ts#L72)
-- **NewCompany** (type) — [`NewCompany`](packages\database\src\schema\tenants.ts#L45)
-- **NewDocument** (type) — [`NewDocument`](packages\database\src\schema\documents.ts#L121)
-- **NewDocumentEvent** (type) — [`NewDocumentEvent`](packages\database\src\schema\documents.ts#L123)
-- **NewMonitorJob** (type) — [`NewMonitorJob`](packages\database\src\schema\audit.ts#L70)
-- **NewNfseConfig** (type) — [`NewNfseConfig`](packages\database\src\schema\nfse-configs.ts#L65)
-- **NewNsuControl** (type) — [`NewNsuControl`](packages\database\src\schema\nsu-control.ts#L86)
-- **NewTenant** (type) — [`NewTenant`](packages\database\src\schema\tenants.ts#L43)
-- **NFCeData** (interface) — [`NFCeData`](packages\xml-parser\src\parsers\nfce.ts#L15)
-- **NFCeItem** (interface) — [`NFCeItem`](packages\xml-parser\src\parsers\nfce.ts#L4)
-- **NFeData** (interface) — [`NFeData`](packages\xml-parser\src\parsers\nfe.ts#L15)
-- **NFeEventCode** (type) — [`NFeEventCode`](packages\xml-parser\src\types.ts#L50)
-- **NFeItem** (interface) — [`NFeItem`](packages\xml-parser\src\parsers\nfe.ts#L4)
-- **NfseConfig** (type) — [`NfseConfig`](packages\database\src\schema\nfse-configs.ts#L64)
-- **NfseConfig** (interface) — [`NfseConfig`](apps\web\lib\types.ts#L282)
-- **NfseConfigFormData** (interface) — [`NfseConfigFormData`](apps\web\lib\types.ts#L300)
-- **NfseConsultaResponse** (interface) — [`NfseConsultaResponse`](packages\nfse-client\src\types.ts#L154)
-- **NfseContato** (interface) — [`NfseContato`](packages\nfse-client\src\types.ts#L82)
-- **NfseCredentials** (interface) — [`NfseCredentials`](packages\nfse-client\src\types.ts#L173)
-- **NFSeData** (interface) — [`NFSeData`](packages\xml-parser\src\parsers\nfse.ts#L6)
-- **NfseEndereco** (interface) — [`NfseEndereco`](packages\nfse-client\src\types.ts#L71)
-- **NfseErro** (interface) — [`NfseErro`](packages\nfse-client\src\types.ts#L163)
-- **NfseIdentificacao** (interface) — [`NfseIdentificacao`](packages\nfse-client\src\types.ts#L47)
-- **NfseMonitorJobData** (interface) — [`NfseMonitorJobData`](apps\api\src\jobs\queues.ts#L101)
-- **NfsePrestador** (interface) — [`NfsePrestador`](packages\nfse-client\src\types.ts#L54)
-- **NfseRpaResult** (interface) — [`NfseRpaResult`](packages\nfse-client\src\types.ts#L180)
-- **NfseServico** (interface) — [`NfseServico`](packages\nfse-client\src\types.ts#L87)
-- **NfseSyncStatus** (type) — [`NfseSyncStatus`](apps\web\lib\types.ts#L269)
-- **NfseTestConnectionResult** (interface) — [`NfseTestConnectionResult`](packages\nfse-client\src\types.ts#L195)
-- **NfseTestResult** (interface) — [`NfseTestResult`](apps\web\lib\types.ts#L307)
-- **NfseTipo** (type) — [`NfseTipo`](apps\web\lib\types.ts#L268)
-- **NfseTomador** (interface) — [`NfseTomador`](packages\nfse-client\src\types.ts#L63)
-- **NfseValores** (interface) — [`NfseValores`](packages\nfse-client\src\types.ts#L96)
-- **NsuControl** (type) — [`NsuControl`](packages\database\src\schema\nsu-control.ts#L85)
-- **NsuControl** (interface) — [`NsuControl`](apps\web\lib\types.ts#L86)
-- **NsuDocType** (type) — [`NsuDocType`](packages\database\src\schema\nsu-control.ts#L28)
-- **NsuSyncStatus** (type) — [`NsuSyncStatus`](packages\database\src\schema\nsu-control.ts#L31)
-- **PaginatedResponse** (interface) — [`PaginatedResponse`](packages\shared\src\types\api.ts#L15)
-- **PaginationMeta** (interface) — [`PaginationMeta`](apps\api\src\utils\response.ts#L4)
-- **PaginationParams** (type) — [`PaginationParams`](packages\shared\src\types\api.ts#L30)
-- **PaginationParams** (interface) — [`PaginationParams`](apps\api\src\utils\response.ts#L102)
-- **ParsedDocument** (type) — [`ParsedDocument`](packages\xml-parser\src\parsers\auto.ts#L9)
-- **ParsedDocumentBase** (interface) — [`ParsedDocumentBase`](packages\xml-parser\src\types.ts#L56)
-- **ParsedNfse** (interface) — [`ParsedNfse`](packages\nfse-client\src\types.ts#L115)
-- **PendentesQuery** (type) — [`PendentesQuery`](apps\api\src\modules\manifestacao\schemas.ts#L31)
-- **PendingCiencia** (interface) — [`PendingCiencia`](apps\web\lib\types.ts#L199)
-- **PendingManifestation** (interface) — [`PendingManifestation`](apps\web\lib\types.ts#L194)
-- **ProcEventoNFeData** (interface) — [`ProcEventoNFeData`](packages\xml-parser\src\types.ts#L132)
-- **QueueStatus** (interface) — [`QueueStatus`](apps\web\lib\types.ts#L148)
-- **RecentQuery** (type) — [`RecentQuery`](apps\api\src\modules\dashboard\schemas.ts#L31)
-- **RegisterAgentInput** (type) — [`RegisterAgentInput`](apps\api\src\modules\agents\schemas.ts#L29)
-- **ResEventoData** (interface) — [`ResEventoData`](packages\xml-parser\src\types.ts#L114)
-- **ResNFeData** (interface) — [`ResNFeData`](packages\xml-parser\src\types.ts#L94)
-- **SATData** (interface) — [`SATData`](packages\xml-parser\src\parsers\sat.ts#L15)
-- **SATItem** (interface) — [`SATItem`](packages\xml-parser\src\parsers\sat.ts#L4)
-- **SearchDocumentsQuery** (type) — [`SearchDocumentsQuery`](apps\api\src\modules\documents\schemas.ts#L48)
-- **SearchFilters** (interface) — [`SearchFilters`](apps\api\src\services\search.ts#L25)
-- **SearchResult** (interface) — [`SearchResult`](apps\api\src\services\search.ts#L37)
-- **SearchSyncJobData** (interface) — [`SearchSyncJobData`](apps\api\src\jobs\queues.ts#L95)
-- **SefazAmbiente** (type) — [`SefazAmbiente`](packages\sefaz-client\src\types.ts#L7)
-- **SefazClientConfig** (interface) — [`SefazClientConfig`](packages\sefaz-client\src\types.ts#L19)
-- **SefazMonitorJobData** (interface) — [`SefazMonitorJobData`](apps\api\src\jobs\queues.ts#L78)
-- **SefazResponse** (interface) — [`SefazResponse`](packages\sefaz-client\src\types.ts#L33)
-- **Situacao** (type) — [`Situacao`](apps\web\lib\types.ts#L6)
-- **Situacao** (type) — [`Situacao`](packages\database\src\schema\documents.ts#L20)
-- **SituacaoInfo** (interface) — [`SituacaoInfo`](packages\shared\src\constants\situacoes.ts#L3)
-- **SoapClientOptions** (interface) — [`SoapClientOptions`](packages\sefaz-client\src\soap-client.ts#L17)
-- **SoapEnvelope** (interface) — [`SoapEnvelope`](packages\sefaz-client\src\types.ts#L178)
-- **SoapResponse** (interface) — [`SoapResponse`](packages\sefaz-client\src\types.ts#L184)
-- **SortParams** (type) — [`SortParams`](packages\shared\src\types\api.ts#L50)
-- **StorageKey** (interface) — [`StorageKey`](apps\api\src\services\storage.ts#L21)
-- **SuccessResponse** (interface) — [`SuccessResponse`](apps\api\src\utils\response.ts#L11)
-- **SummaryQuery** (type) — [`SummaryQuery`](apps\api\src\modules\dashboard\schemas.ts#L30)
-- **SyncRequestInput** (type) — [`SyncRequestInput`](apps\api\src\modules\jobs\schemas.ts#L16)
-- **Tenant** (type) — [`Tenant`](packages\shared\src\types\companies.ts#L48)
-- **Tenant** (type) — [`Tenant`](packages\database\src\schema\tenants.ts#L42)
-- **TextareaProps** (interface) — [`TextareaProps`](packages\ui\src\components\textarea.tsx#L5)
-- **TimelineData** (interface) — [`TimelineData`](apps\web\lib\types.ts#L136)
-- **TimelinePoint** (interface) — [`TimelinePoint`](apps\api\src\modules\dashboard\service.ts#L26)
-- **TimelineQuery** (type) — [`TimelineQuery`](apps\api\src\modules\dashboard\schemas.ts#L28)
-- **TipoEventoManifestacao** (type) — [`TipoEventoManifestacao`](packages\sefaz-client\src\types.ts#L105)
-- **ToggleNfseConfigInput** (type) — [`ToggleNfseConfigInput`](apps\api\src\modules\nfse\schemas.ts#L45)
-- **UpdateCompany** (type) — [`UpdateCompany`](packages\shared\src\types\companies.ts#L35)
-- **UpdateCompanyInput** (type) — [`UpdateCompanyInput`](apps\api\src\modules\companies\schemas.ts#L43)
-- **UpdateNfseConfigInput** (type) — [`UpdateNfseConfigInput`](apps\api\src\modules\nfse\schemas.ts#L44)
-- **UploadCertificateInput** (type) — [`UploadCertificateInput`](apps\api\src\modules\companies\schemas.ts#L45)
-- **UploadXmlInput** (type) — [`UploadXmlInput`](apps\api\src\modules\documents\schemas.ts#L49)
-- **WorkerHealth** (type) — [`WorkerHealth`](apps\api\src\jobs\events.ts#L132)
-- **WorkerStatus** (interface) — [`WorkerStatus`](apps\web\lib\types.ts#L158)
-- **XmlDetectionResult** (interface) — [`XmlDetectionResult`](packages\xml-parser\src\types.ts#L170)
-- **XmlProcessorJobData** (interface) — [`XmlProcessorJobData`](apps\api\src\jobs\queues.ts#L84)
-- **XmlSchemaType** (type) — [`XmlSchemaType`](packages\xml-parser\src\types.ts#L28)
+## Documentos Fiscais Eletrônicos
 
-## Enumerations
-- *No enums detected.*
+### NFe - Nota Fiscal Eletrônica
+Documento fiscal digital que substitui a nota fiscal em papel para operações de circulação de mercadorias (ICMS) e prestação de serviços de transporte interestadual/intermunicipal (ICMS).
 
-## Core Terms
+- **Modelo**: 55
+- **Chave de acesso**: 44 dígitos
+- **Emissor**: Empresas de comércio e indústria
+- **Validação**: SEFAZ estadual
 
-Define key terms, their relevance, and where they surface in the codebase.
+### NFCe - Nota Fiscal de Consumidor Eletrônica
+Versão simplificada da NFe para vendas ao consumidor final (varejo).
 
-## Acronyms & Abbreviations
+- **Modelo**: 65
+- **Uso**: PDV, varejo
+- **Diferença**: Não exige destinatário identificado
 
-Expand abbreviations and note associated services or APIs.
+### CTe - Conhecimento de Transporte Eletrônico
+Documento fiscal para prestação de serviços de transporte de cargas.
 
-## Personas / Actors
+- **Modelo**: 57
+- **Emissor**: Transportadoras
+- **Tipos**: Rodoviário, Aéreo, Aquaviário, Ferroviário, Dutoviário
 
-Describe user goals, key workflows, and pain points addressed by the system.
+### MDFe - Manifesto Eletrônico de Documentos Fiscais
+Documento que vincula documentos fiscais transportados em um mesmo veículo.
 
-## Domain Rules & Invariants
+- **Modelo**: 58
+- **Obrigatório**: Para transporte de carga fracionada
+- **Conteúdo**: Lista de NFe/CTe vinculados
 
-Capture business rules, validation constraints, or compliance requirements. Note any region, localization, or regulatory nuances.
+### NFSe - Nota Fiscal de Serviços Eletrônica
+Documento fiscal municipal para prestação de serviços (ISS).
+
+- **Emissor**: Prestadores de serviço
+- **Validação**: Prefeitura municipal
+- **Padrão**: ABRASF (maioria dos municípios)
+
+## Conceitos SEFAZ
+
+### SEFAZ - Secretaria da Fazenda
+Órgão estadual responsável pela administração tributária. Cada estado possui sua SEFAZ.
+
+### DistDFe - Distribuição de Documentos Fiscais Eletrônicos
+Serviço web da SEFAZ que permite consultar documentos fiscais emitidos contra um CNPJ (como destinatário).
+
+- **Endpoint**: AN (Ambiente Nacional)
+- **Retorno**: XMLs compactados em GZIP
+- **Paginação**: Por NSU (Número Sequencial Único)
+
+### NSU - Número Sequencial Único
+Identificador sequencial único para cada documento/evento retornado pelo DistDFe.
+
+- **Formato**: 15 dígitos (ex: `000000000000001`)
+- **Uso**: Controle de sincronização incremental
+- **Regra**: Consultar sempre a partir do último NSU processado
+
+### Manifestação do Destinatário
+Evento obrigatório onde o destinatário de uma NFe confirma ou rejeita a operação.
+
+| Código | Tipo | Descrição |
+|--------|------|-----------|
+| 210200 | Confirmação da Operação | Confirma recebimento e aceite da mercadoria |
+| 210210 | Ciência da Operação | Indica conhecimento da NFe (não confirma recebimento) |
+| 210220 | Desconhecimento da Operação | Declara desconhecer a operação |
+| 210240 | Operação Não Realizada | Indica que a operação não foi realizada |
+
+### Ambiente
+Contexto de execução dos serviços SEFAZ.
+
+- **Produção** (tpAmb=1): Ambiente real, documentos válidos
+- **Homologação** (tpAmb=2): Ambiente de testes, documentos sem valor fiscal
+
+## Conceitos de Negócio
+
+### Chave de Acesso
+Identificador único de 44 dígitos que identifica um documento fiscal.
+
+**Estrutura**:
+```
+[UF][AAMM][CNPJ][MOD][SER][NUM][TEMIS][CDNF][CDV]
+ 2    4     14    2    3    9     1     8     1   = 44 dígitos
+```
+
+- **UF**: Código do estado (ex: 35 = SP)
+- **AAMM**: Ano e mês de emissão
+- **CNPJ**: CNPJ do emitente
+- **MOD**: Modelo do documento (55, 57, 58)
+- **SER**: Série do documento
+- **NUM**: Número do documento
+- **TEMIS**: Tipo de emissão
+- **CDNF**: Código numérico aleatório
+- **CDV**: Dígito verificador
+
+### Situação do Documento
+Estado atual de um documento fiscal.
+
+| Status | Descrição |
+|--------|-----------|
+| `autorizada` | Documento autorizado e válido |
+| `cancelada` | Documento cancelado |
+| `denegada` | Autorização negada pela SEFAZ |
+| `inutilizada` | Numeração inutilizada |
+| `pendente` | Aguardando processamento |
+
+### Certificado A1
+Certificado digital em arquivo (PFX/P12) usado para assinar documentos fiscais.
+
+- **Validade**: 1 ano
+- **Armazenamento**: Arquivo protegido por senha
+- **Uso**: Assinatura XML, autenticação mTLS com SEFAZ
+
+## Termos Técnicos
+
+### ABRASF
+Associação Brasileira das Secretarias de Finanças das Capitais. Define o padrão técnico para NFSe.
+
+- **Versões**: 1.0, 2.02, 2.03, 2.04
+- **Adoção**: Maioria das capitais e grandes cidades
+
+### RPA - Robotic Process Automation
+Automação de processos via interface web. Usado para municípios sem webservice ABRASF.
+
+### Multi-tenant
+Arquitetura onde uma única instância serve múltiplos clientes (tenants) com dados isolados.
+
+- **Tenant**: Organização/escritório contábil
+- **Company**: Empresa dentro de um tenant
+
+## Personas / Atores
+
+### Contador
+- **Objetivo**: Gerenciar documentos fiscais de múltiplos clientes
+- **Workflow**: Monitorar recebimentos, manifestar NFe, gerar relatórios
+- **Pain points**: Perder prazo de manifestação, documentos não sincronizados
+
+### Analista Fiscal
+- **Objetivo**: Reconciliar documentos com escrituração
+- **Workflow**: Buscar documentos, verificar integridade, exportar XMLs
+- **Pain points**: XMLs faltantes, numeração com gaps
+
+### Gestor de TI
+- **Objetivo**: Integrar FiscalZen com ERP
+- **Workflow**: Configurar APIs, monitorar sincronização
+- **Pain points**: Erros de certificado, timeout SEFAZ
+
+## Regras de Negócio
+
+### Prazo de Manifestação
+- **Ciência**: Sem prazo definido (recomendado até 180 dias)
+- **Confirmação/Desconhecimento/Não Realizada**: Até 180 dias após autorização
+
+### Retenção de Documentos
+- **Obrigatoriedade**: 5 anos (legislação fiscal)
+- **Recomendação**: 10 anos (prescrição civil)
+
+### Rate Limiting SEFAZ
+- **DistDFe**: Máximo 20 consultas por hora por CNPJ
+- **Penalidade**: Bloqueio temporário (código 656 - Consumo Indevido)
+
+### Validação de CNPJ/CPF
+- Dígitos verificadores calculados via algoritmo módulo 11
+- CNPJ: 14 dígitos, CPF: 11 dígitos
