@@ -89,12 +89,88 @@ export async function buildApp(): Promise<FastifyInstance> {
     return sendError(reply, error);
   });
 
-  // Health check
-  app.get('/health', async () => ({
+  // ============================================
+  // Health Check Endpoints
+  // ============================================
+
+  // Liveness probe - simples, só verifica se o processo está vivo
+  app.get('/health/live', async () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version ?? '0.1.0',
   }));
+
+  // Readiness probe - verifica se está pronto para receber tráfego
+  app.get('/health/ready', async (_request, reply) => {
+    const checks: Record<string, 'ok' | 'error'> = {};
+    let isHealthy = true;
+
+    // Check database
+    try {
+      const { checkDatabaseConnection } = await import('./config/database');
+      const dbOk = await checkDatabaseConnection();
+      checks.database = dbOk ? 'ok' : 'error';
+      if (!dbOk) isHealthy = false;
+    } catch {
+      checks.database = 'error';
+      isHealthy = false;
+    }
+
+    // Check Redis
+    try {
+      const { checkRedisConnection } = await import('./config/redis');
+      const redisOk = await checkRedisConnection();
+      checks.redis = redisOk ? 'ok' : 'error';
+      // Redis não é crítico, não afeta isHealthy
+    } catch {
+      checks.redis = 'error';
+    }
+
+    const response = {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      checks,
+    };
+
+    return reply.status(isHealthy ? 200 : 503).send(response);
+  });
+
+  // Main health check - alias para /health/ready
+  app.get('/health', async (_request, reply) => {
+    const checks: Record<string, 'ok' | 'error'> = {};
+    let isHealthy = true;
+
+    // Check database
+    try {
+      const { checkDatabaseConnection } = await import('./config/database');
+      const dbOk = await checkDatabaseConnection();
+      checks.database = dbOk ? 'ok' : 'error';
+      if (!dbOk) isHealthy = false;
+    } catch {
+      checks.database = 'error';
+      isHealthy = false;
+    }
+
+    // Check Redis
+    try {
+      const { checkRedisConnection } = await import('./config/redis');
+      const redisOk = await checkRedisConnection();
+      checks.redis = redisOk ? 'ok' : 'error';
+    } catch {
+      checks.redis = 'error';
+    }
+
+    const response = {
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: process.env.npm_package_version ?? '0.1.0',
+      checks,
+    };
+
+    return reply.status(isHealthy ? 200 : 503).send(response);
+  });
+
 
   // API routes
   await app.register(

@@ -31,79 +31,6 @@ export interface ApiError {
 }
 
 // ============================================
-// Token Management
-// ============================================
-
-let authToken: string | null = null;
-
-export function setAuthToken(token: string | null) {
-  authToken = token;
-}
-
-export function getAuthToken(): string | null {
-  return authToken;
-}
-
-// ============================================
-// Fetch Wrapper
-// ============================================
-
-async function apiFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-
-  if (authToken) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${authToken}`;
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    const data = await response.json();
-
-    // Handle authentication errors
-    if (response.status === 401) {
-      // Clear token and redirect to login
-      setAuthToken(null);
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new ApiClientError('Sessao expirada', 'UNAUTHORIZED', 401);
-    }
-
-    if (!response.ok) {
-      throw new ApiClientError(
-        data.error?.message || 'Erro na requisicao',
-        data.error?.code || 'REQUEST_ERROR',
-        response.status
-      );
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof ApiClientError) {
-      throw error;
-    }
-
-    throw new ApiClientError(
-      'Erro de conexao com o servidor',
-      'NETWORK_ERROR',
-      0
-    );
-  }
-}
-
-// ============================================
 // Error Class
 // ============================================
 
@@ -120,85 +47,258 @@ export class ApiClientError extends Error {
 }
 
 // ============================================
-// API Methods
+// Constants
 // ============================================
 
-export const api = {
-  // GET request
-  get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          searchParams.append(key, String(value));
-        }
-      });
-    }
-    const query = searchParams.toString();
-    const url = query ? `${endpoint}?${query}` : endpoint;
-    return apiFetch<T>(url, { method: 'GET' });
-  },
+const DEFAULT_TIMEOUT = 30000; // 30 segundos
+const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || '/sign-in';
 
-  // POST request
-  post<T>(endpoint: string, body?: unknown) {
-    return apiFetch<T>(endpoint, {
-      method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
+// ============================================
+// Fetch Wrapper (Base Function)
+// ============================================
 
-  // PUT request
-  put<T>(endpoint: string, body?: unknown) {
-    return apiFetch<T>(endpoint, {
-      method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
+interface FetchOptions extends Omit<RequestInit, 'signal'> {
+  timeout?: number;
+}
 
-  // PATCH request
-  patch<T>(endpoint: string, body?: unknown) {
-    return apiFetch<T>(endpoint, {
-      method: 'PATCH',
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
+async function apiFetchWithToken<T>(
+  endpoint: string,
+  token: string | null,
+  options: FetchOptions = {}
+): Promise<ApiResponse<T>> {
+  const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options;
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  // DELETE request
-  delete<T>(endpoint: string) {
-    return apiFetch<T>(endpoint, { method: 'DELETE' });
-  },
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...fetchOptions.headers,
+  };
 
-  // Upload file (multipart/form-data)
-  async upload<T>(endpoint: string, formData: FormData) {
-    const url = `${API_BASE_URL}${endpoint}`;
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
 
-    const headers: HeadersInit = {};
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
+  // Setup abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+  try {
     const response = await fetch(url, {
-      method: 'POST',
+      ...fetchOptions,
       headers,
-      body: formData,
+      credentials: 'include',
+      signal: controller.signal,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    // Parse response with validation
+    let data: ApiResponse<T>;
+    try {
+      const text = await response.text();
+      data = text ? JSON.parse(text) : { success: false };
+    } catch {
       throw new ApiClientError(
-        data.error?.message || 'Erro no upload',
-        data.error?.code || 'UPLOAD_ERROR',
+        'Resposta inválida do servidor',
+        'PARSE_ERROR',
         response.status
       );
     }
 
-    return data as ApiResponse<T>;
-  },
-};
+    // Handle authentication errors
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        window.location.href = SIGN_IN_URL;
+      }
+      throw new ApiClientError('Sessão expirada', 'UNAUTHORIZED', 401);
+    }
+
+    // Handle rate limiting
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After') || '60';
+      throw new ApiClientError(
+        `Muitas requisições. Tente novamente em ${retryAfter} segundos.`,
+        'RATE_LIMITED',
+        429
+      );
+    }
+
+    if (!response.ok) {
+      throw new ApiClientError(
+        data.error?.message || 'Erro na requisição',
+        data.error?.code || 'REQUEST_ERROR',
+        response.status
+      );
+    }
+
+    return data;
+  } catch (error) {
+    // Re-throw our own errors
+    if (error instanceof ApiClientError) {
+      throw error;
+    }
+
+    // Timeout error (AbortController)
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiClientError(
+        'Requisição excedeu o tempo limite',
+        'TIMEOUT_ERROR',
+        408
+      );
+    }
+
+    // Offline / Network error
+    if (error instanceof TypeError) {
+      // TypeError with 'fetch' or 'Failed to fetch' indicates network issues
+      if (
+        error.message.includes('fetch') ||
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError')
+      ) {
+        throw new ApiClientError(
+          'Sem conexão com a internet',
+          'OFFLINE_ERROR',
+          0
+        );
+      }
+    }
+
+    // Generic network error
+    throw new ApiClientError(
+      'Erro de conexão com o servidor',
+      'NETWORK_ERROR',
+      0
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 // ============================================
-// Convenience exports
+// API Factory (for use with Clerk token)
 // ============================================
+
+/**
+ * Creates an API client instance with the provided auth token.
+ * Use this with Clerk's getToken() function.
+ * 
+ * @example
+ * // In a Client Component:
+ * const { getToken } = useAuth();
+ * const token = await getToken();
+ * const apiClient = createApiClient(token);
+ * const response = await apiClient.get('/api/v1/documents');
+ * 
+ * @example
+ * // In a Server Component or Route Handler:
+ * const { getToken } = auth();
+ * const token = await getToken();
+ * const apiClient = createApiClient(token);
+ */
+export function createApiClient(token: string | null) {
+  return {
+    // GET request
+    get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>) {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined) {
+            searchParams.append(key, String(value));
+          }
+        });
+      }
+      const query = searchParams.toString();
+      const url = query ? `${endpoint}?${query}` : endpoint;
+      return apiFetchWithToken<T>(url, token, { method: 'GET' });
+    },
+
+    // POST request
+    post<T>(endpoint: string, body?: unknown) {
+      return apiFetchWithToken<T>(endpoint, token, {
+        method: 'POST',
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    },
+
+    // PUT request
+    put<T>(endpoint: string, body?: unknown) {
+      return apiFetchWithToken<T>(endpoint, token, {
+        method: 'PUT',
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    },
+
+    // PATCH request
+    patch<T>(endpoint: string, body?: unknown) {
+      return apiFetchWithToken<T>(endpoint, token, {
+        method: 'PATCH',
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    },
+
+    // DELETE request
+    delete<T>(endpoint: string) {
+      return apiFetchWithToken<T>(endpoint, token, { method: 'DELETE' });
+    },
+
+    // Upload file (multipart/form-data)
+    async upload<T>(endpoint: string, formData: FormData) {
+      const url = `${API_BASE_URL}${endpoint}`;
+
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new ApiClientError(
+          data.error?.message || 'Erro no upload',
+          data.error?.code || 'UPLOAD_ERROR',
+          response.status
+        );
+      }
+
+      return data as ApiResponse<T>;
+    },
+  };
+}
+
+// ============================================
+// React Hook for API Client
+// ============================================
+
+/**
+ * Custom hook to use the API client with Clerk authentication.
+ * Must be used in a Client Component within ClerkProvider.
+ * 
+ * @example
+ * 'use client';
+ * import { useApiClient } from '@/lib/api';
+ * 
+ * function MyComponent() {
+ *   const { apiClient, isLoaded, isSignedIn } = useApiClient();
+ *   
+ *   const fetchData = async () => {
+ *     if (!apiClient) return;
+ *     const response = await apiClient.get('/api/v1/documents');
+ *     // ...
+ *   };
+ * }
+ */
+export { useApiClient } from './hooks/useApiClient';
+
+// ============================================
+// Default export for backwards compatibility
+// ============================================
+
+// For server-side usage or when token is managed externally
+export const api = createApiClient(null);
 
 export default api;

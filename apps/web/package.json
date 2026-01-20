@@ -10,6 +10,7 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@clerk/localizations": "^3.35.0",
     "@clerk/nextjs": "^4.29.1",
     "@fiscalzen/shared": "workspace:*",
     "@fiscalzen/ui": "workspace:*",

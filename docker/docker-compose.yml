@@ -87,6 +87,64 @@ services:
       exit 0;
       "
 
+  # ===========================================
+  # Application Services (opcional para dev local)
+  # Use: docker compose --profile app up
+  # ===========================================
+  api:
+    profiles: ['app']
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: fiscalzen-api
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+      - '3002:3002'  # WebSocket
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://fiscalzen:fiscalzen_dev@postgres:5432/fiscalzen
+      REDIS_URL: redis://redis:6379
+      MEILISEARCH_URL: http://meilisearch:7700
+      MEILISEARCH_API_KEY: fiscalzen_meilisearch_dev_key
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: fiscalzen
+      S3_SECRET_KEY: fiscalzen_minio_dev
+      S3_BUCKET: fiscalzen-docs
+      CORS_ORIGIN: http://localhost:3000
+      JWT_SECRET: docker_dev_jwt_secret_change_in_production_32chars
+      CERT_ENCRYPTION_KEY: ZG9ja2VyX2Rldl9jZXJ0X2tleV9jaGFuZ2VfaW5fcHJvZA==
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    profiles: ['app']
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.web
+    container_name: fiscalzen-web
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
