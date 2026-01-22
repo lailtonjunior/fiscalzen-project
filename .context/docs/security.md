@@ -1,37 +1,45 @@
-# Security & Compliance
+# FiscalZen Security Documentation
 
-This document outlines the security architecture, data protection measures, and compliance standards implemented in the FiscalZen platform.
+This document outlines the comprehensive security architecture, data protection strategies, and compliance measures applied within the FiscalZen platform. It is intended to guide developers in maintaining robust security practices when working with sensitive fiscal data and the FiscalZen codebase.
+
+---
 
 ## Authentication & Authorization
 
 ### JWT Authentication
 
-The system implements stateless authentication using JSON Web Tokens (JWT). All requests to protected resources must include a valid Bearer token.
+FiscalZen uses stateless authentication with JSON Web Tokens (JWT). Access to protected API endpoints requires a valid Bearer token in the `Authorization` HTTP header.
 
-**Configuration**:
-- `JWT_SECRET`: Minimum 32-character random string (stored in Environment Variables).
-- `JWT_EXPIRES_IN`: Default is `1d`.
+- **Configuration:**
+  - `JWT_SECRET`: A securely stored, high-entropy string (minimum 32 characters) held in environment variables, used for signing tokens.
+  - `JWT_EXPIRES_IN`: Token validity duration, typically set to `1d` (one day).
 
-**Token Payload**:
-```typescript
-interface JwtPayload {
-  userId: string;
-  tenantId: string;
-  email: string;
-  iat: number;  // Issued at
-  exp: number;  // Expiration
-}
-```
+- **JWT Payload Structure:**
+  ```typescript
+  interface JwtPayload {
+    userId: string;
+    tenantId: string;
+    email: string;
+    iat: number;  // Issued at timestamp (Unix time)
+    exp: number;  // Expiration timestamp (Unix time)
+  }
+  ```
 
 ### Authorization Model
 
-FiscalZen uses a strict multi-tenancy model. Authorization is enforced at several levels:
+FiscalZen enforces multi-tenancy and resource ownership through a layered authorization approach:
 
-1.  **Route Level**: Middleware verifies the JWT signature and expiration.
-2.  **Tenant Level**: The `tenantId` is extracted from the JWT and used as a mandatory filter in all database queries.
-3.  **Ownership Level**: Operations on specific entities (e.g., updating a company or viewing a document) verify that the resource belongs to the active `tenantId`.
+1. **Route Level:**
+   - Middleware checks JWT signature validity and expiration.
+   - Required claims such as `tenantId` must be present.
 
-**Example Pattern**:
+2. **Tenant Level:**
+   - The `tenantId` extracted from JWT scopes all database queries, isolating each tenant’s data.
+
+3. **Ownership Level:**
+   - Actions on entities (e.g., updating companies or accessing documents) validate that the entity belongs to the user's tenant, preventing unauthorized access.
+
+**Example Authorization Check:**
 ```typescript
 // apps/api/src/utils/auth.ts
 export async function verifyCompanyAccess(tenantId: string, companyId: string) {
@@ -41,80 +49,114 @@ export async function verifyCompanyAccess(tenantId: string, companyId: string) {
       eq(companies.tenantId, tenantId)
     ),
   });
-  if (!company) throw new ForbiddenError('Access denied to this company');
+
+  if (!company) {
+    throw new ForbiddenError('Access denied: Company does not belong to this tenant');
+  }
   return company;
 }
 ```
 
-## Secrets & Sensitive Data
+---
 
-### Encryption at Rest
+## Secrets & Sensitive Data Handling
 
-Sensitive information, specifically **Certificado Digital A1 (PFX)**, is never stored in plain text.
+### Encryption At Rest
 
-1.  **Algorithm**: AES-256-GCM.
-2.  **Key Management**: Uses a `CERT_ENCRYPTION_KEY` (32 bytes / 64 hex chars) defined in the environment variables.
-3.  **Process**:
-    *   When a certificate is uploaded, the API encrypts the buffer.
-    *   The encrypted string is stored in the database in the format `iv:authTag:encryptedContent`.
-    *   The certificate password is **never** stored; it must be provided by the user/agent when performing SEFAZ operations and is kept only in memory during the request.
+Digital certificates (Certificado Digital A1 in PFX format) are encrypted before storage:
+
+- **Algorithm:** AES-256-GCM, providing confidentiality and integrity.
+- **Key Management:** Encryption key stored securely in environment variable `CERT_ENCRYPTION_KEY` (32 bytes / 64 hex characters).
+- **Storage Format:** Encrypted buffers are saved as colon-separated strings containing the IV, authentication tag, and ciphertext: `iv:authTag:encryptedContent`.
+- **Certificate Password:** Never stored in the database; provided transiently during interactions with SEFAZ and discarded immediately afterward.
 
 ### Sensitive Environment Variables
 
-| Variable | Purpose | Security Note |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | PostgreSQL Connection | Contains credentials; must be restricted to VPC. |
-| `JWT_SECRET` | Token Signing | Rotated periodically. |
-| `CERT_ENCRYPTION_KEY` | PFX Encryption | Critical; loss means certificates cannot be decrypted. |
-| `S3_SECRET_KEY` | XML Storage | Used for MinIO/S3 access. |
+| Variable              | Purpose                       | Security Considerations                        |
+|-----------------------|-------------------------------|-----------------------------------------------|
+| `DATABASE_URL`         | Connection string for PostgreSQL | Contains DB credentials; restrict network access |
+| `JWT_SECRET`           | Key for signing JWT tokens     | High-entropy, rotate regularly to revoke tokens |
+| `CERT_ENCRYPTION_KEY`  | Key to encrypt/decrypt certificates | Critical for certificate decryption; backup securely |
+| `S3_SECRET_KEY`        | Credentials for S3 XML storage | Access must be tightly controlled             |
 
-## Data Protection
+---
 
-### Multi-tenant Isolation
+## Data Protection & Integrity
 
-Data isolation is guaranteed at the application layer through the Drizzle ORM.
+### Multi-tenant Data Isolation
 
-*   **Database Schema**: Almost all tables (documents, companies, audit_logs, jobs) contain a `tenant_id` column.
-*   **Query Safety**: Developers must include `eq(table.tenantId, ctx.tenantId)` in all `where` clauses.
-*   **Indices**: Composite indices on `(tenant_id, id)` ensure performant and secure lookups.
+- Data tables include a `tenant_id` column to segregate tenant data.
+- All database queries enforce tenant scoping with conditions filtering by `tenant_id`.
+- Composite indexes on `(tenant_id, id)` enable efficient, secure tenant-specific lookups.
 
-### Validation & Sanitization
+### Input Validation & Sanitization
 
-*   **Input Validation**: Every API endpoint uses **Zod** schemas to validate structure and types, preventing injection of malformed data.
-*   **SQL Injection**: Prevented by using Drizzle ORM's parameterized queries.
-*   **XSS Protection**: The React frontend (Next.js) automatically escapes content. Content Security Policy (CSP) headers are enabled.
+- API payloads are validated using **Zod schemas** (`apps/api/src/modules/*/schemas.ts`), ensuring data correctness and preventing malformed requests.
+- The use of **Drizzle ORM** guarantees all SQL queries are parameterized to mitigate SQL injection risks.
+- **Next.js** frontend applies default escaping and uses Content Security Policy headers to protect against Cross-Site Scripting (XSS).
+
+---
 
 ## Infrastructure Security
 
-### SEFAZ Communication
+### SEFAZ Communication Protocol
 
-*   **Mutual TLS (mTLS)**: Communication with SEFAZ (Secretaria da Fazenda) uses the client's A1 certificate for two-way SSL authentication.
-*   **Signature**: Outgoing XML messages (Manifestação, etc.) are signed using the `sefaz-client` package with the user's private key.
+- **Mutual TLS (mTLS):** FiscalZen uses two-way SSL authentication with user-provided A1 certificates when communicating with SEFAZ endpoints, managed by `SefazClient` in `packages/sefaz-client`.
+- **XML Digital Signing:** All outgoing requests and events are cryptographically signed using utilities in `packages/sefaz-client/src/signature.ts` to guarantee authenticity and integrity.
 
 ### Rate Limiting
 
-To prevent abuse and comply with external provider limits:
+- API requests are rate-limited via the `fastify-rate-limit` plugin to prevent abuse.
+- SEFAZ “Consumo Indevido” (Rejection 656) responses cause the system to pause synchronization for affected CNPJs by marking `nsu_control` as `rate_limited`.
+- Synchronization resumes after 60 minutes based on `calculateNextSyncTime`.
 
-1.  **API Level**: Configured via `fastify-rate-limit` (default 100 requests per minute per IP).
-2.  **SEFAZ Level**: The system monitors "Consumo Indevido" (Rejection 656). If SEFAZ returns a rate limit error, the `nsu_control` status is set to `rate_limited` and syncing is paused for the specific CNPJ for 60 minutes.
+---
 
-## Compliance
+## Compliance Standards
 
-### LGPD (Brazil Data Protection Law)
+### LGPD (Brazilian Data Protection Law)
 
-*   **Access Control**: Users can only see data from their own Organization/Tenant.
-*   **Audit Logging**: Critical actions (login, certificate upload, document deletion) are logged in the `audit_logs` table, recording the timestamp, user ID, IP address, and action performed.
-*   **Data Portability**: Users can export their XML files at any time through the S3 storage interface or API.
+- **Strict Access Controls:** Tenants can only access their data enforced through tenant-scoped queries and checks.
+- **Audit Logging:** All critical actions (login, certificate upload, document deletion) are recorded in the `audit_logs` table, including metadata such as timestamps, user IDs, and IP addresses.
+- **Data Portability:** Users maintain ownership and can export XML documents through APIs or direct access to S3 storage.
 
-### Fiscal Requirements
+### Fiscal Document Retention
 
-*   **XML Integrity**: The system stores the original XML as received from SEFAZ/City Halls to ensure legal validity.
-*   **Storage Duration**: Documents are stored in S3-compatible storage designed for long-term retention (minimum 5 years as required by Brazilian law).
+- XML documents are stored in original byte stream form, preserving legal digital signatures and document validity.
+- Retention policies on S3-compatible storage keep data for at least 5 years in compliance with Brazilian fiscal regulations.
 
-## Incident Response
+---
 
-In case of a suspected security breach:
+## Incident Response Procedure
 
-1.  **Isolation**: The affected `tenantId` can be suspended via the database `tenants.status` field.
-2.  **Credential Rotation**: Reset the `JWT_SECRET` to invalidate all active sessions.
-3.  **Logs**: Analyze the `audit_logs` and Fastify application logs (stored in JSON format for easy parsing) to identify the scope of the breach.
+In the event of a security incident, FiscalZen provides the following measures:
+
+1. **Tenant Suspension:** Set `tenants.status` to `suspended` in the database to immediately block tenant access.
+2. **Session Invalidation:** Rotate `JWT_SECRET` to revoke all active tokens and force user reauthentication.
+3. **Forensics:** Use `audit_logs` and Fastify JSON logs to trace and analyze the breach scope and entry vectors.
+
+---
+
+## Recommendations for Developers
+
+- Secure all sensitive environment variables with restricted access.
+- Monitor API usage and NSU synchronization states regularly for anomalies.
+- Verify strict tenant-scoped authorization when developing new features.
+- Always encrypt sensitive data both in transit (TLS) and at rest.
+- Ensure audit trails cover any new operations affecting sensitive fiscal or user data.
+
+---
+
+## Related Files & Modules
+
+- **Authentication Utilities:** [`apps/api/src/utils/auth.ts`](apps/api/src/utils/auth.ts)
+- **Certificate Encryption & Handling:** [`packages/sefaz-client/src/certificate.ts`](packages/sefaz-client/src/certificate.ts)
+- **XML Signing Utilities:** [`packages/sefaz-client/src/signature.ts`](packages/sefaz-client/src/signature.ts)
+- **SEFAZ Client Implementation:** [`packages/sefaz-client/src/client.ts`](packages/sefaz-client/src/client.ts)
+- **Rate Limiting Setup:** Configured in API server with `fastify-rate-limit`
+- **API Request Validation:** Located in [`apps/api/src/modules/*/schemas.ts`](apps/api/src/modules/)
+- **Audit Logging Schema:** [`packages/database/src/schema/audit.ts`](packages/database/src/schema/audit.ts)
+
+---
+
+By following the security protocols and using the provided utilities and schemas, developers can help keep FiscalZen a secure, compliant platform for managing fiscal documents and sensitive tenant data.

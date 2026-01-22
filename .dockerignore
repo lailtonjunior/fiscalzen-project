@@ -1,0 +1,49 @@
+# ===========================================
+# FiscalZen Docker Ignore
+# ===========================================
+
+# Dependencies (installed fresh in Docker)
+node_modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/build
+**/.next
+
+# Development files
+**/.turbo
+**/.git
+**/.gitignore
+**/.env
+**/.env.local
+**/.env*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test & Coverage
+coverage
+**/*.test.ts
+**/*.spec.ts
+
+# Documentation (not needed in production image)
+*.md
+!README.md
+docs
+
+# Certificates (should be mounted as volumes)
+certs
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

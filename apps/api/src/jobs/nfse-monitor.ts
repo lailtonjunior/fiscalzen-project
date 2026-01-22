@@ -284,7 +284,7 @@ async function processNfse(
   const existing = await db.query.documents.findFirst({
     where: and(
       eq(documents.companyId, companyId),
-      eq(documents.numero, String(nfse.identificacao.numero)),
+      eq(documents.numero, Number(nfse.identificacao.numero)),
       eq(documents.docType, 'NFSE')
     ),
   });
@@ -295,23 +295,21 @@ async function processNfse(
 
   // Insert new NFSe document
   await db.insert(documents).values({
-    id: crypto.randomUUID(),
     tenantId,
     companyId,
     chave: `${codigoMunicipio}-${nfse.identificacao.numero}-${nfse.identificacao.codigoVerificacao}`,
-    numero: String(nfse.identificacao.numero),
-    serie: '0',
+    numero: Number(nfse.identificacao.numero),
+    serie: 0,
     docType: 'NFSE',
     situacao: 'autorizada',
-    dataEmissao: nfse.identificacao.dataEmissao,
+    dataEmissao: typeof nfse.identificacao.dataEmissao === 'string'
+      ? nfse.identificacao.dataEmissao
+      : new Date(nfse.identificacao.dataEmissao).toISOString().split('T')[0],
     valorTotal: String(nfse.valores.valorServicos),
     emitCnpj: nfse.prestador.cnpj,
-    emitRazaoSocial: nfse.prestador.razaoSocial,
-    destCnpj: nfse.tomador.cpfCnpj,
-    destRazaoSocial: nfse.tomador.razaoSocial,
-    uf: codigoMunicipio.substring(0, 2), // First 2 digits of IBGE code are UF
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    emitRazao: nfse.prestador.razaoSocial,
+    destCnpjCpf: nfse.tomador.cpfCnpj,
+    destRazao: nfse.tomador.razaoSocial,
   });
 }
 
@@ -329,7 +327,7 @@ async function processNfseXml(
   const existing = await db.query.documents.findFirst({
     where: and(
       eq(documents.companyId, companyId),
-      eq(documents.numero, String(parsed.numero)),
+      eq(documents.numero, Number(parsed.numero)),
       eq(documents.docType, 'NFSE')
     ),
   });
@@ -340,22 +338,20 @@ async function processNfseXml(
 
   // Insert new NFSe document
   await db.insert(documents).values({
-    id: crypto.randomUUID(),
     tenantId,
     companyId,
     chave: `${codigoMunicipio}-${parsed.numero}-${parsed.metadata.codigoVerificacao}`,
-    numero: String(parsed.numero),
-    serie: '0',
+    numero: Number(parsed.numero),
+    serie: 0,
     docType: 'NFSE',
     situacao: parsed.situacao,
-    dataEmissao: parsed.dataEmissao,
+    dataEmissao: typeof parsed.dataEmissao === 'string'
+      ? parsed.dataEmissao
+      : new Date(parsed.dataEmissao).toISOString().split('T')[0],
     valorTotal: String(parsed.valorTotal),
     emitCnpj: parsed.emitente.cnpj,
-    emitRazaoSocial: parsed.emitente.razaoSocial,
-    destCnpj: parsed.destinatario.cnpjCpf,
-    destRazaoSocial: parsed.destinatario.razaoSocial,
-    uf: codigoMunicipio.substring(0, 2),
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    emitRazao: parsed.emitente.razaoSocial,
+    destCnpjCpf: parsed.destinatario.cnpjCpf,
+    destRazao: parsed.destinatario.razaoSocial,
   });
 }

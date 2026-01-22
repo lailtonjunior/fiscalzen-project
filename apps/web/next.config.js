@@ -3,6 +3,8 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output só em Linux/Docker (Windows não suporta symlinks sem admin)
+  output: process.platform === 'win32' ? undefined : 'standalone',
   webpack(config, { dev }) {
     /* FISCALZEN_DEV_CACHE_FIX */
     if (dev) {

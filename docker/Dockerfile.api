@@ -1,0 +1,61 @@
+# ===========================================
+# FiscalZen API - Multi-stage Dockerfile
+# ===========================================
+
+# Stage 1: Base with pnpm
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+# Stage 2: Install dependencies
+FROM base AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/database/package.json ./packages/database/
+COPY packages/sefaz-client/package.json ./packages/sefaz-client/
+COPY packages/nfse-client/package.json ./packages/nfse-client/
+COPY packages/xml-parser/package.json ./packages/xml-parser/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile
+
+# Stage 3: Build
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=deps /app/packages ./packages
+COPY . .
+RUN pnpm --filter @fiscalzen/database build
+RUN pnpm --filter @fiscalzen/shared build
+RUN pnpm --filter @fiscalzen/xml-parser build
+RUN pnpm --filter @fiscalzen/sefaz-client build
+RUN pnpm --filter @fiscalzen/nfse-client build
+RUN pnpm --filter @fiscalzen/api build
+
+# Stage 4: Production image
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Add non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 api
+USER api
+
+# Copy built artifacts
+COPY --from=builder --chown=api:nodejs /app/apps/api/dist ./dist
+COPY --from=builder --chown=api:nodejs /app/apps/api/package.json ./
+COPY --from=builder --chown=api:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=api:nodejs /app/packages/database/dist ./node_modules/@fiscalzen/database/dist
+COPY --from=builder --chown=api:nodejs /app/packages/shared/dist ./node_modules/@fiscalzen/shared/dist
+COPY --from=builder --chown=api:nodejs /app/packages/xml-parser/dist ./node_modules/@fiscalzen/xml-parser/dist
+COPY --from=builder --chown=api:nodejs /app/packages/sefaz-client/dist ./node_modules/@fiscalzen/sefaz-client/dist
+COPY --from=builder --chown=api:nodejs /app/packages/nfse-client/dist ./node_modules/@fiscalzen/nfse-client/dist
+
+EXPOSE 3001 3002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+
+CMD ["node", "dist/index.js"]

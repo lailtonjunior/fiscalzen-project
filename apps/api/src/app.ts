@@ -58,6 +58,21 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
 
+  // ============================================
+  // Request ID Propagation
+  // ============================================
+  // Gera ou propaga X-Request-Id para correlação de logs
+  app.addHook('onRequest', async (request, reply) => {
+    const requestId = request.headers['x-request-id'] as string || crypto.randomUUID();
+    request.id = requestId;
+    reply.header('X-Request-Id', requestId);
+  });
+
+  // Adiciona request ID nos logs
+  app.addHook('preHandler', async (request) => {
+    request.log = request.log.child({ requestId: request.id });
+  });
+
   // Global error handler
   app.setErrorHandler((error, request, reply) => {
     request.log.error(error);
@@ -104,7 +119,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     const checks: Record<string, 'ok' | 'error'> = {};
     let isHealthy = true;
 
-    // Check database
+    // Check database (crítico)
     try {
       const { checkDatabaseConnection } = await import('./config/database');
       const dbOk = await checkDatabaseConnection();
@@ -115,20 +130,38 @@ export async function buildApp(): Promise<FastifyInstance> {
       isHealthy = false;
     }
 
-    // Check Redis
+    // Check Redis (não-crítico)
     try {
       const { checkRedisConnection } = await import('./config/redis');
       const redisOk = await checkRedisConnection();
       checks.redis = redisOk ? 'ok' : 'error';
-      // Redis não é crítico, não afeta isHealthy
     } catch {
       checks.redis = 'error';
+    }
+
+    // Check Storage/MinIO (não-crítico)
+    try {
+      const { checkStorageConnection } = await import('./config/storage');
+      const storageOk = await checkStorageConnection();
+      checks.storage = storageOk ? 'ok' : 'error';
+    } catch {
+      checks.storage = 'error';
+    }
+
+    // Check Meilisearch (não-crítico)
+    try {
+      const { checkMeilisearchConnection } = await import('./config/meilisearch');
+      const searchOk = await checkMeilisearchConnection();
+      checks.search = searchOk ? 'ok' : 'error';
+    } catch {
+      checks.search = 'error';
     }
 
     const response = {
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      version: process.env.npm_package_version || '0.1.0',
       checks,
     };
 

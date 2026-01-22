@@ -58,10 +58,26 @@ async function authPlugin(fastify: FastifyInstance) {
     request: FastifyRequest,
     _reply: FastifyReply
   ) {
-    // DEV ONLY: bypass opcional (nunca habilitar em producao)
-    if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_AUTH === 'true') {
+    // DEV ONLY: bypass opcional (NUNCA habilitar em produção!)
+    // Double-check: explicitamente verificamos NODE_ENV === 'development'
+    if (
+      process.env.NODE_ENV === 'development' &&
+      process.env.DISABLE_AUTH === 'true'
+    ) {
+      // Log warning para visibilidade (development only)
+      fastify.log.warn(
+        { route: request.routeOptions?.url },
+        '⚠️ DISABLE_AUTH ativo: autenticação ignorada (dev only)'
+      );
       (request as any).user = buildDevUser();
       return;
+    }
+
+    // Safeguard: se DISABLE_AUTH está definido em prod, logar e ignorar
+    if (process.env.NODE_ENV === 'production' && process.env.DISABLE_AUTH) {
+      fastify.log.error(
+        '🚨 DISABLE_AUTH definido em PRODUÇÃO! Ignorando para segurança.'
+      );
     }
 
     try {

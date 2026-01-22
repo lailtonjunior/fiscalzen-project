@@ -1,103 +1,163 @@
-# Glossário e Conceitos de Domínio
+# Glossário e Conceitos de Domínio - FiscalZen
 
-Este documento serve como referência para os termos técnicos e de negócio utilizados no FiscalZen. O projeto lida com a complexidade do ecossistema fiscal brasileiro, integrando-se com diversas esferas governamentais (Federal, Estadual e Municipal).
+Este documento serve como referência para os termos técnicos, siglas e conceitos de negócio utilizados no ecossistema FiscalZen. O projeto lida com a complexidade do sistema fiscal brasileiro, integrando-se com esferas governamentais Federais, Estaduais e Municipais.
+
+---
 
 ## Documentos Fiscais Eletrônicos (DF-e)
 
-### NFe (Nota Fiscal Eletrônica)
-Documento digital que substitui as notas fiscais modelo 1 e 1-A. Utilizada para registrar operações de circulação de mercadorias.
-- **Modelo:** 55.
-- **Identificação:** Chave de acesso de 44 dígitos.
-- **Ator FiscalZen:** O sistema atua como **Destinatário** (monitorando notas emitidas contra o cliente).
+Os Documentos Fiscais Eletrônicos são arquivos XML com validade jurídica que substituíram os documentos em papel.
 
-### NFSe (Nota Fiscal de Serviços Eletrônica)
-Documento municipal para registro de prestação de serviços.
-- **Padrão:** Variável por município. O FiscalZen foca no padrão **ABRASF** (v1 e v2) e via **RPA** para prefeituras sem webservices padronizados.
-- **Integração:** Realizada via `AbrasfClient` ou `TemplateScraper`.
+### NF-e (Nota Fiscal Eletrônica)  
+- **Descrição:** Documento que registra operações de circulação de mercadorias.  
+- **Modelo:** 55  
+- **Identificação:** Chave de acesso de 44 dígitos única para cada nota.  
+- **Papel no Sistema:** O FiscalZen monitora principalmente notas fiscais onde o cliente é o **Destinatário**, permitindo a recepção e manifestação sobre esses documentos.  
 
-### CTe (Conhecimento de Transporte Eletrônico)
-Documento para serviços de transporte de carga (rodoviário, aéreo, etc.).
-- **Modelo:** 57.
+### NFS-e (Nota Fiscal de Serviços Eletrônica)  
+- **Descrição:** Documento eletrônico emitido para registro de prestação de serviços, com validade municipal.  
+- **Padrão:** O padrão varia por município. O sistema suporta o padrão **ABRASF** (versões 1 e 2) e também a abordagem de **RPA** (Robotic Process Automation) para prefeituras sem webservices.  
+- **Implementação:** Gerenciado internamente pelo `AbrasfClient` e através de adaptadores específicos para municípios, como o `BeloHorizonteAdapter`.  
 
-### MDFe (Manifesto Eletrônico de Documentos Fiscais)
-Documento que agrupa outros documentos fiscais (NFe, CTe) em uma unidade de transporte.
-- **Modelo:** 58.
+### CT-e (Conhecimento de Transporte Eletrônico)  
+- **Descrição:** Documento usado para registrar serviços de transporte de cargas (rodoviário, aéreo, ferroviário, etc.).  
+- **Modelo:** 57  
 
----
-
-## Ecossistema SEFAZ
-
-### SEFAZ (Secretaria da Fazenda)
-Órgão estadual responsável pela arrecadação e fiscalização de tributos estaduais (como ICMS). No FiscalZen, o `SefazClient` gerencia a comunicação com esses órgãos.
-
-### Ambiente (tpAmb)
-Identifica se a operação é real ou teste.
-- **Produção (1):** Documentos com validade jurídica.
-- **Homologação (2):** Apenas para testes de integração.
-
-### DistDFe (Distribuição de Documentos Fiscais)
-Serviço da SEFAZ que permite ao destinatário "baixar" os documentos emitidos contra seu CNPJ.
-- **GZIP:** Os XMLs retornados pela SEFAZ vêm compactados em Base64/GZIP. O utilitário `decodeDocZip` é responsável por esta descompactação.
-
-### NSU (Número Sequencial Único)
-Contador sequencial gerenciado pela SEFAZ para cada CNPJ.
-- **Controle:** O FiscalZen utiliza a tabela `nsu_control` para armazenar o `last_nsu` de cada empresa, garantindo que a sincronização seja incremental e não pule documentos.
+### MDF-e (Manifesto Eletrônico de Documentos Fiscais)  
+- **Descrição:** Documento que agrupa vários documentos fiscais (NF-e, CT-e) relacionados à uma unidade logística de carga.  
+- **Modelo:** 58  
 
 ---
 
-## Certificação Digital
+## Ecossistema SEFAZ e Integração
 
-### Certificado A1
-Arquivo digital (formato `.pfx` ou `.p12`) que contém a identidade da empresa.
-- **Uso:** Necessário para autenticação mTLS (Mutual TLS) com os servidores da SEFAZ e para assinatura digital de eventos.
-- **FiscalZen:** Gerenciado via `loadCertificado` e cacheado em memória para otimizar a performance de conexões SOAP.
+### SEFAZ (Secretaria da Fazenda)  
+Órgão estadual responsável pela arrecadação e fiscalização tributária. No FiscalZen, o componente `SefazClient` encapsula a comunicação via SOAP com os WebServices disponibilizados por SEFAZ em diversos níveis.
 
-### Cadeia de Certificação
-Conjunto de certificados de autoridades certificadoras (AC) que validam o certificado da empresa. O sistema deve confiar nas cadeias da ICP-Brasil.
+### Ambiente (tpAmb)  
+Define qual o destino das requisições feitas ao SEFAZ:  
+- **Produção (1):** Ambiente oficial para operações legais e válidas fiscalmente.  
+- **Homologação (2):** Ambiente de testes, sem validade comercial real.  
 
----
+### DistDFe (Distribuição de Documento Fiscal Eletrônico)  
+Serviço da SEFAZ que permite ao destinatário consultar e baixar documentos fiscais emitidos contra seu CNPJ.  
 
-## Eventos e Manifestação
+- **Compactação dos XML:** Normalmente os XMLs retornados vêm em blocos comprimidos em GZIP, codificados em Base64. A função utilitária `decodeDocZip` lida com esta descompactação automaticamente.  
 
-### Manifestação do Destinatário
-Processo onde o comprador informa à SEFAZ sua participação na operação. Os principais eventos são:
-- **Ciência da Operação (210210):** Declara ter conhecimento da nota, mas ainda não confirma a operação. Libera o download do XML completo.
-- **Confirmação da Operação (210200):** Confirma que a mercadoria foi recebida.
-- **Desconhecimento da Operação (210220):** Utilizado em casos de fraude ou uso indevido do CNPJ.
+### NSU (Número Sequencial Único)  
+Número incremental gerenciado pela SEFAZ para controlar a sequência de documentos disponibilizados para cada destinatário (CNPJ).  
 
-### Protocolo
-Recibo retornado pela SEFAZ (XML `retConsStatServ` ou `retEnviNFe`) comprovando que uma solicitação foi processada.
+- **Sincronização:** O banco possui uma tabela `nsu_control` que guarda o último NSU sincronizado (`last_nsu`), permitindo o job `SefazMonitorJob` continuar a consulta do ponto exato onde parou.  
 
 ---
 
-## Conceitos Técnicos do Sistema
+## Segurança e Certificação
 
-### Tenant (Inquilino)
-Representa uma conta principal no sistema (ex: um escritório de contabilidade). Possui isolamento de dados total.
+### Certificado Digital A1  
+- **Descrição:** Arquivo digital no formato `.pfx` ou `.p12` que atesta a identidade da empresa no ambiente eletrônico fiscal.  
+- **Protocolos:** Utilizado em autenticação mTLS (Mutual TLS), protocolo que exige certificado válido no cliente e servidor para comunicação segura.  
+- **Assinatura Digital:** Documento XML deve ser assinado digitalmente para garantir integridade e autenticidade. As funcionalidades `signXml` e `calculateDigest` realizam este processo no código.  
 
-### Company (Empresa)
-Uma entidade jurídica (CNPJ) cadastrada sob um Tenant. É a unidade que possui certificados e documentos fiscais vinculados.
+### Cadeia de Certificação  
+Conjunto hierárquico de certificados de autoridades certificadoras (AC) que validam o certificado da empresa. FiscalZen requer configuração das cadeias da ICP-Brasil para garantir confiança e compatibilidade.  
 
-### Monitoramento (Jobs)
-Processos em background que executam tarefas recorrentes:
-- **SefazMonitorJob:** Consulta o DistDFe periodicamente.
-- **XmlProcessorJob:** Analisa o conteúdo do XML, extrai valores, impostos e itens.
-- **SearchSyncJob:** Sincroniza os dados do banco de dados com o motor de busca (Meilisearch).
+---
 
-### Chave de Acesso
-String de 44 caracteres que identifica univocamente um documento fiscal no Brasil.
-- **Composição:** UF + AAMM + CNPJ + Modelo + Série + Número + Tipo Emissão + Código Numérico + DV.
-- **Validação:** Realizada via `isValidChaveAcesso` no pacote de utilitários.
+## Eventos e Manifestação do Destinatário
+
+Para que o destinatário manifeste sua ciência e posição diante de uma NF-e eletrônica emitida contra ele, existem eventos legais padronizados:
+
+| Evento                     | Código  | Descrição                                                                                                  |
+| :------------------------- | :-----: | :------------------------------------------------------------------------------------------------------- |
+| Ciência da Operação        | 210210  | O destinatário informa seu conhecimento da nota fiscal, liberando a SEFAZ para liberar o XML completo.    |
+| Confirmação da Operação    | 210200  | O destinatário confirma a operação e o recebimento da mercadoria.                                         |
+| Desconhecimento da Operação| 210220  | Utilizado quando o CNPJ foi indevidamente usado em uma nota, que não pertence à empresa.                   |
+| Operação não Realizada     | 210240  | Quando há um acerto comercial, mas a mercadoria não foi entregue.                                         |
+
+---
+
+## Arquitetura do Sistema (Conceitos Técnicos)
+
+### Tenant (Inquilino)  
+Representa a conta principal no sistema, geralmente um escritório de contabilidade ou uma holding. Garante isolamento lógico entre clientes.  
+
+### Company (Empresa)  
+Entidade associada a um Tenant, representa uma empresa real (CNPJ) no sistema. É o nível onde certificados digitais são instalados e documentos são armazenados.  
+
+### Chave de Acesso  
+Identificador único gerado para cada documento fiscal eletrônico com 44 caracteres, contendo informações codificadas sobre UF, data, CNPJ, modelo, série, número, tipo de emissão e um dígito verificador.  
+
+- **Validação:** Implementada pela função `isValidChaveAcesso` para garantir autenticidade e integridade.  
+
+### Monitoramento e Jobs (Tarefas em Segundo Plano)  
+Módulos de execução contínua e periódica que mantêm a sincronização e atualização dos dados fiscais:
+
+- **SefazMonitorJob:** Consulta periodicamente o serviço de distribuição da SEFAZ para capturar documentos novos ou atualizações.  
+- **XmlProcessorJob:** Realiza parsing e processamento do XML bruto, extraindo dados estruturados como itens, impostos e valores, para gravar no banco de dados.  
+- **SearchSyncJob:** Indexa os documentos processados no Meilisearch, permitindo buscas integradas e ultra-rápidas na interface Web.  
 
 ---
 
 ## Siglas Comuns
 
-| Sigla | Significado | Descrição |
-|:--- |:--- |:--- |
-| **ABRASF** | Assoc. Bras. das Secretarias de Finanças | Órgão que padroniza os XMLs de NFSe. |
-| **DANFE** | Doc. Auxiliar da NFe | Representação gráfica (PDF) da nota fiscal. |
-| **DFe** | Documento Fiscal Eletrônico | Termo genérico para NFe, CTe, MDFe, etc. |
-| **mTLS** | Mutual TLS | Protocolo de segurança que exige certificado de ambos os lados (Cliente e Servidor). |
-| **RPA** | Robotic Process Automation | Automação de navegadores para extrair dados onde não há API disponível. |
-| **UF** | Unidade da Federação | Estado brasileiro (SP, RJ, MG, etc.). |
+| Sigla     | Significado                                 | Descrição                                             |
+|-----------|--------------------------------------------|-------------------------------------------------------|
+| **ABRASF**| Associação Brasileira das Secretarias de Finanças | Organismo que padroniza comunicação de NFS-e.          |
+| **DANFE** | Documento Auxiliar da NF-e                  | Representação legível (tipicamente PDF) da Nota Fiscal. |
+| **DF-e**  | Documento Fiscal Eletrônico                 | Termo geral para documentos como NF-e, CT-e, MDF-e.    |
+| **RPA**   | Robotic Process Automation                  | Automação que simula o navegador para acessar prefeituras sem API. |
+| **SOAP**  | Simple Object Access Protocol                | Protocolo XML utilizado nas comunicações com webservices SEFAZ. |
+| **UF**    | Unidade da Federação                        | Sigla do estado brasileiro (ex: SP - São Paulo).       |
+
+---
+
+## Exemplos de Uso
+
+### Verificar validade de uma Chave de Acesso
+
+```typescript
+import { isValidChaveAcesso } from 'packages/xml-parser/src/detector';
+
+const chave = '35191234567890123456789012345678901234567890';
+if (isValidChaveAcesso(chave)) {
+    console.log('Chave de acesso válida');
+} else {
+    console.log('Chave de acesso inválida');
+}
+```
+
+### Criar cliente ABRASF para emissão de NFS-e
+
+```typescript
+import { AbrasfClient } from 'packages/nfse-client/src/abrasf/client';
+
+const abrasfClient = new AbrasfClient({
+  // Configurações específicas do município e credenciais
+});
+
+const response = await abrasfClient.sendNfse({...});
+console.log('NFS-e emitida com sucesso:', response);
+```
+
+### Monitorar SEFAZ utilizando o job `SefazMonitorJob`
+
+Este job é configurado no backend da aplicação e executa regularmente para sincronizar documentos fiscais eletrônicos emitidos a uma empresa. Ele utiliza o número NSU para evitar duplicidade e garantir o processamento contínuo.
+
+---
+
+## Relacionados
+
+- **`SefazClient`** – Cliente para integração com serviços SOAP da SEFAZ visando NF-e, CT-e, MDF-e, manifestação de destinatário e distribuição de documentos fiscais.  
+- **`AbrasfClient`** – Cliente oficial para integração com o padrão ABRASF das NFS-e municipais.  
+- **`BeloHorizonteAdapter`** – Adaptador específico para integrar com a Prefeitura de Belo Horizonte conforme padrão ABRASF.  
+- **Jobs de backend:**  
+  - `SefazMonitorJob` – Sincroniza documentos fiscais contínuos.  
+  - `XmlProcessorJob` – Realiza processamento e parsing dos XMLs recebidos.  
+  - `SearchSyncJob` – Indexa documentos para uma busca rápida na interface.  
+- **Funções utilitárias:**  
+  - `decodeDocZip` – Descompacta e decodifica XMLs compactados e codificados em Base64.  
+  - `signXml`, `calculateDigest` – Realizam assinaturas digitais e cálculos de hash para integridade e autenticidade dos documentos XML.
+
+---
+
+Este glossário é fundamental para entender os conceitos-chave envolvidos no desenvolvimento, manutenção e integração do sistema FiscalZen com o complexo ambiente fiscal brasileiro. Para detalhes técnicos e exemplos de implementação, consulte os respectivos módulos e serviços listados acima.

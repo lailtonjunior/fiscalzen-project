@@ -1,17 +1,32 @@
 import * as https from 'https';
 import type { SefazClientConfig, SefazAmbiente } from './types';
 
+// Logger interface for optional logging
+export interface SefazLogger {
+  warn: (message: string, context?: Record<string, unknown>) => void;
+  info: (message: string, context?: Record<string, unknown>) => void;
+}
+
+// No-op logger for when no logger is provided
+const noopLogger: SefazLogger = {
+  warn: () => { },
+  info: () => { },
+};
+
 export class SefazClient {
   private config: SefazClientConfig;
   private httpsAgent: https.Agent;
+  private logger: SefazLogger;
+  private disposed = false;
 
-  constructor(config: SefazClientConfig) {
+  constructor(config: SefazClientConfig, logger?: SefazLogger) {
     this.config = {
       timeout: 60000,
       retryAttempts: 3,
       retryDelay: 1000,
       ...config,
     };
+    this.logger = logger || noopLogger;
 
     this.httpsAgent = new https.Agent({
       pfx: config.certificado.pfxBuffer,
@@ -40,7 +55,23 @@ export class SefazClient {
     return this.config.timeout || 60000;
   }
 
+  /**
+   * Destroys the HTTPS agent and releases resources.
+   * Call this when the client is no longer needed.
+   */
+  dispose(): void {
+    if (!this.disposed) {
+      this.httpsAgent.destroy();
+      this.disposed = true;
+      this.logger.info('SefazClient disposed', { uf: this.uf, cnpj: this.cnpj });
+    }
+  }
+
   async request(url: string, soapEnvelope: string): Promise<string> {
+    if (this.disposed) {
+      throw new Error('SefazClient has been disposed');
+    }
+
     let lastError: Error | null = null;
     const attempts = this.config.retryAttempts || 3;
 
@@ -52,6 +83,13 @@ export class SefazClient {
         lastError = error as Error;
         if (attempt < attempts) {
           const delay = (this.config.retryDelay || 1000) * Math.pow(2, attempt - 1);
+          this.logger.warn(`SEFAZ request failed, retrying...`, {
+            attempt,
+            maxAttempts: attempts,
+            delayMs: delay,
+            error: lastError.message,
+            url,
+          });
           await this.sleep(delay);
         }
       }

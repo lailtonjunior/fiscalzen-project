@@ -45,11 +45,12 @@ export async function runScheduler() {
       .where(
         and(
           // Company is active
-          eq(companies.ativo, true),
+          eq(companies.active, true),
+          // TODO: Add certificate checks when certificate fields are added to schema
           // Has certificate configured
-          sql`${companies.certificate} IS NOT NULL`,
-          // Certificate not expired
-          sql`${companies.certificateExpiry} > NOW()`,
+          // sql`${companies.certificate} IS NOT NULL`,
+          // Certificate not expired  
+          // sql`${companies.certificateExpiry} > NOW()`,
           // Ready for sync (nextSync is null or in the past)
           sql`(${nsuControl.nextSync} IS NULL OR ${nsuControl.nextSync} <= NOW())`,
           // Not currently syncing or rate limited
@@ -170,8 +171,9 @@ export async function triggerAllCompaniesSync(tenantId: string) {
   const activeCompanies = await db.query.companies.findMany({
     where: and(
       eq(companies.tenantId, tenantId),
-      eq(companies.ativo, true),
-      sql`${companies.certificate} IS NOT NULL`
+      eq(companies.active, true)
+      // TODO: Add certificate check when certificate fields are added to schema
+      // sql`${companies.certificate} IS NOT NULL`
     ),
   });
 
@@ -201,7 +203,7 @@ export async function triggerAllCompaniesSync(tenantId: string) {
 
     results.push({
       companyId: company.id,
-      companyName: company.razaoSocial,
+      companyName: company.razaoSocial ?? '',
       scheduled,
       errors,
     });

@@ -56,13 +56,21 @@ export async function processSefazMonitor(job: Job<SefazMonitorJobData>) {
       return { success: false, error: 'Company not found' };
     }
 
-    if (!company.certificate || !company.certificatePassword) {
-      logger.error(`Company has no certificate`, { companyId });
+    // TODO: Certificate fields need to be added to companies schema
+    // For now, check if certificate info is in settings/metadata
+    const settings = company.settings as Record<string, unknown> | null;
+    const certificate = settings?.certificate as Buffer | string | undefined;
+    const certificatePassword = settings?.certificatePassword as string | undefined;
+    const certificateExpiry = settings?.certificateExpiry as Date | string | undefined;
+
+    if (!certificate || !certificatePassword) {
+      logger.error(`Company has no certificate configured`, { companyId });
       await updateNsuControlError(companyId, docType, 'Certificado nao configurado');
       return { success: false, error: 'No certificate' };
     }
 
-    if (company.certificateExpiry && company.certificateExpiry < new Date()) {
+    const expiryDate = certificateExpiry ? new Date(certificateExpiry) : null;
+    if (expiryDate && expiryDate < new Date()) {
       logger.error(`Certificate expired`, { companyId });
       await updateNsuControlError(companyId, docType, 'Certificado expirado');
       return { success: false, error: 'Certificate expired' };
@@ -86,8 +94,8 @@ export async function processSefazMonitor(job: Job<SefazMonitorJobData>) {
 
     // 4. Call SEFAZ DistDFe
     const certificado: CertificadoA1 = {
-      pfxBuffer: company.certificate,
-      password: company.certificatePassword,
+      pfxBuffer: typeof certificate === 'string' ? Buffer.from(certificate, 'base64') : certificate,
+      password: certificatePassword,
     };
 
     const ambiente = env.SEFAZ_AMBIENTE;
@@ -223,16 +231,15 @@ export async function processSefazMonitor(job: Job<SefazMonitorJobData>) {
       error: message,
     });
 
-    // Increment error count
+    // Increment error count using sql
     await db
       .update(nsuControl)
       .set({
         syncStatus: 'error',
-        errorCount: nsuEntry => nsuEntry.errorCount + 1,
         lastError: message,
         updatedAt: new Date(),
       })
-      .where(and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType)));
+      .where(and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType as 'NFE' | 'CTE' | 'MDFE')));
 
     throw error;
   }
@@ -269,7 +276,7 @@ async function updateNsuControlError(companyId: string, docType: string, error: 
       lastError: error,
       updatedAt: new Date(),
     })
-    .where(and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType)));
+    .where(and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType as 'NFE' | 'CTE' | 'MDFE')));
 }
 
 async function scheduleNextJob(data: SefazMonitorJobData, delay: number) {

@@ -1,168 +1,48 @@
 # FiscalZen
 
-**CLI para consulta e manifestação de documentos fiscais eletrônicos (SEFAZ)**
+**Plataforma para gestão automatizada de documentos fiscais eletrônicos brasileiros (DF-e)**
 
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)]()
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)]()
+[![Fastify](https://img.shields.io/badge/Fastify-4-white)]()
 
 ---
 
-## O que este projeto faz
+## Visão Geral
 
-Permite consultar e gerenciar documentos fiscais eletrônicos (NF-e, CT-e, MDF-e) destinados a uma empresa via Web Services da SEFAZ:
+FiscalZen é uma plataforma distribuída para automatizar o ciclo de vida de documentos fiscais eletrônicos brasileiros:
 
-- **Consulta DistDFe** - Buscar documentos fiscais destinados ao CNPJ
-- **Manifestação do Destinatário** - Confirmar ciência, confirmar operação, desconhecer ou informar não realização
-- **Validação de Certificado** - Verificar validade do certificado A1
+- **NFe** - Nota Fiscal Eletrônica (Modelo 55)
+- **CTe** - Conhecimento de Transporte (Modelo 57)
+- **MDFe** - Manifesto de Documentos (Modelo 58)
+- **NFSe** - Nota Fiscal de Serviço (Municipal)
 
-## O que este projeto NÃO faz
+### Funcionalidades
 
-> ⚠️ **Leia antes de usar**
-
-- ❌ **NÃO emite NF-e, NFS-e, NFC-e, CT-e ou MDF-e**
-- ❌ NÃO possui interface web ou dashboard
-- ❌ NÃO calcula impostos (ICMS, IPI, etc.)
-- ❌ NÃO integra com ERPs
-- ❌ NÃO armazena dados em banco de dados
-
-Para emissão de documentos fiscais, use soluções especializadas.
+- ✅ **Sincronização Automática** - Polling periódico do DistDFe SEFAZ
+- ✅ **Manifestação do Destinatário** - Ciência, Confirmação, Desconhecimento
+- ✅ **Dashboard Web** - Visualização e gestão de documentos
+- ✅ **Busca Full-Text** - Pesquisa rápida via Meilisearch
+- ✅ **Multi-tenant** - Isolamento de dados por organização
+- ✅ **API REST** - Integração com sistemas externos
 
 ---
 
-## Pré-requisitos
+## Stack Tecnológica
 
-- Node.js 20+
-- pnpm 9+
-- Certificado digital A1 (.pfx) válido
-- Acesso à internet para comunicação com SEFAZ
-
-## Instalação
-
-```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/fiscalzen-project.git
-cd fiscalzen-project
-
-# Instale as dependências
-pnpm install
-
-# Build dos pacotes
-pnpm build
-```
-
-## Uso da CLI
-
-### 1. Validar Certificado
-
-Verifique se seu certificado está válido antes de usar:
-
-```bash
-npx fiscalzen validar-cert --cert ./certificado.pfx --senha "sua-senha"
-```
-
-Saída esperada:
-```
-═══════════════════════════════════════════
-  FiscalZen - Validação de Certificado A1
-═══════════════════════════════════════════
-
-Status: ✓ VÁLIDO
-Mensagem: Certificado válido até 2027-01-15T00:00:00.000Z
-
-─── Dados do Certificado ───────────────────
-
-CNPJ:         12.345.678/0001-99
-Razão Social: EMPRESA EXEMPLO LTDA
-Válido desde: 15/01/2024, 10:30
-Válido até:   15/01/2027, 10:30
-Dias restantes: 730
-```
-
-### 2. Consultar Documentos (DistDFe)
-
-Buscar documentos fiscais destinados ao seu CNPJ:
-
-```bash
-# Ambiente de homologação (testes)
-npx fiscalzen consultar \
-  --cert ./certificado.pfx \
-  --senha "sua-senha" \
-  --cnpj 12345678000199 \
-  --ambiente homologacao \
-  --ultNSU 0
-
-# Consultar documento por chave de acesso
-npx fiscalzen consultar \
-  --cert ./certificado.pfx \
-  --senha "sua-senha" \
-  --cnpj 12345678000199 \
-  --chave 35240112345678000199550010000001231234567890
-```
-
-**Códigos de retorno comuns:**
-- `137` - Nenhum documento localizado
-- `138` - Documento(s) localizado(s)
-- `656` - Consumo indevido (aguarde antes de nova consulta)
-
-### 3. Enviar Manifestação
-
-Manifestar ciência ou confirmação de uma NF-e:
-
-```bash
-# Ciência da operação
-npx fiscalzen manifestar \
-  --cert ./certificado.pfx \
-  --senha "sua-senha" \
-  --chave 35240112345678000199550010000001231234567890 \
-  --tipo ciencia \
-  --ambiente homologacao
-
-# Confirmação da operação
-npx fiscalzen manifestar \
-  --cert ./certificado.pfx \
-  --senha "sua-senha" \
-  --chave 35240112345678000199550010000001231234567890 \
-  --tipo confirmacao
-
-# Operação não realizada (requer justificativa)
-npx fiscalzen manifestar \
-  --cert ./certificado.pfx \
-  --senha "sua-senha" \
-  --chave 35240112345678000199550010000001231234567890 \
-  --tipo nao-realizada \
-  --justificativa "Mercadoria não foi recebida na data informada"
-```
-
-**Tipos de manifestação:**
-- `ciencia` - Ciência da Operação (210210)
-- `confirmacao` - Confirmação da Operação (210200)
-- `desconhecimento` - Desconhecimento da Operação (210220)
-- `nao-realizada` - Operação não Realizada (210240)
-
----
-
-## Exemplo: Fluxo Completo em Homologação
-
-```bash
-# 1. Valide o certificado
-npx fiscalzen validar-cert --cert ./cert.pfx --senha 123456
-
-# 2. Consulte documentos pendentes
-npx fiscalzen consultar \
-  --cert ./cert.pfx \
-  --senha 123456 \
-  --cnpj 12345678000199 \
-  --ambiente homologacao \
-  --ultNSU 0
-
-# 3. Manifeste ciência de um documento encontrado
-npx fiscalzen manifestar \
-  --cert ./cert.pfx \
-  --senha 123456 \
-  --chave <chave-do-documento> \
-  --tipo ciencia \
-  --ambiente homologacao
-```
+| Camada | Tecnologia |
+|--------|------------|
+| **Runtime** | Node.js 20+ |
+| **Linguagem** | TypeScript |
+| **Backend** | Fastify |
+| **Frontend** | Next.js 14 (App Router) |
+| **Banco de Dados** | PostgreSQL 16 + Drizzle ORM |
+| **Filas** | Redis + BullMQ |
+| **Busca** | Meilisearch |
+| **Storage** | MinIO / S3 |
+| **Autenticação** | Clerk |
+| **Monorepo** | Turborepo + pnpm |
 
 ---
 
@@ -170,53 +50,144 @@ npx fiscalzen manifestar \
 
 ```
 fiscalzen-project/
+├── apps/
+│   ├── api/              # Fastify REST API + Workers
+│   └── web/              # Next.js Dashboard
 ├── packages/
-│   ├── cli/              # CLI (este pacote)
-│   ├── sefaz-client/     # Cliente SEFAZ (SOAP, certificado, assinatura)
-│   └── xml-parser/       # Parser de XMLs fiscais
-├── CORE_LOGIC.md         # O que o projeto faz
-├── ANTI_SCOPE.md         # O que o projeto NÃO faz
-└── README.md             # Este arquivo
+│   ├── database/         # Schema Drizzle (PostgreSQL)
+│   ├── sefaz-client/     # Cliente SOAP SEFAZ (mTLS, A1)
+│   ├── nfse-client/      # Cliente NFSe (ABRASF + RPA)
+│   ├── xml-parser/       # Parser XML fiscal brasileiro
+│   ├── shared/           # Tipos e schemas Zod
+│   └── ui/               # Componentes React (shadcn/ui)
+├── docker/               # Docker Compose + configs
+└── scripts/              # Utilitários de desenvolvimento
 ```
 
 ---
 
-## Limitações e Riscos
+## Quick Start
 
-### Limitações Técnicas
+### Pré-requisitos
 
-1. **Ambiente de homologação** - O ambiente de testes da SEFAZ pode não ter documentos disponíveis para o seu CNPJ
-2. **Throttling** - A SEFAZ limita requisições. Código 656 indica consumo indevido
-3. **Certificado real** - Mesmo em homologação, é necessário certificado A1 válido
+- Node.js 20+
+- pnpm 9+
+- Docker e Docker Compose
 
-### Avisos Legais
+### 1. Clone e Instale
 
-> ⚠️ **Use por sua conta e risco**
+```bash
+git clone https://github.com/seu-usuario/fiscalzen-project.git
+cd fiscalzen-project
+pnpm install
+```
 
-- Este projeto é **experimental** e **não possui garantias**
-- Documentos fiscais têm implicações legais - consulte um contador
-- A SEFAZ pode alterar os Web Services sem aviso prévio
-- Não nos responsabilizamos por prejuízos decorrentes do uso
+### 2. Configure o Ambiente
 
-### O que pode dar errado
+```bash
+# Copie o arquivo de exemplo
+cp apps/api/.env.example apps/api/.env
 
-| Erro | Causa | Solução |
-|------|-------|---------|
-| `Mac verify error` | Senha incorreta | Verifique a senha do certificado |
-| `certificate has expired` | Certificado vencido | Renove o certificado |
-| HTTP 500 | Servidor SEFAZ indisponível | Aguarde e tente novamente |
-| cStat 656 | Consumo indevido | Aguarde 1 hora |
+# Gere secrets seguros
+node scripts/generate-secrets.js
+# Copie a saída para apps/api/.env
+```
+
+### 3. Inicie a Infraestrutura
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Serviços disponíveis:
+| Serviço | Porta | URL |
+|---------|-------|-----|
+| PostgreSQL | 5432 | - |
+| Redis | 6379 | - |
+| Meilisearch | 7700 | http://localhost:7700 |
+| MinIO Console | 9001 | http://localhost:9001 |
+
+### 4. Configure o Banco de Dados
+
+```bash
+pnpm --filter @fiscalzen/database db:push
+```
+
+### 5. Inicie o Desenvolvimento
+
+```bash
+pnpm dev
+```
+
+- **API**: http://localhost:3001
+- **Web**: http://localhost:3000
 
 ---
 
-## Desenvolvimento
+## Comandos Úteis
 
 ```bash
-# Rodar em modo desenvolvimento
-pnpm --filter @fiscalzen/cli dev
+# Desenvolvimento
+pnpm dev                    # Inicia API + Web
+pnpm build                  # Build de produção
+pnpm lint                   # Lint completo
+pnpm test                   # Testes
 
-# Executar testes
-pnpm --filter @fiscalzen/sefaz-client test:run
+# Filtros de workspace
+pnpm --filter @fiscalzen/api dev       # Apenas API
+pnpm --filter @fiscalzen/web dev       # Apenas Web
+pnpm --filter @fiscalzen/database db:studio  # GUI do banco
+
+# Docker
+docker compose -f docker/docker-compose.yml up -d      # Infra
+docker compose -f docker/docker-compose.yml logs -f    # Logs
+docker compose -f docker/docker-compose.yml down -v    # Reset
+```
+
+---
+
+## Documentação
+
+| Documento | Descrição |
+|-----------|-----------|
+| [.context/docs/architecture.md](.context/docs/architecture.md) | Arquitetura do sistema |
+| [.context/docs/data-flow.md](.context/docs/data-flow.md) | Fluxo de dados |
+| [.context/docs/development-workflow.md](.context/docs/development-workflow.md) | Workflow de desenvolvimento |
+| [.context/docs/security.md](.context/docs/security.md) | Segurança e compliance |
+| [.context/docs/glossary.md](.context/docs/glossary.md) | Glossário fiscal |
+
+---
+
+## API Endpoints
+
+### Health Check
+
+```bash
+curl http://localhost:3001/health
+```
+
+### Principais Rotas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/v1/companies` | Listar empresas |
+| GET | `/api/v1/documents` | Listar documentos |
+| POST | `/api/v1/manifestacao` | Enviar manifestação |
+| GET | `/api/v1/dashboard/timeline` | Timeline de eventos |
+
+---
+
+## Variáveis de Ambiente
+
+Veja [`apps/api/.env.example`](apps/api/.env.example) para a lista completa.
+
+Variáveis críticas:
+
+```bash
+DATABASE_URL=postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=<gerar com scripts/generate-secrets.js>
+CERT_ENCRYPTION_KEY=<gerar com scripts/generate-secrets.js>
 ```
 
 ---
@@ -227,7 +198,10 @@ MIT
 
 ---
 
-## Documentação Adicional
+## Avisos
 
-- [CORE_LOGIC.md](./CORE_LOGIC.md) - Escopo e fluxo do projeto
-- [ANTI_SCOPE.md](./ANTI_SCOPE.md) - O que não está no escopo
+> ⚠️ **Documentos fiscais têm implicações legais**
+> 
+> - Consulte um contador antes de usar em produção
+> - A SEFAZ pode alterar Web Services sem aviso
+> - Guarde backups dos certificados A1
