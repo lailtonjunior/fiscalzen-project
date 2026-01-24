@@ -19,14 +19,11 @@
 - Confirm the built artefacts in `dist/` match the new source changes.
 
 ## Repository map
-- `apply-next-dev-cache-fix.mjs/` — explain what lives here and when agents should edit it.
-- `apps/` — explain what lives here and when agents should edit it.
-- `Checklist de QA.pdf/` — explain what lives here and when agents should edit it.
-- `clean-web-next-cache.mjs/` — explain what lives here and when agents should edit it.
-- `docker/` — explain what lives here and when agents should edit it.
-- `kill-port.mjs/` — explain what lives here and when agents should edit it.
-- `mnt/` — explain what lives here and when agents should edit it.
-- `package.json/` — explain what lives here and when agents should edit it.
+- `apps/` — Frontend (web) and Backend (api) applications.
+- `packages/` — Shared libraries and internal packages (cli, sefaz-client, database, etc).
+- `docker/` — Docker configurations for local development.
+- `.context/` — AI Agents, Skills, and Documentation source of truth.
+- `AGENTS.md` — High-level entry point for Agent definitions.
 
 ## AI Context References
 - Documentation index: `.context/docs/README.md`

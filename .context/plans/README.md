@@ -3,7 +3,9 @@
 This directory contains plans for coordinating work across documentation and playbooks.
 
 ## Plan Queue
-1. [Primeiro Workflow](./primeiro-workflow.md)
+1. [Analise Codigo E Correcao](./analise-codigo-e-correcao.md)
+2. [Fiscalzen V2 Dev](./fiscalzen-v2-dev.md)
+3. [Primeiro Workflow](./primeiro-workflow.md)
 
 ## How To Create Or Update Plans
 - Run "ai-context plan <name>" to scaffold a new plan template.

@@ -6,7 +6,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-    enviarManifestacao,
     confirmarOperacao,
     registrarCiencia,
     desconhecerOperacao,
@@ -110,8 +109,8 @@ export async function manifestar(options: ManifestarOptions): Promise<void> {
                     ambiente,
                     options.chave,
                     cnpjDestinatario,
-                    options.justificativa!,
-                    certificado
+                    certificado,
+                    options.justificativa!
                 );
                 break;
             default:

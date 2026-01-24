@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, jsonb, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, timestamp, boolean, text } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const tenants = pgTable('tenants', {
@@ -26,6 +26,12 @@ export const companies = pgTable('companies', {
   inscricaoEstadual: varchar('inscricao_estadual', { length: 20 }),
   inscricaoMunicipal: varchar('inscricao_municipal', { length: 20 }),
   codigoMunicipio: varchar('codigo_municipio', { length: 7 }),
+
+  // Certificate info
+  certificate: text('certificate'),
+  certificatePassword: text('certificate_password'),
+  certificateExpiry: timestamp('certificate_expiry', { withTimezone: true }),
+
   settings: jsonb('settings').default({}),
   active: boolean('active').default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),

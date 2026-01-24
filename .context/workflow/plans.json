@@ -1,6 +1,20 @@
 {
   "active": [
-    "primeiro-workflow"
+    {
+      "slug": "analise-codigo-e-correcao",
+      "path": "plans/analise-codigo-e-correcao.md",
+      "title": "Análise de código e correção de problemas no projeto",
+      "linkedAt": "2026-01-24T04:07:33.141Z",
+      "status": "active"
+    },
+    {
+      "slug": "fiscalzen-v2-dev",
+      "path": "plans/fiscalzen-v2-dev.md",
+      "title": "FiscalZen - Desenvolvimento Completo v2.0",
+      "linkedAt": "2026-01-24T06:14:52.185Z",
+      "status": "active"
+    }
   ],
-  "completed": []
+  "completed": [],
+  "primary": "analise-codigo-e-correcao"
 }

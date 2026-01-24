@@ -56,12 +56,11 @@ export async function processSefazMonitor(job: Job<SefazMonitorJobData>) {
       return { success: false, error: 'Company not found' };
     }
 
-    // TODO: Certificate fields need to be added to companies schema
-    // For now, check if certificate info is in settings/metadata
+    // Check for certificate in new fields, fallback to settings
     const settings = company.settings as Record<string, unknown> | null;
-    const certificate = settings?.certificate as Buffer | string | undefined;
-    const certificatePassword = settings?.certificatePassword as string | undefined;
-    const certificateExpiry = settings?.certificateExpiry as Date | string | undefined;
+    const certificate = company.certificate || (settings?.certificate as string | undefined);
+    const certificatePassword = company.certificatePassword || (settings?.certificatePassword as string | undefined);
+    const certificateExpiry = company.certificateExpiry || (settings?.certificateExpiry as Date | string | undefined);
 
     if (!certificate || !certificatePassword) {
       logger.error(`Company has no certificate configured`, { companyId });

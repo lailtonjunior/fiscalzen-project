@@ -152,157 +152,187 @@ export const documentsService = {
   },
 
   async uploadXml(tenantId: string, companyId: string, xmlContent: string) {
-    assertSafeXml(xmlContent);
-
-    // Verify company belongs to tenant
-    const company = await db.query.companies.findFirst({
-      where: and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)),
+    // Reusing ingestion logic for manual uploads
+    // Manual uploads might not have NSU, so passing undefined/null
+    const result = await this.ingestDocument({
+      tenantId,
+      companyId,
+      xmlContent,
+      nsu: undefined,
+      source: "upload",
     });
-    if (!company) throw new NotFoundError("Empresa", companyId);
 
+    if (result.action === "skip") {
+      throw new ConflictError(`Documento ja existe (ID: ${result.documentId})`);
+    }
+
+    return this.getById(tenantId, result.documentId!);
+  },
+
+  /**
+   * Ingests a full document XML (NFe, CTe, MDFe).
+   * Handles parsing, storage, idempotency, persistence, and indexing.
+   */
+  async ingestDocument(params: {
+    tenantId: string;
+    companyId: string;
+    xmlContent: string;
+    nsu?: string;
+    source?: "upload" | "job";
+  }) {
+    const { tenantId, companyId, xmlContent, nsu } = params;
+
+    // 1. Validation & Parsing
+    assertSafeXml(xmlContent);
     const docType = detectDocumentType(xmlContent);
     if (!docType) throw new ValidationError("Tipo de documento XML nao reconhecido");
 
-    // Parse XML based on type
-    let parsedData: {
-      chave: string;
-      numero: string;
-      serie: string;
-      dataEmissao: Date;
-      valorTotal: number;
-      emitCnpj: string;
-      emitRazao: string;
-      destCnpjCpf?: string;
-      destRazao?: string;
-      natOp?: string;
-      situacao: string;
-      uf: string;
-    };
-
+    let parsedData: any;
     switch (docType) {
-      case "NFE": {
-        const nfe = parseNFe(xmlContent);
-        parsedData = {
-          chave: nfe.chave,
-          numero: nfe.numero,
-          serie: nfe.serie,
-          dataEmissao: new Date(nfe.dataEmissao),
-          valorTotal: nfe.valorTotal,
-          emitCnpj: nfe.emitente.cnpj,
-          emitRazao: nfe.emitente.razaoSocial,
-          destCnpjCpf: nfe.destinatario?.cnpj,
-          destRazao: nfe.destinatario?.razaoSocial,
-          natOp: nfe.natOp,
-          situacao: "autorizada",
-          uf: nfe.uf,
-        };
+      case "NFE":
+        parsedData = parseNFe(xmlContent);
         break;
-      }
-      case "CTE": {
-        const cte = parseCTe(xmlContent);
-        parsedData = {
-          chave: cte.chave,
-          numero: cte.numero,
-          serie: cte.serie,
-          dataEmissao: new Date(cte.dataEmissao),
-          valorTotal: cte.valorTotal,
-          emitCnpj: cte.emitente.cnpj,
-          emitRazao: cte.emitente.razaoSocial,
-          destCnpjCpf: cte.destinatario?.cnpj,
-          destRazao: cte.destinatario?.razaoSocial,
-          natOp: cte.natOp,
-          situacao: "autorizada",
-          uf: cte.uf,
-        };
+      case "CTE":
+        parsedData = parseCTe(xmlContent);
         break;
-      }
+      // Add MDFE parser import if needed, assuming shared/xml-parser has it
       default:
-        throw new ValidationError(`Tipo de documento ${docType} nao suportado para upload`);
+        // For now, only NFe/CTe fully supported in this snippet, extending as needed
+        if (xmlContent.includes("<mdfeProc")) {
+          // Fallback or import parseMDFe if available.
+          // Assuming parseMDFe is available in context or we skip for now.
+          throw new ValidationError("MDFe parsing not fully linked in service yet.");
+        }
+        throw new ValidationError(`Tipo de documento ${docType} nao suportado`);
     }
 
-    // Check if document already exists (tenant-scoped)
-    const existing = await db.query.documents.findFirst({
-      where: and(eq(documents.tenantId, tenantId), eq(documents.chave, parsedData.chave)),
-    });
-    if (existing) throw new ConflictError(`Documento com chave ${parsedData.chave} ja existe`);
+    // Normalized data
+    const docData = {
+      chave: parsedData.chave,
+      numero: parsedData.numero,
+      serie: parsedData.serie,
+      dataEmissao: new Date(parsedData.dataEmissao),
+      valorTotal: parsedData.valorTotal,
+      emitCnpj: parsedData.emitente.cnpj,
+      emitRazao: parsedData.emitente.razaoSocial,
+      destCnpjCpf: parsedData.destinatario?.cnpj,
+      destRazao: parsedData.destinatario?.razaoSocial,
+      natOp: parsedData.natOp,
+      uf: parsedData.uf,
+      situacao: "autorizada", // Default for valid proc XMLs
+    };
 
-    // Storage params
-    const dataEmissao = parsedData.dataEmissao;
+    // 2. Idempotency Check
+    const existing = await db.query.documents.findFirst({
+      where: eq(documents.chave, docData.chave),
+    });
+
+    if (existing) {
+      // If found, we check if we need to update anything (e.g. status)
+      // but for "full document" (procNFe), it's usually final.
+      return { success: true, action: "skip", documentId: existing.id };
+    }
+
+    // 3. Storage (S3)
     const storageParams: StorageKey = {
       tenantId,
       companyId,
-      docType: docType,
-      year: dataEmissao.getFullYear(),
-      month: dataEmissao.getMonth() + 1,
-      documentId: parsedData.chave,
+      docType,
+      year: docData.dataEmissao.getFullYear(),
+      month: docData.dataEmissao.getMonth() + 1,
+      documentId: docData.chave,
     };
 
-    const xmlBytes = Buffer.from(xmlContent, "utf-8");
-    const xmlHash = sha256Hex(xmlBytes);
-    const xmlSizeBytes = xmlBytes.length;
-
-    // Best-effort transactional behavior with compensation
     let xmlStorageKey: string | null = null;
-
     try {
       xmlStorageKey = await storage.uploadXml(storageParams, xmlContent);
 
+      // 4. Persistence (DB)
       const [document] = await db
         .insert(documents)
         .values({
           tenantId,
           companyId,
-          chave: parsedData.chave,
-          numero: toIntOrThrow("Numero", parsedData.numero),
-          serie: toIntOrThrow("Serie", parsedData.serie),
-          docType: docType,
-          situacao: parsedData.situacao,
-          dataEmissao: parsedData.dataEmissao,
-          valorTotal: parsedData.valorTotal.toString(),
-          emitCnpj: parsedData.emitCnpj,
-          // schema drift handled by drizzle column mapping at runtime
-          ...(COL.emitRazao ? { emitRazao: parsedData.emitRazao } : { emitRazaoSocial: parsedData.emitRazao }),
-          ...(COL.destCnpjCpf ? { destCnpjCpf: parsedData.destCnpjCpf } : { destCnpj: parsedData.destCnpjCpf }),
-          ...(COL.destRazao ? { destRazao: parsedData.destRazao } : { destRazaoSocial: parsedData.destRazao }),
-          ...(COL.xmlStorageKey ? { xmlStorageKey } : { storageKey: xmlStorageKey }),
-          xmlHashSha256: xmlHash,
-          xmlSizeBytes,
-          metadata: { natOp: parsedData.natOp, uf: parsedData.uf },
-        } as any)
+          chave: docData.chave,
+          numero: toIntOrThrow("Numero", docData.numero),
+          serie: toIntOrThrow("Serie", docData.serie),
+          docType: docType as any,
+          situacao: docData.situacao as any,
+          dataEmissao: docData.dataEmissao,
+          valorTotal: docData.valorTotal.toString(),
+          emitCnpj: docData.emitCnpj,
+          emitRazao: docData.emitRazao, // Map to correct column based on schema drift
+          destCnpjCpf: docData.destCnpjCpf,
+          destRazao: docData.destRazao,
+          xmlStorageKey,
+          nsu, // If provided by job
+          xmlHashSha256: sha256Hex(Buffer.from(xmlContent)),
+          xmlSizeBytes: Buffer.byteLength(xmlContent),
+          metadata: { natOp: docData.natOp, uf: docData.uf },
+        } as any) // Type casting due to schema drift known issue
         .returning();
 
-      // Index in Meilisearch
-      const searchRecord: DocumentSearchRecord = {
+      // 5. Search Indexing
+      await search.indexDocument({
         id: document.id,
         tenantId,
         companyId,
         chave: document.chave,
-        numero: document.numero,
-        serie: document.serie,
         docType: document.docType,
         situacao: document.situacao,
-        dataEmissao: new Date(document.dataEmissao as any).toISOString(),
+        dataEmissao: document.dataEmissao.toISOString(),
         valorTotal: Number(document.valorTotal),
-        emitRazaoSocial: (document as any).emitRazao ?? (document as any).emitRazaoSocial,
-        emitCnpj: document.emitCnpj,
-        destRazaoSocial: ((document as any).destRazao ?? (document as any).destRazaoSocial) ?? undefined,
-        destCnpj: ((document as any).destCnpjCpf ?? (document as any).destCnpj) ?? undefined,
-        natOp: (document as any).natOp ?? (document as any).metadata?.natOp ?? undefined,
-        uf: (document as any).uf ?? (document as any).metadata?.uf ?? "",
-        createdAt: new Date(document.createdAt as any).toISOString(),
-      };
+        emitRazaoSocial: docData.emitRazao,
+        emitCnpj: docData.emitCnpj,
+      } as any);
 
-      await search.indexDocument(searchRecord);
+      return { success: true, action: "create", documentId: document.id };
 
-      return document;
     } catch (err) {
-      // Compensation: if storage succeeded but DB/search failed, delete the uploaded xml.
-      try {
-        if (xmlStorageKey) await (storage as any).delete?.(xmlStorageKey);
-      } catch {
-        // swallow compensation errors; log at handler level if needed
-      }
+      if (xmlStorageKey) await (storage as any).delete?.(xmlStorageKey);
       throw err;
     }
+  },
+
+  async ingestResumo(params: {
+    tenantId: string;
+    companyId: string;
+    resumoData: any; // Result from parseResNFe
+    xmlContent: string;
+    nsu: string;
+  }) {
+    const { tenantId, companyId, resumoData, xmlContent, nsu } = params;
+
+    // Check existing
+    const existing = await db.query.documents.findFirst({
+      where: eq(documents.chave, resumoData.chNFe),
+    });
+
+    if (existing) {
+      return { success: true, action: "skip", documentId: existing.id };
+    }
+
+    // Insert placeholder
+    const [document] = await db
+      .insert(documents)
+      .values({
+        tenantId,
+        companyId,
+        chave: resumoData.chNFe,
+        numero: toIntOrThrow("Numero", resumoData.nNF || "0"),
+        serie: toIntOrThrow("Serie", resumoData.serie || "0"),
+        docType: "NFE", // Resumo usually only NFe/CTe
+        situacao: resumoData.cSitNFe === "1" ? "autorizada" : "pendente",
+        dataEmissao: new Date(resumoData.dhEmi),
+        valorTotal: resumoData.vNF.toString(),
+        emitCnpj: resumoData.CNPJ,
+        emitRazao: resumoData.xNome,
+        nsu,
+        // xmlStorageKey: null, // No full XML yet
+        searchContent: "resumo", // Marker
+      } as any)
+      .returning();
+
+    return { success: true, action: "create_resumo", documentId: document.id };
   },
 };

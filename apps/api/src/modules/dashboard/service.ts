@@ -10,6 +10,7 @@ export interface DocumentSummary {
   autorizadas: number;
   canceladas: number;
   denegadas: number;
+  pendentes: number;
 }
 
 export interface IntegrityStatus {
@@ -44,7 +45,7 @@ export interface Gap {
 }
 
 export const dashboardService = {
-  async getSummary(tenantId: string, query: SummaryQuery): Promise<DocumentSummary[]> {
+  async getSummary(tenantId: string, query: SummaryQuery) {
     const conditions = [eq(documents.tenantId, tenantId)];
 
     if (query.companyId) {
@@ -52,34 +53,83 @@ export const dashboardService = {
     }
 
     if (query.dataInicio) {
-      conditions.push(gte(documents.dataEmissao, new Date(query.dataInicio)));
+      conditions.push(gte(documents.dataEmissao, query.dataInicio));
     }
 
     if (query.dataFim) {
-      conditions.push(lte(documents.dataEmissao, new Date(query.dataFim)));
+      conditions.push(lte(documents.dataEmissao, query.dataFim));
     }
 
-    const result = await db
+    const [totals] = await db
       .select({
-        docType: documents.docType,
-        total: count(),
-        valorTotal: sql<number>`COALESCE(SUM(${documents.valorTotal}::numeric), 0)`,
-        autorizadas: sql<number>`COUNT(*) FILTER (WHERE ${documents.situacao} = 'autorizada')`,
-        canceladas: sql<number>`COUNT(*) FILTER (WHERE ${documents.situacao} = 'cancelada')`,
-        denegadas: sql<number>`COUNT(*) FILTER (WHERE ${documents.situacao} = 'denegada')`,
+        totalDocuments: count(),
+        totalValue: sql<number>`COALESCE(SUM(${documents.valorTotal}), 0)`,
+      })
+      .from(documents)
+      .where(and(...conditions));
+
+    const byType = await db
+      .select({
+        type: documents.docType,
+        count: count(),
       })
       .from(documents)
       .where(and(...conditions))
       .groupBy(documents.docType);
 
-    return result.map((r) => ({
-      docType: r.docType,
-      total: Number(r.total),
-      valorTotal: Number(r.valorTotal),
-      autorizadas: Number(r.autorizadas),
-      canceladas: Number(r.canceladas),
-      denegadas: Number(r.denegadas),
-    }));
+    const byStatus = await db
+      .select({
+        status: documents.situacao,
+        count: count(),
+      })
+      .from(documents)
+      .where(and(...conditions))
+      .groupBy(documents.situacao);
+
+    const totalByType = {
+      NFE: 0,
+      CTE: 0,
+      MDFE: 0,
+      NFSE: 0,
+      SAT: 0,
+      NFCE: 0,
+    };
+
+    byType.forEach((item) => {
+      if (item.type in totalByType) {
+        totalByType[item.type as keyof typeof totalByType] = Number(item.count);
+      }
+    });
+
+    const totalByStatus = {
+      autorizada: 0,
+      cancelada: 0,
+      denegada: 0,
+      inutilizada: 0,
+      pendente: 0, // Keeping 'pendente' for compatibility though not in enum
+    };
+
+    byStatus.forEach((item) => {
+      if (item.status && item.status in totalByStatus) {
+        totalByStatus[item.status as keyof typeof totalByStatus] = Number(item.count);
+      }
+    });
+
+    // Recent documents
+    const recentDocuments = await db.query.documents.findMany({
+      where: and(...conditions),
+      orderBy: [desc(documents.createdAt)],
+      limit: 5,
+    });
+
+    return {
+      totalDocuments: Number(totals?.totalDocuments || 0),
+      totalValue: Number(totals?.totalValue || 0),
+      totalByType,
+      totalByStatus,
+      pendingManifestation: 0, // Placeholder as manifestation logic is complex
+      recentDocuments,
+    };
   },
 
   async getIntegrity(tenantId: string, companyId?: string): Promise<IntegrityStatus> {
@@ -175,7 +225,7 @@ export const dashboardService = {
       message,
       details: {
         syncStatus: nsuStatus.hasError ? 'error' : nsuStatus.hasWarning ? 'warning' : 'ok',
-        gapsDetected: 0, // TODO: implement gap detection
+        gapsDetected: (await dashboardService.getGaps(tenantId, { companyId: companyId, limit: 100 })).reduce((acc, gap) => acc + gap.quantidade, 0),
         certificateStatus,
         lastSyncAge: nsuStatus.lastSyncAge,
       },
@@ -258,10 +308,10 @@ export const dashboardService = {
       day: 'YYYY-MM-DD',
       week: 'IYYY-IW',
       month: 'YYYY-MM',
-    }[groupBy] as const;
+    }[query.groupBy] as const;
 
     const safeDateFormat = dateFormat ?? 'YYYY-MM-DD';
-const result = await db
+    const result = await db
       .select({
         date: sql<string>`TO_CHAR(${documents.dataEmissao}, '${sql.raw(safeDateFormat)}')`,
         nfe: sql<number>`COUNT(*) FILTER (WHERE ${documents.docType} = 'NFE')`,

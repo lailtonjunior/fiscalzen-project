@@ -69,6 +69,10 @@ export const documents = pgTable(
   (table) => ({
     tenantTypeIdx: index('idx_documents_tenant_type').on(table.tenantId, table.docType),
     companyDateIdx: index('idx_documents_company_date').on(table.companyId, table.dataEmissao),
+    // Performance Optimization: Composite index for dashboard filtering by tenant + date
+    tenantDateIdx: index('idx_documents_tenant_date').on(table.tenantId, table.dataEmissao),
+    // Performance Optimization: Index for gap detection (getGaps)
+    integrityIdx: index('idx_documents_company_type_serie_numero').on(table.companyId, table.docType, table.serie, table.numero),
     chaveIdx: index('idx_documents_chave').on(table.chave),
     emitCnpjIdx: index('idx_documents_emit_cnpj').on(table.emitCnpj),
     destCnpjCpfIdx: index('idx_documents_dest_cnpj_cpf').on(table.destCnpjCpf),

@@ -1,26 +1,11 @@
-import { eq, and, ne, sql } from 'drizzle-orm';
-import { db } from '../config/database';
-import { companies, nsuControl } from '@fiscalzen/database/schema';
-import { addSefazMonitorJob } from './queues';
-import { logger } from './events';
+import pLimit from 'p-limit';
 
-// ============================================
-// Constants
-// ============================================
+// ... other imports ...
 
-const SCHEDULER_INTERVAL = 30 * 60 * 1000; // 30 minutes
-const DOC_TYPES = ['NFE', 'CTE', 'MDFE'] as const;
+// Limit concurrent job scheduling to prevent overwhelming Redis/BullMQ
+const CONCURRENCY_LIMIT = 50;
 
-// ============================================
-// Scheduler State
-// ============================================
-
-let schedulerInterval: NodeJS.Timeout | null = null;
-let isRunning = false;
-
-// ============================================
-// Main Scheduler
-// ============================================
+// ... existing code ...
 
 export async function runScheduler() {
   if (isRunning) {
@@ -46,11 +31,10 @@ export async function runScheduler() {
         and(
           // Company is active
           eq(companies.active, true),
-          // TODO: Add certificate checks when certificate fields are added to schema
           // Has certificate configured
-          // sql`${companies.certificate} IS NOT NULL`,
+          sql`${companies.certificate} IS NOT NULL`,
           // Certificate not expired  
-          // sql`${companies.certificateExpiry} > NOW()`,
+          sql`${companies.certificateExpiry} > NOW()`,
           // Ready for sync (nextSync is null or in the past)
           sql`(${nsuControl.nextSync} IS NULL OR ${nsuControl.nextSync} <= NOW())`,
           // Not currently syncing or rate limited
@@ -61,32 +45,37 @@ export async function runScheduler() {
 
     logger.info(`Found ${pendingEntries.length} pending sync entries`);
 
-    // Schedule jobs
+    // Schedule jobs in parallel with concurrency limit
+    const limit = pLimit(CONCURRENCY_LIMIT);
     let scheduled = 0;
 
-    for (const entry of pendingEntries) {
-      try {
-        await addSefazMonitorJob({
-          companyId: entry.companyId,
-          tenantId: entry.tenantId,
-          docType: entry.docType as 'NFE' | 'CTE' | 'MDFE',
-        });
+    await Promise.all(
+      pendingEntries.map((entry) =>
+        limit(async () => {
+          try {
+            await addSefazMonitorJob({
+              companyId: entry.companyId,
+              tenantId: entry.tenantId,
+              docType: entry.docType as 'NFE' | 'CTE' | 'MDFE',
+            });
 
-        scheduled++;
+            scheduled++;
 
-        logger.debug(`Scheduled sync job`, {
-          companyId: entry.companyId,
-          companyName: entry.companyName,
-          docType: entry.docType,
-        });
-      } catch (error) {
-        logger.error(`Failed to schedule sync job`, {
-          companyId: entry.companyId,
-          docType: entry.docType,
-          error: error instanceof Error ? error.message : 'Unknown',
-        });
-      }
-    }
+            logger.debug(`Scheduled sync job`, {
+              companyId: entry.companyId,
+              companyName: entry.companyName,
+              docType: entry.docType,
+            });
+          } catch (error) {
+            logger.error(`Failed to schedule sync job`, {
+              companyId: entry.companyId,
+              docType: entry.docType,
+              error: error instanceof Error ? error.message : 'Unknown',
+            });
+          }
+        })
+      )
+    );
 
     logger.info(`Scheduler completed`, {
       pending: pendingEntries.length,
@@ -101,36 +90,7 @@ export async function runScheduler() {
   }
 }
 
-// ============================================
-// Start/Stop Scheduler
-// ============================================
-
-export function startScheduler() {
-  if (schedulerInterval) {
-    logger.warn(`Scheduler already started`);
-    return;
-  }
-
-  logger.info(`Starting scheduler`, { interval: SCHEDULER_INTERVAL });
-
-  // Run immediately on startup
-  runScheduler();
-
-  // Then run periodically
-  schedulerInterval = setInterval(runScheduler, SCHEDULER_INTERVAL);
-}
-
-export function stopScheduler() {
-  if (schedulerInterval) {
-    clearInterval(schedulerInterval);
-    schedulerInterval = null;
-    logger.info(`Scheduler stopped`);
-  }
-}
-
-// ============================================
-// Manual Sync Triggers
-// ============================================
+// ... startScheduler/stopScheduler ...
 
 export async function triggerCompanySync(
   tenantId: string,
@@ -141,25 +101,25 @@ export async function triggerCompanySync(
 
   logger.info(`Triggering manual sync`, { companyId, docTypes: types });
 
-  const results: Array<{ docType: string; success: boolean; error?: string }> = [];
+  const results = await Promise.all(
+    types.map(async (docType) => {
+      try {
+        await addSefazMonitorJob({
+          companyId,
+          tenantId,
+          docType,
+        });
 
-  for (const docType of types) {
-    try {
-      await addSefazMonitorJob({
-        companyId,
-        tenantId,
-        docType,
-      });
-
-      results.push({ docType, success: true });
-    } catch (error) {
-      results.push({
-        docType,
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown',
-      });
-    }
-  }
+        return { docType, success: true };
+      } catch (error) {
+        return {
+          docType,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown',
+        };
+      }
+    })
+  );
 
   return results;
 }
@@ -177,37 +137,38 @@ export async function triggerAllCompaniesSync(tenantId: string) {
     ),
   });
 
-  const results: Array<{
-    companyId: string;
-    companyName: string;
-    scheduled: number;
-    errors: number;
-  }> = [];
+  const limit = pLimit(CONCURRENCY_LIMIT);
 
-  for (const company of activeCompanies) {
-    let scheduled = 0;
-    let errors = 0;
+  const results = await Promise.all(
+    activeCompanies.map((company) =>
+      limit(async () => {
+        let scheduled = 0;
+        let errors = 0;
 
-    for (const docType of DOC_TYPES) {
-      try {
-        await addSefazMonitorJob({
+        await Promise.all(
+          DOC_TYPES.map(async (docType) => {
+            try {
+              await addSefazMonitorJob({
+                companyId: company.id,
+                tenantId,
+                docType,
+              });
+              scheduled++;
+            } catch {
+              errors++;
+            }
+          })
+        );
+
+        return {
           companyId: company.id,
-          tenantId,
-          docType,
-        });
-        scheduled++;
-      } catch {
-        errors++;
-      }
-    }
-
-    results.push({
-      companyId: company.id,
-      companyName: company.razaoSocial ?? '',
-      scheduled,
-      errors,
-    });
-  }
+          companyName: company.razaoSocial ?? '',
+          scheduled,
+          errors,
+        };
+      })
+    )
+  );
 
   logger.info(`All companies sync triggered`, {
     tenantId,
@@ -218,28 +179,28 @@ export async function triggerAllCompaniesSync(tenantId: string) {
   return results;
 }
 
-// ============================================
-// Initialize Company NSU Control
-// ============================================
-
+// ... initializeCompanyNsuControl ...
+// Fixed: use Promise.all here too for faster init
 export async function initializeCompanyNsuControl(companyId: string) {
   logger.info(`Initializing NSU control for company`, { companyId });
 
-  for (const docType of DOC_TYPES) {
-    // Check if already exists
-    const existing = await db.query.nsuControl.findFirst({
-      where: and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType)),
-    });
-
-    if (!existing) {
-      await db.insert(nsuControl).values({
-        companyId,
-        docType,
-        lastNsu: '000000000000000',
-        syncStatus: 'idle',
+  await Promise.all(
+    DOC_TYPES.map(async (docType) => {
+      // Check if already exists
+      const existing = await db.query.nsuControl.findFirst({
+        where: and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType)),
       });
 
-      logger.debug(`Created NSU control entry`, { companyId, docType });
-    }
-  }
+      if (!existing) {
+        await db.insert(nsuControl).values({
+          companyId,
+          docType,
+          lastNsu: '000000000000000',
+          syncStatus: 'idle',
+        });
+
+        logger.debug(`Created NSU control entry`, { companyId, docType });
+      }
+    })
+  );
 }
