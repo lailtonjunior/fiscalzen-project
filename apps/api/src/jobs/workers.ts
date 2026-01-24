@@ -58,7 +58,7 @@ export async function startWorkers() {
       },
     }
   );
-  setupWorkerEvents(sefazMonitorWorker);
+  setupWorkerEvents(WORKER_CONFIG.sefazMonitor.name, sefazMonitorWorker);
   logger.info(`Started ${WORKER_CONFIG.sefazMonitor.name} worker`);
 
   // XML Processor Worker
@@ -70,7 +70,7 @@ export async function startWorkers() {
       concurrency: WORKER_CONFIG.xmlProcessor.concurrency,
     }
   );
-  setupWorkerEvents(xmlProcessorWorker);
+  setupWorkerEvents(WORKER_CONFIG.xmlProcessor.name, xmlProcessorWorker);
   logger.info(`Started ${WORKER_CONFIG.xmlProcessor.name} worker`);
 
   // Search Sync Worker
@@ -82,7 +82,7 @@ export async function startWorkers() {
       concurrency: WORKER_CONFIG.searchSync.concurrency,
     }
   );
-  setupWorkerEvents(searchSyncWorker);
+  setupWorkerEvents(WORKER_CONFIG.searchSync.name, searchSyncWorker);
   logger.info(`Started ${WORKER_CONFIG.searchSync.name} worker`);
 
   // NFSe Monitor Worker
@@ -98,7 +98,7 @@ export async function startWorkers() {
       },
     }
   );
-  setupWorkerEvents(nfseMonitorWorker);
+  setupWorkerEvents(WORKER_CONFIG.nfseMonitor.name, nfseMonitorWorker);
   logger.info(`Started ${WORKER_CONFIG.nfseMonitor.name} worker`);
 
   logger.info('All job workers started');
@@ -168,25 +168,9 @@ export async function resumeWorkers() {
 // Worker Status
 // ============================================
 
-export function getWorkersStatus(): WorkerHealth[] {
-  const workers = [
-    { worker: sefazMonitorWorker, name: 'sefaz-monitor' },
-    { worker: xmlProcessorWorker, name: 'xml-processor' },
-    { worker: searchSyncWorker, name: 'search-sync' },
-    { worker: nfseMonitorWorker, name: 'nfse-monitor' },
-  ];
-
-  return workers.map(({ worker, name }) => {
-    if (!worker) {
-      return {
-        name,
-        isRunning: false,
-        isPaused: false,
-        concurrency: 0,
-      };
-    }
-    return getWorkerHealth(worker);
-  });
+export function getWorkersStatus(): WorkerHealth {
+  // Use the centralized getWorkerHealth from events.ts
+  return getWorkerHealth();
 }
 
 export function isWorkersRunning(): boolean {

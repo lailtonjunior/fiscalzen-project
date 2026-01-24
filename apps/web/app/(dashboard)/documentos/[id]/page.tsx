@@ -259,10 +259,10 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       )}
 
       {/* Events Timeline */}
-      <EventsTimeline events={(document as any).events} />
+      <EventsTimeline events={document.events} />
 
       {/* XML Viewer */}
-      <XmlViewer xml={(document as any).xmlOriginal} title="XML Original" />
+      <XmlViewer xml={document.xmlOriginal} title="XML Original" />
     </div>
   );
 }

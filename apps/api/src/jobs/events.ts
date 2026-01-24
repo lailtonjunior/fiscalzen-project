@@ -165,7 +165,7 @@ export function setupWorkerEvents(workerName: string, worker: any) {
         s.lastHeartbeat = new Date();
         __workerState.set(workerName, s);
       });
-      worker.on('failed', (job: any, err: any) => {
+      worker.on('failed', (_job: unknown, err: unknown) => {
         const s = __workerState.get(workerName) ?? { running: true };
         s.running = true;
         s.lastHeartbeat = new Date();

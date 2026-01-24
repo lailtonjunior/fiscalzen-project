@@ -53,6 +53,7 @@ export interface DocumentEvent {
 
 export interface DocumentWithEvents extends Document {
   events: DocumentEvent[];
+  xmlOriginal?: string;
 }
 
 // ============================================
