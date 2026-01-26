@@ -5,12 +5,12 @@ import { eq, and } from 'drizzle-orm';
 import { redis } from '../config/redis';
 import { logger } from '../utils/logger';
 import { WebhookService } from '../modules/webhooks/service';
-
-// Stub for sefaz client
-async function consultarEventos(params: any): Promise<any[]> {
-    logger.info('Consultando eventos sefaz (stub)', params);
-    return [];
-}
+import {
+    consultarEventos,
+    type ConsultarEventosResponse,
+    type EventoConsultado,
+    type SefazAmbiente,
+} from '@fiscalzen/sefaz-client';
 
 interface EventMonitorPayload {
     tenantId: string;
@@ -43,58 +43,43 @@ export const eventMonitorWorker = new Worker<EventMonitorPayload>(
                 return;
             }
 
-            // Decrypt certificate (Mocking decryption or using raw if already buffer/string suitable for sefaz-client)
-            // Assuming company.certificate contains the PFX buffer or string directly for now as per previous context
-            // If crypto service needed: const certificate = await cryptoService.decryptCertificate(company.certificate);
-            const certificate = company.certificate;
+            // 2. Consultar eventos via DistDFe
+            // A SEFAZ usa NSU para controle de paginacao, nao data
+            const lastNSU = (company as any).lastEventNsu || '0';
 
-            // 2. Consultar eventos desde última verificação
-            // Default to 24h ago if never checked
-            const lastCheck = company.lastEventCheck || new Date(Date.now() - 24 * 60 * 60 * 1000);
+            logger.info(`Consultando eventos para ${company.cnpj} desde NSU ${lastNSU}`);
 
-            // Sefaz usually allows querying by Nsu or Date. existing consultarEventos usage suggests date range or NSU?
-            // Let's assume the provided code snippet usage:
-            /*
-            const eventos = await consultarEventos({
-              cnpj: company.cnpj,
-              dataInicio: lastCheck,
-              dataFim: new Date(),
-              certificado: certificate,
-              ambiente: company.ambiente
-            });
-            */
-            // MOCK/ADAPT for actual library availability.
-            // If @fiscalzen/sefaz-client doesn't export consultarEventos directly or signatures match
-            // I will use a safe approach or standard library call if available.
-            // For this step I'll faithfully implement the logic provided in the prompt.
-
-            // Mocking return for implementation structure validity if library function missing in context, 
-            // but assuming it exists as per prompt instructions.
-
-            let eventos: any[] = [];
+            let response: ConsultarEventosResponse;
             try {
-                // TS-ignore or similar if imports are tricky without full sefaz-client view
-                // @ts-ignore
-                eventos = await consultarEventos({
+                // Certificate pode ser Buffer ou string base64
+                const certBuffer = Buffer.isBuffer(company.certificate)
+                    ? company.certificate
+                    : Buffer.from(company.certificate as string, 'base64');
+
+                response = await consultarEventos({
                     cnpj: company.cnpj,
-                    dataInicio: lastCheck,
-                    dataFim: new Date(),
-                    certificado: certificate,
-                    ambiente: company.ambiente // Assuming field exists or we default '2' (homolog) / '1' (prod)
+                    certificado: {
+                        pfxBuffer: certBuffer,
+                        password: (company as any).certificateSenha || '',
+                    },
+                    ambiente: ((company as any).ambiente || 'producao') as SefazAmbiente,
+                    ultNSU: lastNSU,
                 });
             } catch (e) {
                 logger.error(`Error fetching events for ${companyId}:`, e);
                 throw e;
             }
 
+            const eventos = response.eventos;
+
             // 3. Processar eventos
             const newAlerts: any[] = [];
 
             for (const evento of eventos) {
-                const tpEvento = (evento.infEvento?.tpEvento || evento.tpEvento) as string;
+                const tpEvento = evento.tipoEvento;
 
                 if (EVENTOS_CRITICOS[tpEvento]) {
-                    const chave = evento.infEvento?.chNFe || evento.chNFe || evento.infEvento?.chCTe || evento.chCTe;
+                    const chave = evento.chave;
 
                     if (!chave) continue;
 
@@ -105,7 +90,7 @@ export const eventMonitorWorker = new Worker<EventMonitorPayload>(
 
                     if (document) {
                         // Processar atualização do documento
-                        await processarEvento(document, evento, tpEvento);
+                        await processarEvento(document, evento);
 
                         // Criar alerta
                         newAlerts.push({
@@ -119,8 +104,8 @@ export const eventMonitorWorker = new Worker<EventMonitorPayload>(
                             data: {
                                 chave: document.chave,
                                 tipoEvento: tpEvento,
-                                dataEvento: evento.infEvento?.dhEvento || evento.dhEvento,
-                                protocolo: evento.infEvento?.nProt || evento.nProt
+                                dataEvento: evento.dataEvento,
+                                protocolo: evento.protocolo
                             }
                         });
                     }
@@ -136,9 +121,13 @@ export const eventMonitorWorker = new Worker<EventMonitorPayload>(
                 // await notificationService.notifyTenant(...) 
             }
 
-            // 5. Atualizar timestamp
+            // 5. Atualizar timestamp e NSU
             await db.update(companies)
-                .set({ lastEventCheck: new Date() })
+                .set({
+                    lastEventCheck: new Date(),
+                    // Atualizar lastEventNsu se existir no schema
+                    ...(response.ultNSU !== lastNSU ? { lastEventNsu: response.ultNSU } as any : {}),
+                })
                 .where(eq(companies.id, companyId));
 
             // Dispatch webhooks for new alerts
@@ -171,9 +160,10 @@ export const eventMonitorWorker = new Worker<EventMonitorPayload>(
     { connection: redis, concurrency: 5 }
 );
 
-async function processarEvento(document: any, evento: any, tpEvento: string): Promise<void> {
-    const dataEvento = new Date(evento.infEvento?.dhEvento || evento.dhEvento);
-    const protocolo = evento.infEvento?.nProt || evento.nProt;
+async function processarEvento(document: any, evento: EventoConsultado): Promise<void> {
+    const dataEvento = evento.dataEvento;
+    const protocolo = evento.protocolo;
+    const tpEvento = evento.tipoEvento;
 
     switch (tpEvento) {
         case '110111': // Cancelamento NFe

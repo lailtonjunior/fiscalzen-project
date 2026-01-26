@@ -4,7 +4,6 @@ import { NotFoundError, ConflictError, ValidationError } from "../../utils/error
 import { validateCertificado, getCertificadoInfo } from "@fiscalzen/sefaz-client";
 import type { CreateCompanyInput, UpdateCompanyInput, ListCompaniesQuery } from "./schemas";
 import type { CertificadoA1 } from "@fiscalzen/sefaz-client";
-import { encryptToBuffer, encryptToBase64 } from "../../utils/encryption";
 import { injectable, inject, container } from "tsyringe";
 import { DATABASE_TOKEN } from "../../providers/database";
 import type { Database } from "../../config/database";
@@ -158,16 +157,16 @@ export class CompaniesService {
     }
 
     // FIX: encrypt sensitive fields before persisting.
-    // - certificate (pfx) stored as encrypted Buffer
-    // - certificatePassword stored as encrypted base64 string
-    const certificateEnc = encryptToBuffer(pfxBuffer);
-    const passwordEncB64 = encryptToBase64(Buffer.from(password, "utf-8"));
+    // Using the new CertificateCryptoService for proper format
+    const { certificateCrypto } = await import('./crypto.service');
+    const certificateEncrypted = certificateCrypto.encrypt(pfxBuffer);
+    const passwordEncrypted = certificateCrypto.encryptPassword(password);
 
     await this.db
       .update(companies)
       .set({
-        certificate: certificateEnc,
-        certificatePassword: passwordEncB64,
+        certificate: certificateEncrypted,
+        certificatePassword: passwordEncrypted,
         certificateExpiry: info.validTo,
         updatedAt: new Date(),
       })
@@ -200,6 +199,32 @@ export class CompaniesService {
       errorCount: entry.errorCount,
       lastError: entry.lastError,
     }));
+  }
+
+  /**
+   * Retrieves decrypted certificate for SEFAZ operations
+   * @returns Decrypted PFX buffer and password
+   */
+  async getCertificateForSefaz(tenantId: string, companyId: string): Promise<{ buffer: Buffer; password: string }> {
+    const { certificateCrypto } = await import('./crypto.service');
+
+    const company = await this.db.query.companies.findFirst({
+      where: and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)),
+    });
+
+    if (!company) {
+      throw new NotFoundError('Empresa', companyId);
+    }
+
+    if (!company.certificate || !company.certificatePassword) {
+      throw new ValidationError('Empresa não possui certificado configurado');
+    }
+
+    // Decrypt certificate and password
+    const pfxBuffer = certificateCrypto.decrypt(company.certificate as string);
+    const password = certificateCrypto.decryptPassword(company.certificatePassword);
+
+    return { buffer: pfxBuffer, password };
   }
 }
 

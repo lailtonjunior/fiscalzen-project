@@ -1,0 +1,55 @@
+# ===========================================
+# FiscalZen - Docker Compose for Integration Tests
+# ===========================================
+# Usage: docker compose -f docker/docker-compose.test.yml up -d
+# Teardown: docker compose -f docker/docker-compose.test.yml down -v
+# ===========================================
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: fiscalzen-postgres-test
+    ports:
+      - '5434:5432'
+    environment:
+      POSTGRES_USER: fiscalzen_test
+      POSTGRES_PASSWORD: fiscalzen_test
+      POSTGRES_DB: fiscalzen_test
+    # No persistent volumes - ephemeral for tests
+    tmpfs:
+      - /var/lib/postgresql/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U fiscalzen_test -d fiscalzen_test' ]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: fiscalzen-redis-test
+    ports:
+      - '6380:6379'
+    # No auth for test simplicity
+    command: redis-server --appendonly no
+    tmpfs:
+      - /data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    healthcheck:
+      test: [ 'CMD', 'redis-cli', 'ping' ]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+networks:
+  default:
+    name: fiscalzen-test-network

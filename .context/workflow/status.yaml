@@ -20,11 +20,11 @@ phases:
 
 execution:
   history:
-    - timestamp: "2026-01-24T06:14:52.186Z"
+    - timestamp: "2026-01-26T03:22:20.331Z"
       phase: P
       action: plan_linked
-      plan: "fiscalzen-v2-dev"
-  last_activity: "2026-01-24T06:14:52.186Z"
+      plan: "integration-tests-postgresql"
+  last_activity: "2026-01-26T03:22:20.331Z"
   resume_context: "Plano vinculado - aguardando revisão"
 
 approval:

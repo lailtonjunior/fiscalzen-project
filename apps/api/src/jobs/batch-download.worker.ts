@@ -151,33 +151,10 @@ export const batchDownloadWorker = new Worker<BatchDownloadPayload>(
 
         const zipBuffer = Buffer.concat(chunks);
 
-        // 4. Upload ZIP
+        // 4. Upload ZIP to S3/MinIO
         const fileName = `export_${new Date().toISOString().slice(0, 10)}_${job.id}.zip`;
-        // We reuse storage service, but we don't have a "ZIP" key builder. 
-        // storage.uploadPdf expects StorageKey...
-        // We should use raw s3 client or add a generic upload method?
-        // Checking StorageService... it has uploadXml and uploadPdf.
-        // It seems rigid. 
-        // I can assume "PDF" type and force a key, or better, extend StorageService? 
-        // Or just hack it by using uploadPdf with a fake StorageKey that produces the path we want?
-        // StorageKey: { tenantId, companyId, docType, year, month, documentId }
-        // Key = tenant/company/docType/year/month/docId.xml
-        // This is too structured for a transient download.
-        // 
-        // Workaround: I will implement a simpler `uploadFile` in `StorageService` OR 
-        // just utilize the existing client from `storage` if exposed. 
-        // `storage.client` is private.
-        // I should create a new method in StorageService.
-
-        // For now, I will add `uploadArchive` to StorageService in next step. 
-        // Here I will assume it exists or use `uploadPdf` with a strict key override if possible.
-        // Wait, I can import S3Client directly like StorageService does?
-        // No, cleaner to add method to Storage. 
-        // I'll leave a TODO here and fix StorageService next.
-
-        // Let's assume storage.uploadZip exists.
         const zipPath = `${tenantId}/downloads/${fileName}`;
-        await (storage as any).uploadZip(zipPath, zipBuffer);
+        await storage.uploadZip(zipPath, zipBuffer);
 
         const downloadUrl = await storage.generatePresignedUrl(zipPath, 86400); // 24h
 

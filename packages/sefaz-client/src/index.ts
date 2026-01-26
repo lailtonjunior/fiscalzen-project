@@ -106,3 +106,11 @@ export {
   desconhecerOperacao,
   operacaoNaoRealizada,
 } from './services/manifestacao';
+
+// Services - Event Query
+export {
+  consultarEventos,
+  type ConsultarEventosParams,
+  type ConsultarEventosResponse,
+  type EventoConsultado,
+} from './services/event-query';

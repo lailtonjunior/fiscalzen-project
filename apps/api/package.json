@@ -10,6 +10,7 @@
     "lint": "eslint src --ext .ts",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -55,6 +56,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/pdfmake": "^0.2.12",
     "@types/pg": "^8.16.0",
+    "postgres": "^3.4.3",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",

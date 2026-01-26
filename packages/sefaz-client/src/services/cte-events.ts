@@ -110,13 +110,6 @@ function buildEnvEventoXml(eventoAssinado: string, idLote: string): string {
 </eventoCTe>`.trim();
 }
 
-function buildSoapBody(envEventoXml: string): string {
-    return `
-<cteDadosMsg xmlns="${SOAP_NAMESPACES.cteEvento}">
-  ${envEventoXml}
-</cteDadosMsg>`.trim();
-}
-
 function gerarIdLote(): string {
     return Date.now().toString().slice(-15).padStart(15, '0');
 }

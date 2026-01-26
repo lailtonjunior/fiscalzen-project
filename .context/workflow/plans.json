@@ -13,6 +13,14 @@
       "title": "FiscalZen - Desenvolvimento Completo v2.0",
       "linkedAt": "2026-01-24T06:14:52.185Z",
       "status": "active"
+    },
+    {
+      "slug": "integration-tests-postgresql",
+      "path": "plans/integration-tests-postgresql.md",
+      "title": "FiscalZen - Configurar Testes de Integração com PostgreSQL",
+      "summary": "Configurar ambiente de testes de integração com banco PostgreSQL real para validar queries Drizzle, substituindo mocks por testes contra banco isolado usando Docker",
+      "linkedAt": "2026-01-26T03:22:20.328Z",
+      "status": "active"
     }
   ],
   "completed": [],
