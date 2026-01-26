@@ -21,7 +21,12 @@ FiscalZen é uma plataforma distribuída para automatizar o ciclo de vida de doc
 ### Funcionalidades
 
 - ✅ **Sincronização Automática** - Polling periódico do DistDFe SEFAZ
-- ✅ **Manifestação do Destinatário** - Ciência, Confirmação, Desconhecimento
+- ✅ **Monitoramento de Eventos** - Detecção de cancelamentos, correções e desacordos em tempo real
+- ✅ **Alertas Inteligentes** - Notificações críticas sobre documentos
+- ✅ **Webhooks & Integração** - Notificação ativa para ERPs via Webhooks seguros (HMAC)
+- ✅ **Geração de PDF** - DACTE (CTe) e DANFE (NFe) com suporte a download em lote
+- ✅ **Colaboração** - Tags, Comentários e Menções em documentos
+- ✅ **Manifestação & Desacordo** - Ciência, Confirmação, Desconhecimento e Desacordo de CTe
 - ✅ **Dashboard Web** - Visualização e gestão de documentos
 - ✅ **Busca Full-Text** - Pesquisa rápida via Meilisearch
 - ✅ **Multi-tenant** - Isolamento de dados por organização
@@ -172,7 +177,12 @@ curl http://localhost:3001/health
 |--------|----------|-----------|
 | GET | `/api/v1/companies` | Listar empresas |
 | GET | `/api/v1/documents` | Listar documentos |
+| GET | `/api/v1/documents/:id/pdf` | Download PDF (DACTE/DANFE) |
+| POST | `/api/v1/documents/batch-download` | Download em lote (ZIP) |
 | POST | `/api/v1/manifestacao` | Enviar manifestação |
+| POST | `/api/v1/manifestacao/desacordo` | Registrar desacordo de CTe |
+| GET | `/api/v1/alerts` | Listar alertas |
+| POST | `/api/v1/webhooks` | Gerenciar webhooks |
 | GET | `/api/v1/dashboard/timeline` | Timeline de eventos |
 
 ---
