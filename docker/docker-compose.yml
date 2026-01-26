@@ -30,7 +30,7 @@ services:
           cpus: '0.5'
           memory: 512M
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U fiscalzen -d fiscalzen']
+      test: [ 'CMD-SHELL', 'pg_isready -U fiscalzen -d fiscalzen' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,9 +46,7 @@ services:
     volumes:
       - redis_data:/data
     command: >
-      sh -c "redis-server
-      --appendonly yes
-      --requirepass $$(cat /run/secrets/redis_password)"
+      sh -c "redis-server --appendonly yes --requirepass $$(cat /run/secrets/redis_password)"
     deploy:
       resources:
         limits:
@@ -58,7 +56,7 @@ services:
           cpus: '0.25'
           memory: 128M
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: [ 'CMD', 'redis-cli', 'ping' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,8 +75,7 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     command: >
-      sh -c "export MEILI_MASTER_KEY=$$(cat /run/secrets/meilisearch_key) &&
-      meilisearch"
+      sh -c "export MEILI_MASTER_KEY=$$(cat /run/secrets/meilisearch_key) && meilisearch"
     deploy:
       resources:
         limits:
@@ -88,13 +85,13 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:7700/health' ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   minio:
-    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    image: minio/minio:latest
     container_name: fiscalzen-minio
     restart: unless-stopped
     ports:
@@ -105,10 +102,9 @@ services:
       - minio_password
     volumes:
       - minio_data:/data
-    command: >
-      sh -c "export MINIO_ROOT_USER=$$(cat /run/secrets/minio_user) &&
-      export MINIO_ROOT_PASSWORD=$$(cat /run/secrets/minio_password) &&
-      minio server /data --console-address ':9001'"
+    entrypoint: >
+      /bin/sh -c " export MINIO_ROOT_USER=$$(cat /run/secrets/minio_user) && export MINIO_ROOT_PASSWORD=$$(cat /run/secrets/minio_password) && /usr/bin/docker-entrypoint.sh server /data --console-address ':9001' "
+    # command: server /data --console-address ':9001' (overridden by entrypoint above)
     deploy:
       resources:
         limits:
@@ -118,7 +114,7 @@ services:
           cpus: '0.5'
           memory: 256M
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: [ 'CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -134,19 +130,14 @@ services:
       - minio_user
       - minio_password
     entrypoint: >
-      /bin/sh -c "
-      mc alias set minio http://minio:9000 $$(cat /run/secrets/minio_user) $$(cat /run/secrets/minio_password);
-      mc mb minio/fiscalzen-docs --ignore-existing;
-      mc anonymous set none minio/fiscalzen-docs;
-      exit 0;
-      "
+      /bin/sh -c " mc alias set minio http://minio:9000 $$(cat /run/secrets/minio_user) $$(cat /run/secrets/minio_password); mc mb minio/fiscalzen-docs --ignore-existing; mc anonymous set none minio/fiscalzen-docs; exit 0; "
 
   # ===========================================
   # Application Services (opcional para dev local)
   # Use: docker compose --profile app up
   # ===========================================
   api:
-    profiles: ['app']
+    profiles: [ 'app' ]
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
@@ -154,7 +145,7 @@ services:
     restart: unless-stopped
     ports:
       - '3001:3001'
-      - '3002:3002'  # WebSocket
+      - '3002:3002' # WebSocket
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://fiscalzen:fiscalzen_dev@postgres:5432/fiscalzen
@@ -190,14 +181,14 @@ services:
       minio:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3001/health']
+      test: [ 'CMD', 'wget', '--spider', '-q', 'http://localhost:3001/health' ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
   web:
-    profiles: ['app']
+    profiles: [ 'app' ]
     build:
       context: ..
       dockerfile: docker/Dockerfile.web
@@ -219,7 +210,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
+      test: [ 'CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -230,6 +221,7 @@ volumes:
   redis_data:
   meilisearch_data:
   minio_data:
+
 
 networks:
   default:
