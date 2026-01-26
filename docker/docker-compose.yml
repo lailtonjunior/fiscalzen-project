@@ -1,4 +1,9 @@
-version: '3.8'
+# ===========================================
+# FiscalZen - Docker Compose
+# ===========================================
+# Uso desenvolvimento: docker compose up
+# Uso com apps: docker compose --profile app up
+# ===========================================
 
 services:
   postgres:
@@ -9,11 +14,21 @@ services:
       - '5433:5432'
     environment:
       POSTGRES_USER: fiscalzen
-      POSTGRES_PASSWORD: fiscalzen_dev
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: fiscalzen
+    secrets:
+      - postgres_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U fiscalzen -d fiscalzen']
       interval: 10s
@@ -26,9 +41,22 @@ services:
     restart: unless-stopped
     ports:
       - '6379:6379'
+    secrets:
+      - redis_password
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: >
+      sh -c "redis-server
+      --appendonly yes
+      --requirepass $$(cat /run/secrets/redis_password)"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -43,10 +71,22 @@ services:
       - '7700:7700'
     environment:
       MEILI_ENV: development
-      MEILI_MASTER_KEY: fiscalzen_meilisearch_dev_key
       MEILI_NO_ANALYTICS: 'true'
+    secrets:
+      - meilisearch_key
     volumes:
       - meilisearch_data:/meili_data
+    command: >
+      sh -c "export MEILI_MASTER_KEY=$$(cat /run/secrets/meilisearch_key) &&
+      meilisearch"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:7700/health']
       interval: 10s
@@ -54,36 +94,50 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
     container_name: fiscalzen-minio
     restart: unless-stopped
     ports:
       - '9000:9000'
       - '9001:9001'
-    environment:
-      MINIO_ROOT_USER: fiscalzen
-      MINIO_ROOT_PASSWORD: fiscalzen_minio_dev
+    secrets:
+      - minio_user
+      - minio_password
     volumes:
       - minio_data:/data
-    command: server /data --console-address ":9001"
+    command: >
+      sh -c "export MINIO_ROOT_USER=$$(cat /run/secrets/minio_user) &&
+      export MINIO_ROOT_PASSWORD=$$(cat /run/secrets/minio_password) &&
+      minio server /data --console-address ':9001'"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Create default bucket on startup
+  # Create default bucket on startup (private access)
   minio-init:
     image: minio/mc:latest
     container_name: fiscalzen-minio-init
     depends_on:
       minio:
         condition: service_healthy
+    secrets:
+      - minio_user
+      - minio_password
     entrypoint: >
       /bin/sh -c "
-      mc alias set minio http://minio:9000 fiscalzen fiscalzen_minio_dev;
+      mc alias set minio http://minio:9000 $$(cat /run/secrets/minio_user) $$(cat /run/secrets/minio_password);
       mc mb minio/fiscalzen-docs --ignore-existing;
-      mc anonymous set download minio/fiscalzen-docs;
+      mc anonymous set none minio/fiscalzen-docs;
       exit 0;
       "
 
@@ -102,18 +156,30 @@ services:
       - '3001:3001'
       - '3002:3002'  # WebSocket
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgresql://fiscalzen:fiscalzen_dev@postgres:5432/fiscalzen
       REDIS_URL: redis://redis:6379
       MEILISEARCH_URL: http://meilisearch:7700
-      MEILISEARCH_API_KEY: fiscalzen_meilisearch_dev_key
       S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: fiscalzen
-      S3_SECRET_KEY: fiscalzen_minio_dev
       S3_BUCKET: fiscalzen-docs
       CORS_ORIGIN: http://localhost:3000
-      JWT_SECRET: docker_dev_jwt_secret_change_in_production_32chars
-      CERT_ENCRYPTION_KEY: ZG9ja2VyX2Rldl9jZXJ0X2tleV9jaGFuZ2VfaW5fcHJvZA==
+    env_file:
+      - .env.api
+    secrets:
+      - jwt_secret
+      - cert_encryption_key
+      - meilisearch_key
+      - minio_user
+      - minio_password
+      - redis_password
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     depends_on:
       postgres:
         condition: service_healthy
@@ -141,9 +207,23 @@ services:
       - '3000:3000'
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:3001
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   postgres_data:
@@ -154,3 +234,22 @@ volumes:
 networks:
   default:
     name: fiscalzen-network
+
+# ===========================================
+# Secrets - Arquivos locais em docker/secrets/
+# ===========================================
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  meilisearch_key:
+    file: ./secrets/meilisearch_key.txt
+  minio_user:
+    file: ./secrets/minio_user.txt
+  minio_password:
+    file: ./secrets/minio_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  cert_encryption_key:
+    file: ./secrets/cert_encryption_key.txt

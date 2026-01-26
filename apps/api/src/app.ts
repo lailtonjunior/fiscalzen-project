@@ -11,12 +11,19 @@ import rateLimitPlugin from './plugins/rate-limit';
 // Routes
 import { companiesRoutes } from './modules/companies/index';
 import { documentsRoutes } from './modules/documents/index';
+import { pdfRoutes } from './modules/pdf/index';
+import { relationsRoutes } from './modules/relations/index';
+import { tagsRoutes } from './modules/tags/index';
+import { commentsRoutes } from './modules/comments/index';
+import { alertsRoutes } from './modules/alertas/index';
+import { webhooksRoutes } from './modules/webhooks/index';
 import { eventsRoutes } from './modules/events/index';
 import { dashboardRoutes } from './modules/dashboard/index';
 import { manifestacaoRoutes } from './modules/manifestacao/index';
 import { agentsRoutes } from './modules/agents/index';
 import { jobsRoutes } from './modules/jobs/index';
 import { nfseRoutes, companyNfseRoutes } from './modules/nfse/index';
+import { downloadsRoutes } from './modules/downloads/index';
 
 // Utils
 import { AppError } from './utils/errors';
@@ -210,7 +217,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     async (api) => {
       await api.register(companiesRoutes, { prefix: '/companies' });
       await api.register(documentsRoutes, { prefix: '/documents' });
+      await api.register(pdfRoutes, { prefix: '/documents' }); // PDF endpoints
+      await api.register(relationsRoutes, { prefix: '/documents' });
+      await api.register(tagsRoutes, { prefix: '/tags' });
+      await api.register(commentsRoutes, { prefix: '/comments' });
+      await api.register(alertsRoutes, { prefix: '/alerts' }); // New Alerts API
+      await api.register(webhooksRoutes, { prefix: '/webhooks' }); // New Webhooks API
       await api.register(eventsRoutes, { prefix: '/documents' }); // Nested under documents
+      await api.register(downloadsRoutes, { prefix: '/downloads' }); // New batch download details
       await api.register(dashboardRoutes, { prefix: '/dashboard' });
       await api.register(manifestacaoRoutes, { prefix: '/manifestacao' });
 

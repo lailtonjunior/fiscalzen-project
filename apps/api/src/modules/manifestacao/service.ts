@@ -7,6 +7,7 @@ import {
   confirmarOperacao,
   desconhecerOperacao,
   operacaoNaoRealizada,
+  registrarDesacordoCTe,
   type CertificadoA1,
   type SefazAmbiente,
 } from '@fiscalzen/sefaz-client';
@@ -263,6 +264,97 @@ export const manifestacaoService = {
         chNFe,
         tipoEvento: '210240',
         descricao: 'Operacao nao Realizada',
+        protocolo: result.nProt,
+        dataRegistro: result.dhRegEvento,
+      };
+    } catch (error) {
+      if (error instanceof ExternalServiceError) throw error;
+      const message = error instanceof Error ? error.message : 'Erro desconhecido';
+      throw new ExternalServiceError('SEFAZ', message);
+    }
+  },
+
+  async registrarDesacordo(
+    tenantId: string,
+    companyId: string,
+    chCTe: string,
+    observacao: string,
+    indDesacordoOper: '1' | '2' | '3' | '4'
+  ) {
+    const company = await getCompanyWithCertificate(tenantId, companyId);
+
+    const document = await db.query.documents.findFirst({
+      where: and(eq(documents.chave, chCTe), eq(documents.tenantId, tenantId)),
+    });
+
+    // 2. Validar tipo de documento
+    if (document.docType !== 'CTE') {
+      throw new ValidationError('Desacordo so e permitido para CTe');
+    }
+
+    // 3. Validar se ja nao existe desacordo
+    if (document.statusDesacordo) {
+      throw new ValidationError('Este CTe ja possui registro de desacordo');
+    }
+
+    // 4. Validar prazo (45 dias)
+    if (document.dataAutorizacao) {
+      const diasDesdeAutorizacao = Math.ceil(
+        Math.abs(new Date().getTime() - new Date(document.dataAutorizacao).getTime()) /
+        (1000 * 60 * 60 * 24)
+      );
+      if (diasDesdeAutorizacao > 45) {
+        throw new ValidationError('Prazo para registro de desacordo expirado (45 dias)');
+      }
+    }
+
+    const certificado: CertificadoA1 = {
+      pfxBuffer: company.certificate!,
+      password: company.certificatePassword!,
+    };
+
+    const ambiente: SefazAmbiente = env.SEFAZ_AMBIENTE;
+
+    try {
+      const result = await registrarDesacordoCTe({
+        ambiente,
+        chCTe,
+        cnpjTomador: company.cnpj,
+        certificado,
+        observacao,
+        indDesacordoOper,
+      });
+
+      if (!result.sucesso) {
+        throw new ExternalServiceError('SEFAZ', result.xMotivo);
+      }
+
+      await recordManifestacao(
+        document.id,
+        '610110',
+        'Prestacao do Servico em Desacordo',
+        result.nProt ?? undefined,
+        result.cStat,
+        result.xMotivo
+      );
+
+      // 8. Atualizar documento (Desacordo specific fields)
+      await db
+        .update(documents)
+        .set({
+          statusDesacordo: indDesacordoOper,
+          dataDesacordo: result.dhRegEvento ? new Date(result.dhRegEvento) : new Date(),
+          protocoloDesacordo: result.nProt,
+          observacaoDesacordo: observacao,
+          updatedAt: new Date(),
+        })
+        .where(eq(documents.id, document.id));
+
+      return {
+        success: true,
+        chCTe,
+        tipoEvento: '610110',
+        descricao: 'Prestacao do Servico em Desacordo',
         protocolo: result.nProt,
         dataRegistro: result.dhRegEvento,
       };

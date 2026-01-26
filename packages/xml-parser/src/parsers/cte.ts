@@ -1,6 +1,15 @@
 import { createParser, parseDate, parseDecimal, extractCnpjCpf, buildSearchContent } from '../utils';
 import type { DocumentStatus } from '../types';
 
+export interface DocumentoOriginario {
+  tipo: 'NFE' | 'NF' | 'OUTROS';
+  chave?: string;
+  serie?: string;
+  numero?: string;
+  dataEmissao?: string;
+  valorTotal?: number;
+}
+
 export interface CTeData {
   tipo: 'CTE';
   chave: string;
@@ -23,6 +32,7 @@ export interface CTeData {
   valorTotal: number;
   valorFrete: number;
   situacao: DocumentStatus;
+  documentosOriginarios: DocumentoOriginario[];
   metadata: Record<string, unknown>;
   searchContent: string;
 }
@@ -49,6 +59,42 @@ export function parseCTe(xml: string): CTeData {
   const dest = infCte.dest || {}; // Destinatário
   const vPrest = infCte.vPrest;
   const protCTe = procCTe.protCTe?.infProt;
+  const infDoc = infCte.infCTeNorm?.infDoc || {};
+
+  // Extract referenced documents (NFe, NF papel, outros)
+  const documentosOriginarios: DocumentoOriginario[] = [];
+
+  // NFe eletronica (most common)
+  const infNFeList = Array.isArray(infDoc.infNFe) ? infDoc.infNFe : (infDoc.infNFe ? [infDoc.infNFe] : []);
+  for (const nfe of infNFeList) {
+    documentosOriginarios.push({
+      tipo: 'NFE',
+      chave: String(nfe.chave || ''),
+    });
+  }
+
+  // NF papel (legacy)
+  const infNFList = Array.isArray(infDoc.infNF) ? infDoc.infNF : (infDoc.infNF ? [infDoc.infNF] : []);
+  for (const nf of infNFList) {
+    documentosOriginarios.push({
+      tipo: 'NF',
+      serie: String(nf.serie || ''),
+      numero: String(nf.nDoc || ''),
+      dataEmissao: nf.dEmi,
+      valorTotal: parseDecimal(nf.vBC),
+    });
+  }
+
+  // Outros documentos
+  const infOutrosList = Array.isArray(infDoc.infOutros) ? infDoc.infOutros : (infDoc.infOutros ? [infDoc.infOutros] : []);
+  for (const outro of infOutrosList) {
+    documentosOriginarios.push({
+      tipo: 'OUTROS',
+      numero: String(outro.nDoc || ''),
+      dataEmissao: outro.dEmi,
+      valorTotal: parseDecimal(outro.vDocFisc),
+    });
+  }
 
   // Extract access key
   const chave = infCte['@_Id']?.replace('CTe', '') || protCTe?.chCTe || '';
@@ -96,6 +142,7 @@ export function parseCTe(xml: string): CTeData {
     valorTotal: parseDecimal(vPrest?.vTPrest),
     valorFrete: parseDecimal(vPrest?.vRec),
     situacao,
+    documentosOriginarios,
     metadata: {
       natOp: ide.natOp,
       tpCTe: ide.tpCTe, // 0=Normal, 1=Complemento, 2=Anulação, 3=Substituto

@@ -1,4 +1,13 @@
 import pLimit from 'p-limit';
+import { db } from '../config/database';
+import { logger } from '../utils/logger';
+import { addSefazMonitorJob } from './index';
+import { companies, nsuControl } from '@fiscalzen/database/schema';
+import { eq, and, sql, ne } from 'drizzle-orm';
+
+// Document types constants
+const DOC_TYPES = ['NFE', 'CTE', 'MDFE'] as const;
+let isRunning = false;
 
 // ... other imports ...
 
@@ -20,26 +29,26 @@ export async function runScheduler() {
     // Find all NSU control entries that need sync
     const pendingEntries = await db
       .select({
-        companyId: nsuControl.companyId,
-        docType: nsuControl.docType,
-        tenantId: companies.tenantId,
-        companyName: companies.razaoSocial,
+        companyId: (nsuControl as any).companyId,
+        docType: (nsuControl as any).docType,
+        tenantId: (companies as any).tenantId,
+        companyName: (companies as any).razaoSocial,
       })
-      .from(nsuControl)
-      .innerJoin(companies, eq(nsuControl.companyId, companies.id))
+      .from(nsuControl as any)
+      .innerJoin(companies as any, eq((nsuControl as any).companyId, (companies as any).id))
       .where(
         and(
           // Company is active
-          eq(companies.active, true),
+          eq((companies as any).active, true),
           // Has certificate configured
-          sql`${companies.certificate} IS NOT NULL`,
+          sql`${(companies as any).certificate} IS NOT NULL`,
           // Certificate not expired  
-          sql`${companies.certificateExpiry} > NOW()`,
+          sql`${(companies as any).certificateExpiry} > NOW()`,
           // Ready for sync (nextSync is null or in the past)
-          sql`(${nsuControl.nextSync} IS NULL OR ${nsuControl.nextSync} <= NOW())`,
+          sql`(${(nsuControl as any).nextSync} IS NULL OR ${(nsuControl as any).nextSync} <= NOW())`,
           // Not currently syncing or rate limited
-          ne(nsuControl.syncStatus, 'syncing'),
-          ne(nsuControl.syncStatus, 'rate_limited')
+          ne((nsuControl as any).syncStatus, 'syncing'),
+          ne((nsuControl as any).syncStatus, 'rate_limited')
         )
       );
 
@@ -128,79 +137,37 @@ export async function triggerAllCompaniesSync(tenantId: string) {
   logger.info(`Triggering sync for all companies`, { tenantId });
 
   // Get all active companies for tenant
-  const activeCompanies = await db.query.companies.findMany({
+  const activeCompanies = await (db.query as any).companies.findMany({
     where: and(
-      eq(companies.tenantId, tenantId),
-      eq(companies.active, true)
+      eq((companies as any).tenantId, tenantId),
+      eq((companies as any).active, true)
       // TODO: Add certificate check when certificate fields are added to schema
       // sql`${companies.certificate} IS NOT NULL`
     ),
   });
-
-  const limit = pLimit(CONCURRENCY_LIMIT);
-
-  const results = await Promise.all(
-    activeCompanies.map((company) =>
-      limit(async () => {
-        let scheduled = 0;
-        let errors = 0;
-
-        await Promise.all(
-          DOC_TYPES.map(async (docType) => {
-            try {
-              await addSefazMonitorJob({
-                companyId: company.id,
-                tenantId,
-                docType,
-              });
-              scheduled++;
-            } catch {
-              errors++;
-            }
-          })
-        );
-
-        return {
-          companyId: company.id,
-          companyName: company.razaoSocial ?? '',
-          scheduled,
-          errors,
-        };
-      })
-    )
-  );
-
-  logger.info(`All companies sync triggered`, {
-    tenantId,
-    companies: results.length,
-    totalScheduled: results.reduce((sum, r) => sum + r.scheduled, 0),
-  });
-
-  return results;
-}
-
-// ... initializeCompanyNsuControl ...
-// Fixed: use Promise.all here too for faster init
-export async function initializeCompanyNsuControl(companyId: string) {
-  logger.info(`Initializing NSU control for company`, { companyId });
-
   await Promise.all(
-    DOC_TYPES.map(async (docType) => {
-      // Check if already exists
-      const existing = await db.query.nsuControl.findFirst({
-        where: and(eq(nsuControl.companyId, companyId), eq(nsuControl.docType, docType)),
-      });
+    activeCompanies.map(async (company: any) => {
+      const companyId = company.id;
 
-      if (!existing) {
-        await db.insert(nsuControl).values({
-          companyId,
-          docType,
-          lastNsu: '000000000000000',
-          syncStatus: 'idle',
-        });
+      await Promise.all(
+        DOC_TYPES.map(async (docType) => {
+          // Check if already exists
+          const existing = await (db.query as any).nsuControl.findFirst({
+            where: and(eq((nsuControl as any).companyId, companyId), eq((nsuControl as any).docType, docType)),
+          });
 
-        logger.debug(`Created NSU control entry`, { companyId, docType });
-      }
+          if (!existing) {
+            await db.insert(nsuControl).values({
+              companyId,
+              docType,
+              lastNsu: '000000000000000',
+              syncStatus: 'idle',
+            });
+
+            logger.debug(`Created NSU control entry`, { companyId, docType });
+          }
+        })
+      );
     })
   );
 }

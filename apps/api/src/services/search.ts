@@ -20,6 +20,7 @@ export interface DocumentSearchRecord {
   infAdic?: string;
   uf: string;
   createdAt: string;
+  tags?: string[];
 }
 
 export interface SearchFilters {
@@ -32,6 +33,7 @@ export interface SearchFilters {
   emitCnpj?: string;
   destCnpj?: string;
   uf?: string;
+  tags?: string[];
 }
 
 export interface SearchResult {
@@ -84,7 +86,15 @@ function buildFilters(filters: SearchFilters): string[] {
   return filterArray;
 }
 
-export const search = {
+export const search: {
+  indexDocument(doc: DocumentSearchRecord): Promise<void>;
+  indexDocuments(docs: DocumentSearchRecord[]): Promise<void>;
+  searchDocuments(query: string, filters: SearchFilters, page?: number, limit?: number, sort?: string[]): Promise<SearchResult>;
+  deleteDocument(id: string): Promise<void>;
+  deleteDocumentsByTenant(tenantId: string): Promise<void>;
+  getDocument(id: string): Promise<DocumentSearchRecord | null>;
+  updateDocumentTags(documentId: string, tags: string[]): Promise<void>;
+} = {
   async indexDocument(doc: DocumentSearchRecord): Promise<void> {
     try {
       const index = meilisearch.index(INDEXES.DOCUMENTS);
@@ -167,6 +177,19 @@ export const search = {
     } catch (error) {
       // Document not found
       return null;
+    }
+  },
+
+  async updateDocumentTags(documentId: string, tags: string[]): Promise<void> {
+    try {
+      const index = meilisearch.index(INDEXES.DOCUMENTS);
+      await index.updateDocuments([{
+        id: documentId,
+        tags
+      }]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new ExternalServiceError('Meilisearch', `Falha ao atualizar tags do documento: ${message}`);
     }
   },
 };

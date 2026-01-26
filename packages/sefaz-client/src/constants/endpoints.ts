@@ -154,6 +154,10 @@ export function getCTeDistDFeEndpoint(ambiente: SefazAmbiente): string {
   return CTE_DISTDFE_ENDPOINTS[ambiente];
 }
 
+export function getCTeEventoEndpoint(ambiente: SefazAmbiente): string {
+  return CTE_RECEPCAO_EVENTO_ENDPOINTS[ambiente];
+}
+
 export function getMDFeDistDFeEndpoint(ambiente: SefazAmbiente): string {
   return MDFE_DISTDFE_ENDPOINTS[ambiente];
 }

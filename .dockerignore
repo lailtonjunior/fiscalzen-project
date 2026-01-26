@@ -1,49 +1,84 @@
 # ===========================================
-# FiscalZen Docker Ignore
+# FiscalZen - Docker Ignore
 # ===========================================
 
-# Dependencies (installed fresh in Docker)
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies (serão instaladas no container)
 node_modules
 **/node_modules
 
-# Build outputs
+# Build outputs (serão gerados no container)
+dist
 **/dist
+build
 **/build
+.next
 **/.next
-
-# Development files
+.turbo
 **/.turbo
-**/.git
-**/.gitignore
-**/.env
-**/.env.local
-**/.env*.local
 
-# IDE
-.idea
+# Environment files (NUNCA incluir no build)
+.env
+.env.*
+*.env
+!.env.example
+
+# IDE e editores
 .vscode
+.idea
 *.swp
 *.swo
+*~
+
+# Testes e cobertura
+coverage
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/*.test.tsx
+**/*.spec.tsx
+jest.config.*
+vitest.config.*
+
+# Docker (evita recursão)
+docker/secrets/
+Dockerfile*
+docker-compose*
+
+# Secrets (CRÍTICO - nunca incluir)
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+certs/
+
+# Logs e temporários
+*.log
+logs/
+tmp/
+temp/
+.cache
+npm-debug.log*
+pnpm-debug.log*
 
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Test & Coverage
-coverage
-**/*.test.ts
-**/*.spec.ts
-
-# Documentation (not needed in production image)
+# Documentação (não necessária no runtime)
 *.md
-!README.md
-docs
+docs/
+LICENSE
 
-# Certificates (should be mounted as volumes)
-certs
-
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
+# Monorepo configs (não necessários no runtime)
+turbo.json
+.npmrc
+.nvmrc
+.node-version

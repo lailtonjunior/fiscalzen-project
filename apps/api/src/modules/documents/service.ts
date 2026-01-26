@@ -1,12 +1,19 @@
 import { eq, and, sql, desc, asc, gte, lte } from "drizzle-orm";
-import { db } from "../../config/database";
-import { documents, companies } from "@fiscalzen/database/schema";
+import { documents } from "@fiscalzen/database/schema";
 import { NotFoundError, ValidationError, ConflictError } from "../../utils/errors";
-import { storage, type StorageKey } from "../../services/storage";
-import { search, type DocumentSearchRecord } from "../../services/search";
+import { StorageService, type StorageKey } from "../../services/storage";
+import { search } from "../../services/search";
 import { parseNFe, parseCTe, detectDocumentType } from "@fiscalzen/xml-parser";
+import { PdfService } from "../pdf/service";
+import { RelationsService } from "../relations/service";
 import type { ListDocumentsQuery, SearchDocumentsQuery } from "./schemas";
 import { sha256Hex } from "../../utils/encryption";
+import { injectable, inject, container } from "tsyringe";
+import { DATABASE_TOKEN } from "../../providers/database";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "@fiscalzen/database/schema";
+
+type Database = NodePgDatabase<typeof schema>;
 
 /**
  * Compatibility mapping:
@@ -50,7 +57,15 @@ function toIntOrThrow(label: string, v: string): number {
   return n;
 }
 
-export const documentsService = {
+@injectable()
+export class DocumentsService {
+  constructor(
+    @inject(DATABASE_TOKEN) private db: Database,
+    @inject(StorageService) private storage: StorageService,
+    @inject(PdfService) private pdfService: PdfService,
+    @inject(RelationsService) private relationsService: RelationsService
+  ) { }
+
   async list(tenantId: string, query: ListDocumentsQuery) {
     const { page, limit, sortBy, sortOrder, ...filters } = query;
     const offset = (page - 1) * limit;
@@ -66,8 +81,8 @@ export const documentsService = {
     if (filters.serie) conditions.push(eq(documents.serie, filters.serie));
     if (filters.chave) conditions.push(eq(documents.chave, filters.chave));
 
-    if (filters.dataInicio) conditions.push(gte(documents.dataEmissao, new Date(filters.dataInicio)));
-    if (filters.dataFim) conditions.push(lte(documents.dataEmissao, new Date(filters.dataFim)));
+    if (filters.dataInicio) conditions.push(gte(documents.dataEmissao, filters.dataInicio));
+    if (filters.dataFim) conditions.push(lte(documents.dataEmissao, filters.dataFim));
 
     const orderColumn =
       {
@@ -80,7 +95,7 @@ export const documentsService = {
     const orderFn = sortOrder === "asc" ? asc : desc;
 
     const [items, countResult] = await Promise.all([
-      db
+      this.db
         .select({
           id: documents.id,
           chave: documents.chave,
@@ -101,28 +116,28 @@ export const documentsService = {
         .orderBy(orderFn(orderColumn))
         .limit(limit)
         .offset(offset),
-      db.select({ count: sql<number>`count(*)` }).from(documents).where(and(...conditions)),
+      this.db.select({ count: sql<number>`count(*)` }).from(documents).where(and(...conditions)),
     ]);
 
     return { items, total: Number(countResult[0]?.count ?? 0) };
-  },
+  }
 
   async getById(tenantId: string, documentId: string) {
-    const document = await db.query.documents.findFirst({
+    const document = await this.db.query.documents.findFirst({
       where: and(eq(documents.id, documentId), eq(documents.tenantId, tenantId)),
     });
     if (!document) throw new NotFoundError("Documento", documentId);
     return document;
-  },
+  }
 
   async getByChave(tenantId: string, chave: string) {
     // FIX: ensure tenantId filter to avoid cross-tenant leakage.
-    const document = await db.query.documents.findFirst({
+    const document = await this.db.query.documents.findFirst({
       where: and(eq(documents.chave, chave), eq(documents.tenantId, tenantId)),
     });
     if (!document) throw new NotFoundError("Documento");
     return document;
-  },
+  }
 
   async getXml(tenantId: string, documentId: string): Promise<string> {
     const document: any = await this.getById(tenantId, documentId);
@@ -130,8 +145,48 @@ export const documentsService = {
     const key: string | null | undefined = document.xmlStorageKey ?? document.storageKey ?? document.xml_storage_key;
     if (!key) throw new NotFoundError("XML do documento");
 
-    return storage.downloadXml(key);
-  },
+    return this.storage.downloadXml(key);
+  }
+
+  async getPdf(tenantId: string, documentId: string): Promise<Buffer> {
+    const document: any = await this.getById(tenantId, documentId);
+
+    // Try to download PDF from storage
+    if (document.pdfStorageKey) {
+      try {
+        const pdf = await this.storage.downloadPdf(document.pdfStorageKey);
+        return pdf;
+      } catch (err) {
+        // Fallback to generation
+      }
+    }
+
+    // Generate from XML
+    // Use getXml directly which handles the key lookup
+    const xml = await this.getXml(tenantId, documentId);
+
+    if (document.docType === 'NFE') {
+      const data = parseNFe(xml);
+      return this.pdfService.generateDanfe(data);
+    } else if (document.docType === 'CTE') {
+      const data = parseCTe(xml);
+      return this.pdfService.generateDacte(data);
+    }
+
+    throw new ValidationError('Tipo de documento nao suporta geracao de PDF');
+  }
+
+  /**
+   * Returns a presigned URL for downloading the PDF.
+   * Generates PDF if not yet cached.
+   */
+  async getPdfUrl(tenantId: string, documentId: string): Promise<{ url: string; cached: boolean }> {
+    const result = await this.pdfService.generatePdf(documentId, tenantId);
+    return {
+      url: result.url,
+      cached: result.cached,
+    };
+  }
 
   async search(tenantId: string, query: SearchDocumentsQuery) {
     const { q, page, limit, ...filters } = query;
@@ -149,7 +204,7 @@ export const documentsService = {
       page,
       limit
     );
-  },
+  }
 
   async uploadXml(tenantId: string, companyId: string, xmlContent: string) {
     // Reusing ingestion logic for manual uploads
@@ -167,7 +222,7 @@ export const documentsService = {
     }
 
     return this.getById(tenantId, result.documentId!);
-  },
+  }
 
   /**
    * Ingests a full document XML (NFe, CTe, MDFe).
@@ -223,7 +278,7 @@ export const documentsService = {
     };
 
     // 2. Idempotency Check
-    const existing = await db.query.documents.findFirst({
+    const existing = await this.db.query.documents.findFirst({
       where: eq(documents.chave, docData.chave),
     });
 
@@ -245,10 +300,10 @@ export const documentsService = {
 
     let xmlStorageKey: string | null = null;
     try {
-      xmlStorageKey = await storage.uploadXml(storageParams, xmlContent);
+      xmlStorageKey = await this.storage.uploadXml(storageParams, xmlContent);
 
       // 4. Persistence (DB)
-      const [document] = await db
+      const [document] = await this.db
         .insert(documents)
         .values({
           tenantId,
@@ -280,31 +335,42 @@ export const documentsService = {
         chave: document.chave,
         docType: document.docType,
         situacao: document.situacao,
-        dataEmissao: document.dataEmissao.toISOString(),
+        dataEmissao: typeof document.dataEmissao === 'string' ? document.dataEmissao : new Date(document.dataEmissao).toISOString(),
         valorTotal: Number(document.valorTotal),
         emitRazaoSocial: docData.emitRazao,
         emitCnpj: docData.emitCnpj,
       } as any);
 
+      // 6. Process Relations (Async)
+      // We pass the full parsedData objects. 
+      // Note: parsedData for CTe must contain infCte/infDoc for this to work.
+      // If parsedData is simplified, we might need to pass xmlContent or re-parse in service?
+      // RelationsService.processDocumentRelations expects (document, parsedXml).
+      // We pass the DB document and the parsedData object from Step 1.
+      this.relationsService.processDocumentRelations(document, parsedData).catch(err => {
+        // Log error but don't fail ingestion
+        console.error(`Falha ao processar relacionamentos para ${document.chave}:`, err);
+      });
+
       return { success: true, action: "create", documentId: document.id };
 
     } catch (err) {
-      if (xmlStorageKey) await (storage as any).delete?.(xmlStorageKey);
+      if (xmlStorageKey) await (this.storage as any).delete?.(xmlStorageKey);
       throw err;
     }
-  },
+  }
 
   async ingestResumo(params: {
     tenantId: string;
     companyId: string;
     resumoData: any; // Result from parseResNFe
-    xmlContent: string;
+    xmlContent?: string;
     nsu: string;
   }) {
-    const { tenantId, companyId, resumoData, xmlContent, nsu } = params;
+    const { tenantId, companyId, resumoData, nsu } = params;
 
     // Check existing
-    const existing = await db.query.documents.findFirst({
+    const existing = await this.db.query.documents.findFirst({
       where: eq(documents.chave, resumoData.chNFe),
     });
 
@@ -313,7 +379,7 @@ export const documentsService = {
     }
 
     // Insert placeholder
-    const [document] = await db
+    const [document] = await this.db
       .insert(documents)
       .values({
         tenantId,
@@ -334,5 +400,7 @@ export const documentsService = {
       .returning();
 
     return { success: true, action: "create_resumo", documentId: document.id };
-  },
-};
+  }
+}
+
+export const documentsService = container.resolve(DocumentsService);

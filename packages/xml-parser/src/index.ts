@@ -28,7 +28,7 @@ export {
 // Document Parsers
 // ============================================
 export { parseNFe, type NFeData, type NFeItem } from './parsers/nfe';
-export { parseCTe, type CTeData } from './parsers/cte';
+export { parseCTe, type CTeData, type DocumentoOriginario } from './parsers/cte';
 export { parseMDFe, type MDFeData } from './parsers/mdfe';
 export { parseSAT, type SATData, type SATItem } from './parsers/sat';
 export { parseNFCe, type NFCeData, type NFCeItem } from './parsers/nfce';

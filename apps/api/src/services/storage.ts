@@ -7,16 +7,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env';
 import { ExternalServiceError } from '../utils/errors';
-
-const s3Client = new S3Client({
-  endpoint: env.S3_ENDPOINT,
-  region: env.S3_REGION,
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY,
-    secretAccessKey: env.S3_SECRET_KEY,
-  },
-  forcePathStyle: true, // Required for MinIO
-});
+import { injectable, singleton } from 'tsyringe';
 
 export interface StorageKey {
   tenantId: string;
@@ -32,12 +23,28 @@ function buildKey(params: StorageKey): string {
   return `${tenantId}/${companyId}/${docType}/${year}/${month.toString().padStart(2, '0')}/${documentId}.xml`;
 }
 
-export const storage = {
+@singleton()
+@injectable()
+export class StorageService {
+  private client: S3Client;
+
+  constructor() {
+    this.client = new S3Client({
+      endpoint: env.S3_ENDPOINT,
+      region: env.S3_REGION,
+      credentials: {
+        accessKeyId: env.S3_ACCESS_KEY,
+        secretAccessKey: env.S3_SECRET_KEY,
+      },
+      forcePathStyle: true, // Required for MinIO
+    });
+  }
+
   async uploadXml(params: StorageKey, xml: string): Promise<string> {
     const key = buildKey(params);
 
     try {
-      await s3Client.send(
+      await this.client.send(
         new PutObjectCommand({
           Bucket: env.S3_BUCKET,
           Key: key,
@@ -57,11 +64,11 @@ export const storage = {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao fazer upload: ${message}`);
     }
-  },
+  }
 
   async downloadXml(key: string): Promise<string> {
     try {
-      const response = await s3Client.send(
+      const response = await this.client.send(
         new GetObjectCommand({
           Bucket: env.S3_BUCKET,
           Key: key,
@@ -77,11 +84,11 @@ export const storage = {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao baixar XML: ${message}`);
     }
-  },
+  }
 
   async deleteXml(key: string): Promise<void> {
     try {
-      await s3Client.send(
+      await this.client.send(
         new DeleteObjectCommand({
           Bucket: env.S3_BUCKET,
           Key: key,
@@ -91,7 +98,7 @@ export const storage = {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao deletar XML: ${message}`);
     }
-  },
+  }
 
   async generatePresignedUrl(key: string, expiresInSeconds: number = 3600): Promise<string> {
     try {
@@ -100,18 +107,18 @@ export const storage = {
         Key: key,
       });
 
-      return await getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+      return await getSignedUrl(this.client, command, { expiresIn: expiresInSeconds });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao gerar URL: ${message}`);
     }
-  },
+  }
 
   async uploadPdf(params: StorageKey, pdf: Buffer): Promise<string> {
     const key = buildKey(params).replace('.xml', '.pdf');
 
     try {
-      await s3Client.send(
+      await this.client.send(
         new PutObjectCommand({
           Bucket: env.S3_BUCKET,
           Key: key,
@@ -125,11 +132,11 @@ export const storage = {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao fazer upload PDF: ${message}`);
     }
-  },
+  }
 
   async downloadPdf(key: string): Promise<Buffer> {
     try {
-      const response = await s3Client.send(
+      const response = await this.client.send(
         new GetObjectCommand({
           Bucket: env.S3_BUCKET,
           Key: key,
@@ -146,5 +153,27 @@ export const storage = {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new ExternalServiceError('S3', `Falha ao baixar PDF: ${message}`);
     }
-  },
-};
+  }
+
+  async uploadZip(key: string, buffer: Buffer): Promise<string> {
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: env.S3_BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: 'application/zip',
+          Metadata: { type: 'batch-download' }
+        })
+      );
+      return key;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new ExternalServiceError('S3', `Falha ao fazer upload ZIP: ${message}`);
+    }
+  }
+}
+
+// Export singleton instance for backward compatibility (transition period)
+import { container } from 'tsyringe';
+export const storage = container.resolve(StorageService);

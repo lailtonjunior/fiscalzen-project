@@ -1,0 +1,25 @@
+{
+    "name": "@fiscalzen/pdf-generator",
+    "version": "0.1.0",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc -w",
+        "lint": "eslint . --ext .ts",
+        "clean": "rimraf dist"
+    },
+    "dependencies": {
+        "pdfkit": "^0.15.0",
+        "bwip-js": "^4.5.1",
+        "qrcode": "^1.5.4",
+        "@fiscalzen/xml-parser": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/pdfkit": "^0.13.4",
+        "@types/qrcode": "^1.5.5",
+        "typescript": "^5.0.0",
+        "rimraf": "^5.0.0"
+    }
+}

@@ -6,3 +6,8 @@ export * from './agents';
 export * from './audit';
 export * from './nsu-control';
 export * from './nfse-configs';
+export * from './document-relations';
+export * from './tags';
+export * from './comments';
+export * from './alerts';
+export * from './webhooks';

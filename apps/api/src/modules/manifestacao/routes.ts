@@ -5,11 +5,13 @@ import {
   confirmacaoSchema,
   desconhecimentoSchema,
   naoRealizadaSchema,
+  desacordoSchema,
   pendentesQuerySchema,
   type CienciaInput,
   type ConfirmacaoInput,
   type DesconhecimentoInput,
   type NaoRealizadaInput,
+  type DesacordoInput,
   type PendentesQuery,
 } from './schemas';
 import { getTenantId } from '../../plugins/auth';
@@ -67,6 +69,24 @@ export async function manifestacaoRoutes(fastify: FastifyInstance) {
       companyId,
       chNFe,
       justificativa
+    );
+
+    return sendSuccess(reply, result);
+  });
+
+  // POST /api/v1/manifestacao/cte/desacordo - Prestacao em Desacordo (610110)
+  fastify.post<{
+    Body: DesacordoInput;
+  }>('/cte/desacordo', async (request, reply) => {
+    const tenantId = getTenantId(request);
+    const { chCTe, companyId, observacao, indDesacordoOper } = desacordoSchema.parse(request.body);
+
+    const result = await manifestacaoService.registrarDesacordo(
+      tenantId,
+      companyId,
+      chCTe,
+      observacao,
+      indDesacordoOper
     );
 
     return sendSuccess(reply, result);

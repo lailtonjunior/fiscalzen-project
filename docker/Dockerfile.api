@@ -3,7 +3,7 @@
 # ===========================================
 
 # Stage 1: Base with pnpm
-FROM node:20-alpine AS base
+FROM node:20.11-alpine3.19 AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY packages/sefaz-client/package.json ./packages/sefaz-client/
 COPY packages/nfse-client/package.json ./packages/nfse-client/
 COPY packages/xml-parser/package.json ./packages/xml-parser/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Stage 3: Build
 FROM base AS builder
@@ -24,23 +24,32 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages ./packages
 COPY . .
-RUN pnpm --filter @fiscalzen/database build
-RUN pnpm --filter @fiscalzen/shared build
-RUN pnpm --filter @fiscalzen/xml-parser build
-RUN pnpm --filter @fiscalzen/sefaz-client build
-RUN pnpm --filter @fiscalzen/nfse-client build
-RUN pnpm --filter @fiscalzen/api build
+RUN pnpm --filter @fiscalzen/database build && \
+    pnpm --filter @fiscalzen/shared build && \
+    pnpm --filter @fiscalzen/xml-parser build && \
+    pnpm --filter @fiscalzen/sefaz-client build && \
+    pnpm --filter @fiscalzen/nfse-client build && \
+    pnpm --filter @fiscalzen/api build
 
 # Stage 4: Production image
-FROM node:20-alpine AS runner
+FROM node:20.11-alpine3.19 AS runner
+
+# Labels para rastreabilidade
+LABEL org.opencontainers.image.title="FiscalZen API" \
+      org.opencontainers.image.vendor="FiscalZen" \
+      org.opencontainers.image.source="https://github.com/fiscalzen/fiscalzen"
+
 WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Atualiza pacotes de segurança
+RUN apk update && apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
+
 # Add non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 api
-USER api
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 api
 
 # Copy built artifacts
 COPY --from=builder --chown=api:nodejs /app/apps/api/dist ./dist
@@ -52,10 +61,12 @@ COPY --from=builder --chown=api:nodejs /app/packages/xml-parser/dist ./node_modu
 COPY --from=builder --chown=api:nodejs /app/packages/sefaz-client/dist ./node_modules/@fiscalzen/sefaz-client/dist
 COPY --from=builder --chown=api:nodejs /app/packages/nfse-client/dist ./node_modules/@fiscalzen/nfse-client/dist
 
+USER api
+
 EXPOSE 3001 3002
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
 CMD ["node", "dist/index.js"]

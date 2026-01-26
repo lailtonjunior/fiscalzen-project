@@ -3,13 +3,14 @@ import {
   uuid,
   varchar,
   integer,
-  decimal,
+  numeric,
   date,
   timestamp,
   jsonb,
   text,
   index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 import { tenants, companies } from './tenants';
 
@@ -43,7 +44,7 @@ export const documents = pgTable(
     destRazao: varchar('dest_razao', { length: 255 }),
 
     // Values
-    valorTotal: decimal('valor_total', { precision: 15, scale: 2 }),
+    valorTotal: numeric('valor_total', { precision: 15, scale: 2 }),
 
     // Dates
     dataEmissao: date('data_emissao').notNull(),
@@ -53,8 +54,19 @@ export const documents = pgTable(
     // Status
     situacao: varchar('situacao', { length: 20 }).default('autorizada').$type<Situacao>(),
 
+    // Manifestacao (NFe)
+    manifestacao: varchar('manifestacao', { length: 20 }),
+    manifestacaoData: timestamp('manifestacao_data', { withTimezone: true }),
+
+    // Desacordo (CTe)
+    statusDesacordo: varchar('status_desacordo', { length: 1 }),
+    dataDesacordo: timestamp('data_desacordo', { withTimezone: true }),
+    protocoloDesacordo: varchar('protocolo_desacordo', { length: 15 }),
+    observacaoDesacordo: text('observacao_desacordo'),
+
     // Storage
     xmlStorageKey: varchar('xml_storage_key', { length: 255 }),
+    pdfStorageKey: varchar('pdf_storage_key', { length: 255 }),
     xmlHashSha256: varchar('xml_hash_sha256', { length: 64 }),
     xmlSizeBytes: integer('xml_size_bytes'),
 
@@ -77,6 +89,7 @@ export const documents = pgTable(
     emitCnpjIdx: index('idx_documents_emit_cnpj').on(table.emitCnpj),
     destCnpjCpfIdx: index('idx_documents_dest_cnpj_cpf').on(table.destCnpjCpf),
     dataEmissaoIdx: index('idx_documents_data_emissao').on(table.dataEmissao),
+    desacordoIdx: index('idx_documents_desacordo').on(table.tenantId, table.statusDesacordo).where(sql`doc_type = 'CTe'`),
   })
 );
 

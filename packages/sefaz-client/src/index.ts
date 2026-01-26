@@ -86,6 +86,10 @@ export {
   consultarCTePorChave,
 } from './services/cte-distdfe';
 
+export {
+  registrarDesacordoCTe,
+} from './services/cte-events';
+
 // Services - MDFe
 export {
   consultarMDFeDistDFe,

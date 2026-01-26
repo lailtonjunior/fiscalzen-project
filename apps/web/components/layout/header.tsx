@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@fiscalzen/ui';
 import { PendingNotification } from '@/components/manifestacao';
+import { AlertsDropdown } from '@/components/alerts/AlertsDropdown';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -49,6 +50,9 @@ export function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-2">
         {/* Pending Manifestations Notification */}
         <PendingNotification />
+
+        {/* Alerts Dropdown */}
+        <AlertsDropdown />
 
         {/* User menu */}
         <DropdownMenu>

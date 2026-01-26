@@ -120,8 +120,24 @@ export async function documentsRoutes(fastify: FastifyInstance) {
     const tenantId = getTenantId(request);
     const { id } = documentIdSchema.parse(request.params);
 
-    const url = await documentsService.getPdfUrl(tenantId, id);
+    const result = await documentsService.getPdfUrl(tenantId, id);
 
-    return sendSuccess(reply, { url });
+    return sendSuccess(reply, result);
+  });
+
+  // GET /api/v1/documents/:id/pdf/download - Download PDF directly
+  fastify.get<{
+    Params: DocumentIdParams;
+  }>('/:id/pdf/download', async (request, reply) => {
+    const tenantId = getTenantId(request);
+    const { id } = documentIdSchema.parse(request.params);
+
+    const document = await documentsService.getById(tenantId, id);
+    const pdf = await documentsService.getPdf(tenantId, id);
+
+    return reply
+      .header('Content-Type', 'application/pdf')
+      .header('Content-Disposition', `attachment; filename="${document.chave || id}.pdf"`)
+      .send(pdf);
   });
 }
