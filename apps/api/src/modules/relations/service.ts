@@ -48,8 +48,32 @@ export class RelationsService {
                 break;
 
             case 'MDFE':
-                // MDFe logic placeholder (parsedXml structure for MDFe needed)
-                // const documentosVinculados = this.extractDocumentsFromMDFe(parsedXml);
+                // MDFe can contain both CTe and NFe
+                const ctesFromMdfe = this.extractCTesFromMDFe(parsedXml);
+                for (const cteChave of ctesFromMdfe) {
+                    relationsList.push({
+                        tenantId: document.tenantId,
+                        sourceDocumentId: document.id,
+                        sourceChave: document.chave,
+                        sourceType: 'MDFE',
+                        targetChave: cteChave,
+                        targetType: 'CTE',
+                        relationType: 'mdfe_contem_cte'
+                    });
+                }
+
+                const nfesFromMdfe = this.extractNFesFromMDFe(parsedXml);
+                for (const nfeChave of nfesFromMdfe) {
+                    relationsList.push({
+                        tenantId: document.tenantId,
+                        sourceDocumentId: document.id,
+                        sourceChave: document.chave,
+                        sourceType: 'MDFE',
+                        targetChave: nfeChave,
+                        targetType: 'NFE',
+                        relationType: 'mdfe_contem_nfe'
+                    });
+                }
                 break;
 
             case 'NFE':

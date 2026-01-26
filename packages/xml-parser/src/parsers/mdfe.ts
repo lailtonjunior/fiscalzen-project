@@ -1,6 +1,11 @@
 import { createParser, parseDate, parseDecimal, ensureArray, buildSearchContent } from '../utils';
 import type { DocumentStatus } from '../types';
 
+export interface DocumentoVinculado {
+  tipo: 'CTE' | 'NFE';
+  chave: string;
+}
+
 export interface MDFeData {
   tipo: 'MDFE';
   chave: string;
@@ -18,7 +23,8 @@ export interface MDFeData {
   };
   valorTotal: number;
   situacao: DocumentStatus;
-  documentosVinculados: number;
+  documentosVinculados: DocumentoVinculado[];
+  totalDocumentosVinculados: number;
   metadata: Record<string, unknown>;
   searchContent: string;
 }
@@ -54,14 +60,35 @@ export function parseMDFe(xml: string): MDFeData {
     situacao = 'cancelada';
   }
 
-  // Count linked documents
+  // Extract linked documents (CTe and NFe)
   const infMunDescarga = ensureArray(infMDFe.infDoc?.infMunDescarga);
-  let documentosVinculados = 0;
+  const documentosVinculados: DocumentoVinculado[] = [];
+
   for (const mun of infMunDescarga) {
-    const infCTe = ensureArray(mun.infCTe);
-    const infNFe = ensureArray(mun.infNFe);
-    documentosVinculados += infCTe.length + infNFe.length;
+    // Extract CTe chaves
+    const infCTeList = ensureArray(mun.infCTe);
+    for (const cte of infCTeList) {
+      if (cte.chCTe) {
+        documentosVinculados.push({
+          tipo: 'CTE',
+          chave: String(cte.chCTe),
+        });
+      }
+    }
+
+    // Extract NFe chaves
+    const infNFeList = ensureArray(mun.infNFe);
+    for (const nfe of infNFeList) {
+      if (nfe.chNFe) {
+        documentosVinculados.push({
+          tipo: 'NFE',
+          chave: String(nfe.chNFe),
+        });
+      }
+    }
   }
+
+  const totalDocumentosVinculados = documentosVinculados.length;
 
   // Build search content
   const searchContent = buildSearchContent([
@@ -90,6 +117,7 @@ export function parseMDFe(xml: string): MDFeData {
     valorTotal: parseDecimal(tot.vCarga),
     situacao,
     documentosVinculados,
+    totalDocumentosVinculados,
     metadata: {
       modal: ide.modal,
       tpEmit: ide.tpEmit,

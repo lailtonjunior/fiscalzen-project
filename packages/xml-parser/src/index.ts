@@ -29,7 +29,7 @@ export {
 // ============================================
 export { parseNFe, type NFeData, type NFeItem } from './parsers/nfe';
 export { parseCTe, type CTeData, type DocumentoOriginario } from './parsers/cte';
-export { parseMDFe, type MDFeData } from './parsers/mdfe';
+export { parseMDFe, type MDFeData, type DocumentoVinculado } from './parsers/mdfe';
 export { parseSAT, type SATData, type SATItem } from './parsers/sat';
 export { parseNFCe, type NFCeData, type NFCeItem } from './parsers/nfce';
 export { parseNFSe, type NFSeData } from './parsers/nfse';

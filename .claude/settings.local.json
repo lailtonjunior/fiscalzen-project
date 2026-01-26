@@ -4,7 +4,8 @@
       "Bash(dir:*)",
       "Bash(pnpm install:*)",
       "Bash(npx tsc:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pnpm tsc:*)"
     ]
   }
 }
