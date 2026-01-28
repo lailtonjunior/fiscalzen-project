@@ -51,6 +51,14 @@ export const nfseMonitorQueue = new Queue('nfse-monitor', {
   },
 });
 
+export const certificateCheckerQueue = new Queue('certificate-checker', {
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
+  defaultJobOptions: {
+    ...defaultJobOptions,
+    attempts: 3,
+  },
+});
+
 // ============================================
 // Queue Events for monitoring
 // ============================================
@@ -68,6 +76,10 @@ export const searchSyncEvents = new QueueEvents('search-sync', {
 });
 
 export const nfseMonitorEvents = new QueueEvents('nfse-monitor', {
+  connection: { ...(redis as any).options, maxRetriesPerRequest: null },
+});
+
+export const certificateCheckerEvents = new QueueEvents('certificate-checker', {
   connection: { ...(redis as any).options, maxRetriesPerRequest: null },
 });
 
@@ -103,6 +115,10 @@ export interface NfseMonitorJobData {
   tenantId: string;
   codigoMunicipio: string;
   tipo: 'abrasf' | 'rpa';
+}
+
+export interface CertificateCheckerJobData {
+  scheduledRun: boolean;
 }
 
 // ============================================
@@ -146,6 +162,16 @@ export async function addNfseMonitorJob(data: NfseMonitorJobData, delay?: number
   });
 }
 
+export async function addCertificateCheckerJob(data: CertificateCheckerJobData, delay?: number) {
+  const jobId = `cert-checker-${Date.now()}`;
+
+  return certificateCheckerQueue.add('check', data, {
+    jobId,
+    delay,
+    removeOnComplete: true,
+  });
+}
+
 // ============================================
 // Queue Status
 // ============================================
@@ -176,6 +202,7 @@ export async function getAllQueuesStatus() {
     getQueueStatus(xmlProcessorQueue),
     getQueueStatus(searchSyncQueue),
     getQueueStatus(nfseMonitorQueue),
+    getQueueStatus(certificateCheckerQueue),
   ]);
 }
 
@@ -189,9 +216,11 @@ export async function closeQueues() {
     xmlProcessorQueue.close(),
     searchSyncQueue.close(),
     nfseMonitorQueue.close(),
+    certificateCheckerQueue.close(),
     sefazMonitorEvents.close(),
     xmlProcessorEvents.close(),
     searchSyncEvents.close(),
     nfseMonitorEvents.close(),
+    certificateCheckerEvents.close(),
   ]);
 }

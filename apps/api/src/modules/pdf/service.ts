@@ -3,12 +3,16 @@ import { documents } from '@fiscalzen/database/schema';
 import { eq, and } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '@fiscalzen/database/schema';
-import PdfPrinter from 'pdfmake';
-import type { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { createRequire } from 'module';
+import type { TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { DATABASE_TOKEN } from '../../providers/database';
 import { StorageService } from '../../services/storage';
 import { parseNFe, parseCTe, type NFeData, type CTeData } from '@fiscalzen/xml-parser';
 import { NotFoundError, ValidationError } from '../../utils/errors';
+
+// Use createRequire for CommonJS pdfmake module
+const require = createRequire(import.meta.url);
+const PdfPrinter = require('pdfmake');
 
 // Layouts
 import { getNFeLayout, type DanfeLayoutOptions } from './layouts/nfe';
@@ -59,7 +63,7 @@ const fonts = {
 
 @injectable()
 export class PdfService {
-  private printer: PdfPrinter;
+  private printer: any;
 
   constructor(
     @inject(DATABASE_TOKEN) private db: Database,

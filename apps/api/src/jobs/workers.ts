@@ -4,6 +4,7 @@ import { processSefazMonitor } from './sefaz-monitor';
 import { processXmlProcessor } from './xml-processor';
 import { processSearchSync } from './search-sync';
 import { processNfseMonitor } from './nfse-monitor';
+import { processCertificateChecker } from './certificate-checker';
 import { setupWorkerEvents, logger, getWorkerHealth, type WorkerHealth } from './events';
 
 // ============================================
@@ -14,6 +15,7 @@ let sefazMonitorWorker: Worker | null = null;
 let xmlProcessorWorker: Worker | null = null;
 let searchSyncWorker: Worker | null = null;
 let nfseMonitorWorker: Worker | null = null;
+let certificateCheckerWorker: Worker | null = null;
 
 // ============================================
 // Worker Configuration
@@ -35,6 +37,10 @@ const WORKER_CONFIG = {
   nfseMonitor: {
     name: 'nfse-monitor',
     concurrency: 2, // Low concurrency for RPA and API calls
+  },
+  certificateChecker: {
+    name: 'certificate-checker',
+    concurrency: 1, // Single worker, runs once per day
   },
 };
 
@@ -101,6 +107,18 @@ export async function startWorkers() {
   setupWorkerEvents(WORKER_CONFIG.nfseMonitor.name, nfseMonitorWorker);
   logger.info(`Started ${WORKER_CONFIG.nfseMonitor.name} worker`);
 
+  // Certificate Checker Worker
+  certificateCheckerWorker = new Worker(
+    WORKER_CONFIG.certificateChecker.name,
+    processCertificateChecker,
+    {
+      connection: redis,
+      concurrency: WORKER_CONFIG.certificateChecker.concurrency,
+    }
+  );
+  setupWorkerEvents(WORKER_CONFIG.certificateChecker.name, certificateCheckerWorker);
+  logger.info(`Started ${WORKER_CONFIG.certificateChecker.name} worker`);
+
   logger.info('All job workers started');
 }
 
@@ -111,7 +129,7 @@ export async function startWorkers() {
 export async function stopWorkers() {
   logger.info('Stopping job workers...');
 
-  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker];
+  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker, certificateCheckerWorker];
 
   await Promise.all(
     workers.map(async (worker) => {
@@ -126,6 +144,7 @@ export async function stopWorkers() {
   xmlProcessorWorker = null;
   searchSyncWorker = null;
   nfseMonitorWorker = null;
+  certificateCheckerWorker = null;
 
   logger.info('All job workers stopped');
 }
@@ -137,7 +156,7 @@ export async function stopWorkers() {
 export async function pauseWorkers() {
   logger.info('Pausing job workers...');
 
-  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker];
+  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker, certificateCheckerWorker];
 
   await Promise.all(
     workers.map(async (worker) => {
@@ -152,7 +171,7 @@ export async function pauseWorkers() {
 export async function resumeWorkers() {
   logger.info('Resuming job workers...');
 
-  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker];
+  const workers = [sefazMonitorWorker, xmlProcessorWorker, searchSyncWorker, nfseMonitorWorker, certificateCheckerWorker];
 
   await Promise.all(
     workers.map(async (worker) => {
@@ -174,5 +193,5 @@ export function getWorkersStatus(): WorkerHealth {
 }
 
 export function isWorkersRunning(): boolean {
-  return !!(sefazMonitorWorker && xmlProcessorWorker && searchSyncWorker && nfseMonitorWorker);
+  return !!(sefazMonitorWorker && xmlProcessorWorker && searchSyncWorker && nfseMonitorWorker && certificateCheckerWorker);
 }

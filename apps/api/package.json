@@ -25,7 +25,6 @@
     "@fastify/websocket": "^10.0.1",
     "@fiscalzen/database": "workspace:*",
     "@fiscalzen/nfse-client": "workspace:*",
-    "@fiscalzen/pdf-generator": "workspace:*",
     "@fiscalzen/sefaz-client": "workspace:*",
     "@fiscalzen/shared": "workspace:*",
     "@fiscalzen/xml-parser": "workspace:*",

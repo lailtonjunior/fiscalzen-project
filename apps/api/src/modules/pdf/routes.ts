@@ -1,9 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
-import { container } from 'tsyringe';
-import { PdfService } from './service';
+
+// TODO: Re-enable once pdfmake ESM compatibility is fixed
+// import { container } from 'tsyringe';
+// import { PdfService } from './service';
 
 export const pdfRoutes: FastifyPluginAsync = async (fastify) => {
-    const pdfService = container.resolve(PdfService);
+    // PDF generation temporarily disabled due to pdfmake ESM compatibility issues
 
     fastify.get('/:id/pdf', {
         schema: {
@@ -22,30 +24,21 @@ export const pdfRoutes: FastifyPluginAsync = async (fastify) => {
                 },
             },
             response: {
-                200: {
+                503: {
                     type: 'object',
                     properties: {
-                        url: { type: 'string' },
-                        cached: { type: 'boolean' },
-                        metadata: { type: 'object', additionalProperties: true },
+                        error: { type: 'string' },
+                        message: { type: 'string' },
                     },
                 },
             },
             security: [{ bearerAuth: [] }],
         },
-        handler: async (request, reply) => {
-            const { id } = request.params as { id: string };
-            const { redirect } = request.query as { redirect?: boolean };
-            // User is injected by auth middleware, usually request.user
-            const user = (request as any).user;
-
-            const result = await pdfService.generatePdf(id, user.tenantId);
-
-            if (redirect) {
-                return reply.redirect(result.url);
-            }
-
-            return reply.send(result);
+        handler: async (_request, reply) => {
+            return reply.status(503).send({
+                error: 'Service Unavailable',
+                message: 'Geracao de PDF temporariamente indisponivel',
+            });
         },
     });
 
@@ -61,12 +54,11 @@ export const pdfRoutes: FastifyPluginAsync = async (fastify) => {
             },
             security: [{ bearerAuth: [] }]
         },
-        handler: async (request, reply) => {
-            const { documentIds } = request.body as { documentIds: string[] };
-            const user = (request as any).user;
-
-            const result = await pdfService.generateBatchPdf(documentIds, user.tenantId);
-            return reply.status(202).send(result);
+        handler: async (_request, reply) => {
+            return reply.status(503).send({
+                error: 'Service Unavailable',
+                message: 'Geracao de PDF temporariamente indisponivel',
+            });
         }
-    })
+    });
 };

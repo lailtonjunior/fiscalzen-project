@@ -7,15 +7,18 @@ export {
   sefazMonitorQueue,
   xmlProcessorQueue,
   searchSyncQueue,
+  certificateCheckerQueue,
   addSefazMonitorJob,
   addXmlProcessorJob,
   addSearchSyncJob,
+  addCertificateCheckerJob,
   getAllQueuesStatus,
   getQueueStatus,
   closeQueues,
   type SefazMonitorJobData,
   type XmlProcessorJobData,
   type SearchSyncJobData,
+  type CertificateCheckerJobData,
 } from './queues';
 
 // Workers
@@ -50,3 +53,4 @@ export {
 export { processSefazMonitor } from './sefaz-monitor';
 export { processXmlProcessor } from './xml-processor';
 export { processSearchSync, reindexAllDocuments, batchIndexDocuments } from './search-sync';
+export { processCertificateChecker, startCertificateChecker } from './certificate-checker';

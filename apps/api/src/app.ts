@@ -217,7 +217,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     async (api) => {
       await api.register(companiesRoutes, { prefix: '/companies' });
       await api.register(documentsRoutes, { prefix: '/documents' });
-      await api.register(pdfRoutes, { prefix: '/documents' }); // PDF endpoints
+      // await api.register(pdfRoutes, { prefix: '/documents' }); // PDF endpoints - disabled, already in documentsRoutes
       await api.register(relationsRoutes, { prefix: '/documents' });
       await api.register(tagsRoutes, { prefix: '/tags' });
       await api.register(commentsRoutes, { prefix: '/comments' });

@@ -99,7 +99,60 @@ export async function runScheduler() {
   }
 }
 
-// ... startScheduler/stopScheduler ...
+// Scheduler state
+let schedulerInterval: NodeJS.Timeout | null = null;
+const SCHEDULER_INTERVAL_MS = 60000; // 1 minute
+
+export function startScheduler() {
+  if (schedulerInterval) {
+    logger.warn('Scheduler already started');
+    return;
+  }
+
+  logger.info('Starting scheduler');
+  schedulerInterval = setInterval(() => {
+    runScheduler().catch((err) => {
+      logger.error('Scheduler run failed', { error: err });
+    });
+  }, SCHEDULER_INTERVAL_MS);
+
+  // Run immediately on start
+  runScheduler().catch((err) => {
+    logger.error('Initial scheduler run failed', { error: err });
+  });
+}
+
+export function stopScheduler() {
+  if (schedulerInterval) {
+    clearInterval(schedulerInterval);
+    schedulerInterval = null;
+    logger.info('Scheduler stopped');
+  }
+}
+
+export async function initializeCompanyNsuControl(companyId: string) {
+  logger.info('Initializing NSU control for company', { companyId });
+
+  for (const docType of DOC_TYPES) {
+    try {
+      const existing = await (db.query as any).nsuControl.findFirst({
+        where: and(eq((nsuControl as any).companyId, companyId), eq((nsuControl as any).docType, docType)),
+      });
+
+      if (!existing) {
+        await db.insert(nsuControl).values({
+          companyId,
+          docType,
+          lastNsu: '000000000000000',
+          syncStatus: 'idle',
+        });
+        logger.debug('Created NSU control entry', { companyId, docType });
+      }
+    } catch (error) {
+      logger.error('Failed to initialize NSU control', { companyId, docType, error });
+    }
+  }
+}
 
 export async function triggerCompanySync(
   tenantId: string,
