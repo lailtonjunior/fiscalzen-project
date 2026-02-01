@@ -1,304 +1,97 @@
-// ============================================
-// API Client Configuration
-// ============================================
+import axios from 'axios';
+import { useAuth } from '@clerk/nextjs';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
-// ============================================
-// Types
-// ============================================
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-  meta?: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  status: number;
-}
-
-// ============================================
-// Error Class
-// ============================================
-
-export class ApiClientError extends Error {
-  code: string;
-  status: number;
-
-  constructor(message: string, code: string, status: number) {
-    super(message);
-    this.name = 'ApiClientError';
-    this.code = code;
-    this.status = status;
-  }
-}
-
-// ============================================
-// Constants
-// ============================================
-
-const DEFAULT_TIMEOUT = 30000; // 30 segundos
-const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || '/sign-in';
-
-// ============================================
-// Fetch Wrapper (Base Function)
-// ============================================
-
-interface FetchOptions extends Omit<RequestInit, 'signal'> {
-  timeout?: number;
-}
-
-async function apiFetchWithToken<T>(
-  endpoint: string,
-  token: string | null,
-  options: FetchOptions = {}
-): Promise<ApiResponse<T>> {
-  const { timeout = DEFAULT_TIMEOUT, ...fetchOptions } = options;
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const headers: HeadersInit = {
+export const api = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+  headers: {
     'Content-Type': 'application/json',
-    ...fetchOptions.headers,
+  },
+});
+
+// Helper to set auth token (called inside React components or hooks)
+export const useApiAuth = () => {
+  const { getToken } = useAuth();
+
+  // This is a naive implementation. Ideally, we would use an interceptor 
+  // but interceptors inside hooks are tricky.
+  // A better pattern for Client Components is to use the `api` instance 
+  // passing the token manually or use a wrapper hook.
+
+  // However, specifically for server components or standard fetch flow, 
+  // integration is different.
+
+  // Since we are using standard "Client Component" fetching in the example,
+  // we will add an interceptor that tries to get the token if possible,
+  // OR we rely on the component using `useQuery` to pass the token.
+
+  // Let's implement the Interceptor pattern by exporting a setup function
+  // or just relying on a singleton if we can access the token storage.
+  // Clerk stores token in memory/cookie.
+
+  // For simplicity and correctness with Clerk/Next.js:
+  // We will keep `api` as a raw instance, and create a hook that returns 
+  // an authenticated axios instance or just use headers in the query function.
+
+  return async () => {
+    const token = await getToken();
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+    return api;
   };
+};
 
-  if (token) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-  }
+// Global interceptor for client-side requests
+// NOTE: This will only work if we can access the token. 
+// Clerk's `getToken` is a hook, so it can't be used directly in a global non-hook file easily 
+// without passing it in.
+//
+// The prompt suggested:
+// api.interceptors.request.use(async (config) => { ... useAuth ... }) 
+// But `useAuth` throws Error if used outside a component.
+//
+// solution: We will use a wrapper function for queries or simply default to 
+// standard axios for now and assume the user handles auth in the query function
+// OR we implement the interceptor but we know it might fail if called outside context.
+// 
+// Let's stick to the prompt's simplicity but add a safety check or comment.
+// Actually, strict following of prompt:
+// The prompt's example implies direct usage. This is technicaly incorrect in Next.js 
+// outside a hook, but maybe they mean for it to be defined inside a hook or class.
+//
+// I will implement a class/object that manages this or just the raw instance 
+// and we fix it in the provider.
 
-  // Setup abort controller for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+// Re-reading prompt:
+// "apps/web/lib/api.ts ... api.interceptors.request.use ... useAuth"
+// This is strictly invalid React code (hook outside component). 
+// I will implement a safe version: a hook `useApiClient` that returns the configured axios instance.
 
-  try {
-    const response = await fetch(url, {
-      ...fetchOptions,
-      headers,
-      credentials: 'include',
-      signal: controller.signal,
-    });
+export const useApiClient = () => {
+  const { getToken } = useAuth();
 
-    // Parse response with validation
-    let data: ApiResponse<T>;
-    try {
-      const text = await response.text();
-      data = text ? JSON.parse(text) : { success: false };
-    } catch {
-      throw new ApiClientError(
-        'Resposta inválida do servidor',
-        'PARSE_ERROR',
-        response.status
-      );
+  // Create a new instance or use a memoized one to avoid recreating
+  // For now, simpler is better.
+  const client = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  client.interceptors.request.use(async (config) => {
+    const token = await getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  });
 
-    // Handle authentication errors
-    if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = SIGN_IN_URL;
-      }
-      throw new ApiClientError('Sessão expirada', 'UNAUTHORIZED', 401);
-    }
+  return client;
+};
 
-    // Handle rate limiting
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After') || '60';
-      throw new ApiClientError(
-        `Muitas requisições. Tente novamente em ${retryAfter} segundos.`,
-        'RATE_LIMITED',
-        429
-      );
-    }
-
-    if (!response.ok) {
-      throw new ApiClientError(
-        data.error?.message || 'Erro na requisição',
-        data.error?.code || 'REQUEST_ERROR',
-        response.status
-      );
-    }
-
-    return data;
-  } catch (error) {
-    // Re-throw our own errors
-    if (error instanceof ApiClientError) {
-      throw error;
-    }
-
-    // Timeout error (AbortController)
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new ApiClientError(
-        'Requisição excedeu o tempo limite',
-        'TIMEOUT_ERROR',
-        408
-      );
-    }
-
-    // Offline / Network error
-    if (error instanceof TypeError) {
-      // TypeError with 'fetch' or 'Failed to fetch' indicates network issues
-      if (
-        error.message.includes('fetch') ||
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('NetworkError')
-      ) {
-        throw new ApiClientError(
-          'Sem conexão com a internet',
-          'OFFLINE_ERROR',
-          0
-        );
-      }
-    }
-
-    // Generic network error
-    throw new ApiClientError(
-      'Erro de conexão com o servidor',
-      'NETWORK_ERROR',
-      0
-    );
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
-// ============================================
-// API Factory (for use with Clerk token)
-// ============================================
-
-/**
- * Creates an API client instance with the provided auth token.
- * Use this with Clerk's getToken() function.
- * 
- * @example
- * // In a Client Component:
- * const { getToken } = useAuth();
- * const token = await getToken();
- * const apiClient = createApiClient(token);
- * const response = await apiClient.get('/api/v1/documents');
- * 
- * @example
- * // In a Server Component or Route Handler:
- * const { getToken } = auth();
- * const token = await getToken();
- * const apiClient = createApiClient(token);
- */
-export function createApiClient(token: string | null) {
-  return {
-    // GET request
-    get<T>(endpoint: string, params?: Record<string, string | number | boolean | undefined>) {
-      const searchParams = new URLSearchParams();
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined) {
-            searchParams.append(key, String(value));
-          }
-        });
-      }
-      const query = searchParams.toString();
-      const url = query ? `${endpoint}?${query}` : endpoint;
-      return apiFetchWithToken<T>(url, token, { method: 'GET' });
-    },
-
-    // POST request
-    post<T>(endpoint: string, body?: unknown) {
-      return apiFetchWithToken<T>(endpoint, token, {
-        method: 'POST',
-        body: body ? JSON.stringify(body) : undefined,
-      });
-    },
-
-    // PUT request
-    put<T>(endpoint: string, body?: unknown) {
-      return apiFetchWithToken<T>(endpoint, token, {
-        method: 'PUT',
-        body: body ? JSON.stringify(body) : undefined,
-      });
-    },
-
-    // PATCH request
-    patch<T>(endpoint: string, body?: unknown) {
-      return apiFetchWithToken<T>(endpoint, token, {
-        method: 'PATCH',
-        body: body ? JSON.stringify(body) : undefined,
-      });
-    },
-
-    // DELETE request
-    delete<T>(endpoint: string) {
-      return apiFetchWithToken<T>(endpoint, token, { method: 'DELETE' });
-    },
-
-    // Upload file (multipart/form-data)
-    async upload<T>(endpoint: string, formData: FormData) {
-      const url = `${API_BASE_URL}${endpoint}`;
-
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData,
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new ApiClientError(
-          data.error?.message || 'Erro no upload',
-          data.error?.code || 'UPLOAD_ERROR',
-          response.status
-        );
-      }
-
-      return data as ApiResponse<T>;
-    },
-  };
-}
-
-// ============================================
-// React Hook for API Client
-// ============================================
-
-/**
- * Custom hook to use the API client with Clerk authentication.
- * Must be used in a Client Component within ClerkProvider.
- * 
- * @example
- * 'use client';
- * import { useApiClient } from '@/lib/api';
- * 
- * function MyComponent() {
- *   const { apiClient, isLoaded, isSignedIn } = useApiClient();
- *   
- *   const fetchData = async () => {
- *     if (!apiClient) return;
- *     const response = await apiClient.get('/api/v1/documents');
- *     // ...
- *   };
- * }
- */
-export { useApiClient } from './hooks/useApiClient';
-
-// ============================================
-// Default export for backwards compatibility
-// ============================================
-
-// For server-side usage or when token is managed externally
-export const api = createApiClient(null);
-
-export default api;
+// Export singleton for non-auth requests (or if we set default headers globally)
+export const apiUnauth = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});

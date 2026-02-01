@@ -5,3 +5,5 @@ export * from './use-manifestacao';
 export * from './use-jobs';
 export * from './use-debounce';
 export * from './use-nfse';
+export * from './use-certificates';
+export * from './use-webhooks';

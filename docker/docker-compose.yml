@@ -11,7 +11,7 @@ services:
     container_name: fiscalzen-postgres
     restart: unless-stopped
     ports:
-      - '5433:5432'
+      - '5432:5432'
     environment:
       POSTGRES_USER: fiscalzen
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
@@ -154,6 +154,7 @@ services:
       S3_ENDPOINT: http://minio:9000
       S3_BUCKET: fiscalzen-docs
       CORS_ORIGIN: http://localhost:3000
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
     env_file:
       - .env.api
     secrets:
@@ -215,6 +216,44 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # ===========================================
+  # Observability Stack
+  # ===========================================
+  # ===========================================
+  # Observability Stack
+  # ===========================================
+  prometheus:
+    profiles: [ 'app' ]
+    image: prom/prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  grafana:
+    profiles: [ 'app' ]
+    image: grafana/grafana
+    ports:
+      - "3003:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  jaeger:
+    profiles: [ 'app' ]
+    image: jaegertracing/all-in-one
+    container_name: jaeger
+    ports:
+      - "16686:16686" # UI
+      - "14268:14268" # Collector (HTTP)
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
 
 volumes:
   postgres_data:

@@ -1,0 +1,56 @@
+﻿   Ôû▓ Next.js 15.5.10
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ┬À staleTimes
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully in 4.1s
+   Linting and checking validity of types ...
+node.exe :  Ô¿» ESLint: Converting 
+circular structure to JSON     --> 
+starting at object with constructor 
+'Object'     |     property 'configs' 
+-> object with constructor 'Object'    
+ |     property 'flat' -> object with 
+constructor 'Object'     |     ...     
+|     property 'plugins' -> object 
+with constructor 'Object'     --- 
+property 'react' closes the circle 
+Referenced from: C:\fiscalzen-project\a
+pps\web\.eslintrc.cjs
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: ( Ô¿» ESLint: Co...b\.eslint  
+  rc.cjs:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+Failed to compile.
+
+./components/alerts/AlertsDropdown.tsx:
+11:5
+Type error: 'Button' is declared but 
+its value is never read.
+
+[0m [90m  9 |[39m     [33mDropdownM
+enuSeparator[39m[33m,[39m
+ [90m 10 |[39m     [33mDropdownMenuT
+rigger[39m[33m,[39m
+[31m[1m>[22m[39m[90m 11 |[39m    
+ [33mButton[39m
+ [90m    |[39m     
+[31m[1m^[22m[39m
+ [90m 12 |[39m } [36mfrom[39m 
+[32m'@fiscalzen/ui'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m { 
+[33mAlertBadge[39m } [36mfrom[39m 
+[32m'./AlertBadge'[39m[33m;[39m
+ [90m 14 |[39m [36mimport[39m { 
+useAlerts } [36mfrom[39m [32m'@/lib/
+hooks/useAlerts'[39m[33m;[39m[0m
+Next.js build worker exited with code: 
+1 and signal: null

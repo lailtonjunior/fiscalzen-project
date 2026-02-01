@@ -13,6 +13,7 @@ import {
 import { getTenantId } from '../../plugins/auth';
 import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response';
 import { ValidationError } from '../../utils/errors';
+import { zodToFastify, commonSchemas, standardResponses } from '../../utils/schema-converter';
 
 export async function companiesRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -21,7 +22,34 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // GET /api/v1/companies - List companies
   fastify.get<{
     Querystring: ListCompaniesQuery;
-  }>('/', async (request, reply) => {
+  }>('/', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Listar empresas',
+      description: 'Retorna lista paginada de empresas do usuário autenticado',
+      querystring: zodToFastify(listCompaniesQuerySchema),
+      response: {
+        200: {
+          description: 'Lista de empresas',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'array', items: { type: 'object' } },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                limit: { type: 'integer' },
+                total: { type: 'integer' },
+                pages: { type: 'integer' },
+              },
+            },
+          },
+        },
+        401: standardResponses[401],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const query = listCompaniesQuerySchema.parse(request.query);
 
@@ -34,7 +62,26 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // POST /api/v1/companies - Create company
   fastify.post<{
     Body: CreateCompanyInput;
-  }>('/', async (request, reply) => {
+  }>('/', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Criar empresa',
+      description: 'Cadastra uma nova empresa vinculada ao usuário',
+      body: zodToFastify(createCompanySchema),
+      response: {
+        201: {
+          description: 'Empresa criada com sucesso',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        400: standardResponses[400],
+        401: standardResponses[401],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const data = createCompanySchema.parse(request.body);
 
@@ -46,7 +93,26 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // GET /api/v1/companies/:id - Get company details
   fastify.get<{
     Params: CompanyIdParams;
-  }>('/:id', async (request, reply) => {
+  }>('/:id', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Obter empresa',
+      description: 'Retorna detalhes de uma empresa específica',
+      params: zodToFastify(companyIdSchema),
+      response: {
+        200: {
+          description: 'Detalhes da empresa',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
 
@@ -59,7 +125,28 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   fastify.put<{
     Params: CompanyIdParams;
     Body: UpdateCompanyInput;
-  }>('/:id', async (request, reply) => {
+  }>('/:id', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Atualizar empresa',
+      description: 'Atualiza dados de uma empresa existente',
+      params: zodToFastify(companyIdSchema),
+      body: zodToFastify(updateCompanySchema),
+      response: {
+        200: {
+          description: 'Empresa atualizada',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        400: standardResponses[400],
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
     const data = updateCompanySchema.parse(request.body);
@@ -72,7 +159,19 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // DELETE /api/v1/companies/:id - Soft delete company
   fastify.delete<{
     Params: CompanyIdParams;
-  }>('/:id', async (request, reply) => {
+  }>('/:id', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Desativar empresa',
+      description: 'Desativa uma empresa (soft delete)',
+      params: zodToFastify(companyIdSchema),
+      response: {
+        204: { description: 'Empresa desativada' },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
 
@@ -84,7 +183,35 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // POST /api/v1/companies/:id/certificate - Upload certificate
   fastify.post<{
     Params: CompanyIdParams;
-  }>('/:id/certificate', async (request, reply) => {
+  }>('/:id/certificate', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Upload de certificado',
+      description: 'Faz upload do certificado digital A1 (.pfx) para a empresa',
+      params: zodToFastify(companyIdSchema),
+      consumes: ['multipart/form-data'],
+      response: {
+        200: {
+          description: 'Certificado enviado com sucesso',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                validFrom: { type: 'string' },
+                validTo: { type: 'string' },
+                subject: { type: 'string' },
+              },
+            },
+          },
+        },
+        400: standardResponses[400],
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
 
@@ -114,7 +241,33 @@ export async function companiesRoutes(fastify: FastifyInstance) {
   // GET /api/v1/companies/:id/nsu-status - Get NSU sync status
   fastify.get<{
     Params: CompanyIdParams;
-  }>('/:id/nsu-status', async (request, reply) => {
+  }>('/:id/nsu-status', {
+    schema: {
+      tags: ['Companies'],
+      summary: 'Status de sincronização NSU',
+      description: 'Retorna o status de sincronização do NSU (Número Sequencial Único) da empresa',
+      params: zodToFastify(companyIdSchema),
+      response: {
+        200: {
+          description: 'Status do NSU',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                lastNsu: { type: 'string' },
+                lastSync: { type: 'string' },
+                totalDocuments: { type: 'integer' },
+              },
+            },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = companyIdSchema.parse(request.params);
 

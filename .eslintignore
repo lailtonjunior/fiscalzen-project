@@ -1,0 +1,21 @@
+# Build outputs
+**/dist/
+**/.next/
+**/coverage/
+
+# Dependencies
+**/node_modules/
+
+# Generated
+**/drizzle/
+**/*.generated.ts
+
+# Config files
+*.config.js
+*.config.mjs
+*.config.cjs
+
+# Other
+mnt/
+rag-v1/
+tools/

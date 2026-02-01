@@ -1,17 +1,21 @@
+import './config/tracing'; // Must be first
 import Fastify, { type FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
 import helmet from '@fastify/helmet';
 import { env } from './config/env';
+import { logger, requestLogger } from './config/logger';
 
 // Plugins
 import authPlugin from './plugins/auth';
 import corsPlugin from './plugins/cors';
 import rateLimitPlugin from './plugins/rate-limit';
+import swaggerPlugin from './plugins/swagger';
+import metricsPlugin from './plugins/metrics';
 
 // Routes
 import { companiesRoutes } from './modules/companies/index';
 import { documentsRoutes } from './modules/documents/index';
-import { pdfRoutes } from './modules/pdf/index';
+
 import { relationsRoutes } from './modules/relations/index';
 import { tagsRoutes } from './modules/tags/index';
 import { commentsRoutes } from './modules/comments/index';
@@ -32,23 +36,17 @@ import { ZodError } from 'zod';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: {
-      level: env.LOG_LEVEL,
-      transport:
-        env.NODE_ENV === 'development'
-          ? {
-            target: 'pino-pretty',
-            options: {
-              translateTime: 'HH:MM:ss Z',
-              ignore: 'pid,hostname',
-            },
-          }
-          : undefined,
-    },
+    logger: logger as any, // Cast to any to avoid pino/fastify version mismatch types
     trustProxy: true,
+    disableRequestLogging: true, // We handle logging via requestLogger/pino
+    getRequestId: (req) => {
+      return (req.headers['x-request-id'] as string) || crypto.randomUUID();
+    }
   });
 
   // Register plugins
+  await app.register(metricsPlugin); // Register metrics early
+
   // CORS must be registered FIRST to handle preflight OPTIONS requests
   await app.register(corsPlugin);
 
@@ -57,7 +55,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await app.register(rateLimitPlugin);
+
+  // Inject Correlation ID and Logger
+  requestLogger(app);
+
   await app.register(authPlugin);
+  await app.register(swaggerPlugin);
+  await app.register(authPlugin);
+  await app.register(swaggerPlugin);
 
   await app.register(multipart, {
     limits: {

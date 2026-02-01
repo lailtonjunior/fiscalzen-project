@@ -2,6 +2,11 @@
 # FiscalZen Web - Multi-stage Dockerfile
 # ===========================================
 
+# Build arguments
+ARG NODE_ENV=production
+ARG VERSION=dev
+ARG NEXT_PUBLIC_API_URL
+
 # Stage 1: Base with pnpm
 FROM node:20.11-alpine3.19 AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
@@ -27,7 +32,9 @@ RUN pnpm --filter @fiscalzen/shared build && \
     pnpm --filter @fiscalzen/ui build
 
 # Build Next.js app
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN pnpm --filter @fiscalzen/web build
 
 # Stage 4: Production image
@@ -40,8 +47,13 @@ LABEL org.opencontainers.image.title="FiscalZen Web" \
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Re-declare build args in this stage
+ARG NODE_ENV
+ARG VERSION
+
+ENV NODE_ENV=${NODE_ENV}
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV APP_VERSION=${VERSION}
 
 # Atualiza pacotes de segurança
 RUN apk update && apk upgrade --no-cache && \

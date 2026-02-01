@@ -16,16 +16,22 @@ On-demand expertise for AI agents. Skills are task-specific procedures that get 
 
 | Skill | Description | Phases |
 |-------|-------------|--------|
-| [commit-message](./commit-message/SKILL.md) | Generate commit messages following conventional commits with scope detection | E, C |
-| [pr-review](./pr-review/SKILL.md) | Review pull requests against team standards and best practices | R, V |
-| [code-review](./code-review/SKILL.md) | Review code quality, patterns, and best practices | R, V |
-| [test-generation](./test-generation/SKILL.md) | Generate comprehensive test cases for code | E, V |
-| [documentation](./documentation/SKILL.md) | Generate and update technical documentation | P, C |
-| [refactoring](./refactoring/SKILL.md) | Safe code refactoring with step-by-step approach | E |
-| [bug-investigation](./bug-investigation/SKILL.md) | Systematic bug investigation and root cause analysis | E, V |
-| [feature-breakdown](./feature-breakdown/SKILL.md) | Break down features into implementable tasks | P |
-| [api-design](./api-design/SKILL.md) | Design RESTful APIs following best practices | P, R |
-| [security-audit](./security-audit/SKILL.md) | Security review checklist for code and infrastructure | R, V |
+| [Commit Message](./commit-message/SKILL.md) | Generate commit messages following conventional commits with scope detection | E, C |
+| [Pr Review](./pr-review/SKILL.md) | Review pull requests against team standards and best practices | R, V |
+| [Code Review](./code-review/SKILL.md) | Review code quality, patterns, and best practices | R, V |
+| [Test Generation](./test-generation/SKILL.md) | Generate comprehensive test cases for code | E, V |
+| [Documentation](./documentation/SKILL.md) | Generate and update technical documentation | P, C |
+| [Refactoring](./refactoring/SKILL.md) | Safe code refactoring with step-by-step approach | E |
+| [Bug Investigation](./bug-investigation/SKILL.md) | Systematic bug investigation and root cause analysis | E, V |
+| [Feature Breakdown](./feature-breakdown/SKILL.md) | Break down features into implementable tasks | P |
+| [Api Design](./api-design/SKILL.md) | Design RESTful APIs following best practices | P, R |
+| [Security Audit](./security-audit/SKILL.md) | Security review checklist for code and infrastructure | R, V |
+
+### Custom Skills
+
+| Skill | Description | Phases |
+|-------|-------------|--------|
+| [Fiscalzen Sefaz](./fiscalzen-sefaz/SKILL.md) | TODO: Describe when to use fiscalzen-sefaz | E |
 
 ## Creating Custom Skills
 

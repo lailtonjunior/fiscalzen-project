@@ -10,6 +10,7 @@ export interface NFeItem {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
+  unidade: string;
 }
 
 export interface NFeData {
@@ -70,6 +71,7 @@ export function parseNFe(xml: string): NFeData {
     quantidade: parseDecimal(det.prod?.qCom),
     valorUnitario: parseDecimal(det.prod?.vUnCom),
     valorTotal: parseDecimal(det.prod?.vProd),
+    unidade: String(det.prod?.uCom || det.prod?.uTrib || 'UN'),
   }));
 
   // Determine document status

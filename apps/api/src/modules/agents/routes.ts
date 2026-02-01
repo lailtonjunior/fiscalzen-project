@@ -13,6 +13,7 @@ import {
 import { getTenantId } from '../../plugins/auth';
 import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response';
 import { UnauthorizedError } from '../../utils/errors';
+import { zodToFastify, standardResponses } from '../../utils/schema-converter';
 
 export async function agentsRoutes(fastify: FastifyInstance) {
   // All routes except heartbeat require authentication
@@ -27,7 +28,26 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   // GET /api/v1/agents - List agents
   fastify.get<{
     Querystring: ListAgentsQuery;
-  }>('/', async (request, reply) => {
+  }>('/', {
+    schema: {
+      tags: ['Agentes'],
+      summary: 'Listar agentes',
+      description: 'Lista agentes registrados no tenant',
+      querystring: zodToFastify(listAgentsQuerySchema),
+      response: {
+        200: {
+          description: 'Lista de agentes',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'array', items: { type: 'object' } },
+            pagination: { type: 'object' },
+          },
+        },
+        401: standardResponses[401],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const query = listAgentsQuerySchema.parse(request.query);
 
@@ -40,7 +60,26 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   // POST /api/v1/agents/register - Register new agent
   fastify.post<{
     Body: RegisterAgentInput;
-  }>('/register', async (request, reply) => {
+  }>('/register', {
+    schema: {
+      tags: ['Agentes'],
+      summary: 'Registrar agente',
+      description: 'Registra um novo agente local para processamento',
+      body: zodToFastify(registerAgentSchema),
+      response: {
+        201: {
+          description: 'Agente registrado',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        400: standardResponses[400],
+        401: standardResponses[401],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const data = registerAgentSchema.parse(request.body);
 
@@ -52,7 +91,26 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   // GET /api/v1/agents/:id - Get agent details
   fastify.get<{
     Params: AgentIdParams;
-  }>('/:id', async (request, reply) => {
+  }>('/:id', {
+    schema: {
+      tags: ['Agentes'],
+      summary: 'Detalhes do agente',
+      description: 'Retorna informações de um agente específico',
+      params: zodToFastify(agentIdSchema),
+      response: {
+        200: {
+          description: 'Detalhes do agente',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = agentIdSchema.parse(request.params);
 
@@ -64,7 +122,19 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   // DELETE /api/v1/agents/:id - Remove agent
   fastify.delete<{
     Params: AgentIdParams;
-  }>('/:id', async (request, reply) => {
+  }>('/:id', {
+    schema: {
+      tags: ['Agentes'],
+      summary: 'Remover agente',
+      description: 'Remove o registro de um agente',
+      params: zodToFastify(agentIdSchema),
+      response: {
+        204: { description: 'Agente removido' },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = agentIdSchema.parse(request.params);
 
@@ -77,7 +147,28 @@ export async function agentsRoutes(fastify: FastifyInstance) {
   fastify.post<{
     Params: AgentIdParams;
     Body: AgentHeartbeatInput;
-  }>('/:id/heartbeat', async (request, reply) => {
+  }>('/:id/heartbeat', {
+    schema: {
+      tags: ['Agentes'],
+      summary: 'Heartbeat do agente',
+      description: 'Endpoint para agentes enviarem heartbeat e status',
+      params: zodToFastify(agentIdSchema),
+      body: zodToFastify(agentHeartbeatSchema),
+      security: [{ apiKey: [] }], // Customize scheme if needed, usually defined in swagger.ts
+      response: {
+        200: {
+          description: 'Status atualizado',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'object' },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const { id } = agentIdSchema.parse(request.params);
 
     // Validate API key from header

@@ -1,0 +1,181 @@
+name: CD Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Build and Push Docker Images
+  # ============================================
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      api_image: ${{ steps.meta-api.outputs.tags }}
+      web_image: ${{ steps.meta-web.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api
+          tags: |
+            type=raw,value=staging
+            type=sha,prefix=staging-
+
+      - name: Extract metadata (Web)
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web
+          tags: |
+            type=raw,value=staging
+            type=sha,prefix=staging-
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            NEXT_PUBLIC_API_URL=${{ vars.STAGING_API_URL }}
+
+  # ============================================
+  # Deploy to Staging
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to staging server
+        env:
+          HOST: ${{ vars.STAGING_HOST }}
+          USER: ${{ vars.STAGING_USER }}
+          DEPLOY_PATH: ${{ vars.STAGING_DEPLOY_PATH }}
+        run: |
+          ssh $USER@$HOST << 'ENDSSH'
+            cd $DEPLOY_PATH
+
+            # Pull latest images
+            docker compose pull
+
+            # Stop and recreate containers
+            docker compose up -d --remove-orphans
+
+            # Run migrations
+            docker compose exec -T api pnpm db:migrate
+
+            # Cleanup old images
+            docker image prune -f
+
+            # Health check
+            sleep 10
+            curl -f http://localhost:3001/health || exit 1
+
+            echo "Deployment successful!"
+          ENDSSH
+
+      - name: Notify on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Staging deploy successful for FiscalZen",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deploy Successful*\n\nCommit: `${{ github.sha }}`\nBranch: `${{ github.ref_name }}`\n\n<${{ vars.STAGING_URL }}|View Staging>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Staging deploy FAILED for FiscalZen",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Staging Deploy FAILED*\n\nCommit: `${{ github.sha }}`\nBranch: `${{ github.ref_name }}`\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true

@@ -1,0 +1,309 @@
+name: CD Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Build and Push Production Images
+  # ============================================
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      api_image: ${{ steps.meta-api.outputs.tags }}
+      web_image: ${{ steps.meta-web.outputs.tags }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Get version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (API)
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,prefix=
+
+      - name: Extract metadata (Web)
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=sha,prefix=
+
+      - name: Build and push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VERSION=${{ steps.version.outputs.version }}
+
+      - name: Build and push Web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            NEXT_PUBLIC_API_URL=${{ vars.PRODUCTION_API_URL }}
+            VERSION=${{ steps.version.outputs.version }}
+
+  # ============================================
+  # Deploy to Production (Blue-Green)
+  # ============================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Blue-Green Deploy
+        env:
+          HOST: ${{ vars.PRODUCTION_HOST }}
+          USER: ${{ vars.PRODUCTION_USER }}
+          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
+          VERSION: ${{ needs.build-and-push.outputs.version }}
+        run: |
+          ssh $USER@$HOST << 'ENDSSH'
+            set -e
+            cd $DEPLOY_PATH
+
+            echo "=== Starting Blue-Green Deployment ==="
+            echo "Version: $VERSION"
+
+            # Determine current active environment
+            CURRENT_ENV=$(docker compose ps --format json | jq -r 'select(.Name | contains("api")) | .Name' | head -1 | grep -oE 'blue|green' || echo "blue")
+
+            if [ "$CURRENT_ENV" = "blue" ]; then
+              NEW_ENV="green"
+            else
+              NEW_ENV="blue"
+            fi
+
+            echo "Current: $CURRENT_ENV -> New: $NEW_ENV"
+
+            # Pull new images
+            docker compose pull
+
+            # Start new environment
+            echo "Starting $NEW_ENV environment..."
+            docker compose -f docker-compose.prod.yml up -d fiscalzen-api-$NEW_ENV fiscalzen-web-$NEW_ENV
+
+            # Wait for health check
+            echo "Waiting for health check..."
+            sleep 15
+
+            # Health check
+            if ! curl -sf http://localhost:3001/health > /dev/null; then
+              echo "Health check failed! Rolling back..."
+              docker compose stop fiscalzen-api-$NEW_ENV fiscalzen-web-$NEW_ENV
+              exit 1
+            fi
+
+            # Run migrations (only on new environment)
+            echo "Running migrations..."
+            docker compose exec -T fiscalzen-api-$NEW_ENV pnpm db:migrate
+
+            # Switch traffic (update nginx/traefik config)
+            echo "Switching traffic to $NEW_ENV..."
+            # This depends on your load balancer setup
+            # Example for nginx:
+            # sed -i "s/fiscalzen-api-$CURRENT_ENV/fiscalzen-api-$NEW_ENV/g" /etc/nginx/conf.d/fiscalzen.conf
+            # nginx -s reload
+
+            # Graceful shutdown of old environment
+            echo "Shutting down $CURRENT_ENV environment..."
+            sleep 30  # Allow in-flight requests to complete
+            docker compose stop fiscalzen-api-$CURRENT_ENV fiscalzen-web-$CURRENT_ENV
+
+            # Cleanup
+            docker image prune -f
+
+            echo "=== Deployment Complete ==="
+          ENDSSH
+
+      - name: Create deployment record
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 0,
+              state: 'success',
+              environment_url: '${{ vars.PRODUCTION_URL }}',
+              description: 'Deployed version ${{ needs.build-and-push.outputs.version }}'
+            });
+
+      - name: Notify on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Production deploy successful for FiscalZen",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deploy Successful*\n\nVersion: `${{ needs.build-and-push.outputs.version }}`\n\n<${{ vars.PRODUCTION_URL }}|View Production>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true
+
+      - name: Notify on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "PRODUCTION DEPLOY FAILED for FiscalZen",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*PRODUCTION DEPLOY FAILED*\n\nVersion: `${{ needs.build-and-push.outputs.version }}`\n\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true
+
+  # ============================================
+  # Rollback Job (Manual)
+  # ============================================
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: ${{ failure() && needs.deploy-production.result == 'failure' }}
+    needs: deploy-production
+    environment:
+      name: production
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ vars.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback
+        env:
+          HOST: ${{ vars.PRODUCTION_HOST }}
+          USER: ${{ vars.PRODUCTION_USER }}
+          DEPLOY_PATH: ${{ vars.PRODUCTION_DEPLOY_PATH }}
+        run: |
+          ssh $USER@$HOST << 'ENDSSH'
+            cd $DEPLOY_PATH
+            echo "Rolling back to previous version..."
+            docker compose up -d --force-recreate
+            echo "Rollback complete"
+          ENDSSH
+
+      - name: Notify rollback
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Production ROLLBACK executed for FiscalZen",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Rollback Executed*\n\nDeploy failed, rolled back to previous version."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        continue-on-error: true

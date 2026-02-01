@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useApiClient } from '../api';
+import { useState, useCallback } from 'react';
+import { useApiClient } from './useApiClient';
 
 export interface Alerta {
     id: string;
@@ -23,15 +23,16 @@ export interface AlertaSummary {
 }
 
 export function useAlerts() {
-    const { apiClient } = useApiClient();
+    const { getApiClient, isSignedIn } = useApiClient();
     const [alerts, setAlerts] = useState<Alerta[]>([]);
     const [summary, setSummary] = useState<AlertaSummary>({ total: 0, naoLidos: 0, altaPrioridade: 0 });
     const [loading, setLoading] = useState(false);
 
     const fetchAlerts = useCallback(async (filters: any = {}) => {
-        if (!apiClient) return;
+        if (!isSignedIn) return;
         try {
             setLoading(true);
+            const apiClient = await getApiClient();
             const res = await apiClient.get<Alerta[]>('/api/v1/alerts', filters);
             if (res.success && res.data) {
                 setAlerts(res.data);
@@ -41,11 +42,12 @@ export function useAlerts() {
         } finally {
             setLoading(false);
         }
-    }, [apiClient]);
+    }, [getApiClient, isSignedIn]);
 
     const fetchSummary = useCallback(async () => {
-        if (!apiClient) return;
+        if (!isSignedIn) return;
         try {
+            const apiClient = await getApiClient();
             const res = await apiClient.get<AlertaSummary>('/api/v1/alerts/summary');
             if (res.success && res.data) {
                 setSummary(res.data);
@@ -53,11 +55,12 @@ export function useAlerts() {
         } catch (error) {
             console.error('Failed to fetch alerts summary', error);
         }
-    }, [apiClient]);
+    }, [getApiClient, isSignedIn]);
 
     const markAsRead = useCallback(async (id: string) => {
-        if (!apiClient) return;
+        if (!isSignedIn) return;
         try {
+            const apiClient = await getApiClient();
             await apiClient.patch(`/api/v1/alerts/${id}/read`);
             // Update local state optimistic
             setAlerts(prev => prev.map(a => a.id === id ? { ...a, lido: true } : a));
@@ -68,18 +71,19 @@ export function useAlerts() {
         } catch (error) {
             console.error('Failed to mark alert as read', error);
         }
-    }, [apiClient]);
+    }, [getApiClient, isSignedIn]);
 
     const markAllAsRead = useCallback(async () => {
-        if (!apiClient) return;
+        if (!isSignedIn) return;
         try {
+            const apiClient = await getApiClient();
             await apiClient.patch('/api/v1/alerts/read-all');
             fetchAlerts();
             fetchSummary();
         } catch (error) {
             console.error('Failed to mark all as read', error);
         }
-    }, [apiClient, fetchAlerts, fetchSummary]);
+    }, [getApiClient, isSignedIn, fetchAlerts, fetchSummary]);
 
     return {
         alerts,

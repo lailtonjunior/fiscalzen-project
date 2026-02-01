@@ -1,33 +1,81 @@
 import { FastifyPluginAsync } from 'fastify';
-import { commentsService, CreateCommentDto } from './service';
+import { commentsService } from './service';
 import { getTenantId, getUserId } from '../../plugins/auth';
-import { z } from 'zod';
-
-const createCommentSchema = z.object({
-    content: z.string().min(1),
-    isInternal: z.boolean().optional(),
-    parentId: z.string().uuid().optional(),
-});
-
-const updateCommentSchema = z.object({
-    content: z.string().min(1),
-});
+import { zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { sendSuccess } from '../../utils/response';
+import {
+    createCommentSchema,
+    updateCommentSchema,
+    commentIdParamsSchema,
+    documentCommentsParamsSchema,
+    type CreateCommentInput,
+    type UpdateCommentInput
+} from './schemas';
 
 export const commentsRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.addHook('onRequest', fastify.authenticate);
 
-    fastify.get('/documents/:documentId/comments', async (request, reply) => {
+    // GET /api/v1/comments/documents/:documentId/comments - List comments
+    // NOTE: Fastify routes without prefix usually relative to module prefix. 
+    // Assuming module prefix is '/comments' or similar in app.ts, but user code had path '/documents/:documentId/comments'
+    // This looks like it is mounted at root or '/api/v1', let's preserve the paths from original file.
+    fastify.get<{
+        Params: { documentId: string };
+    }>('/documents/:documentId/comments', {
+        schema: {
+            tags: ['Comentários'],
+            summary: 'Listar comentários',
+            description: 'Lista comentários de um documento fiscal',
+            params: zodToFastify(documentCommentsParamsSchema),
+            response: {
+                200: {
+                    description: 'Lista de comentários',
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: { type: 'array', items: { type: 'object' } },
+                    },
+                },
+                401: standardResponses[401],
+                404: standardResponses[404],
+            },
+        },
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
-        const { documentId } = request.params as { documentId: string };
+        const { documentId } = documentCommentsParamsSchema.parse(request.params);
 
         const result = await commentsService.list(documentId, tenantId);
-        return result;
+        return sendSuccess(reply, result);
     });
 
-    fastify.post('/documents/:documentId/comments', async (request, reply) => {
+    // POST /api/v1/comments/documents/:documentId/comments - Create comment
+    fastify.post<{
+        Params: { documentId: string };
+        Body: CreateCommentInput;
+    }>('/documents/:documentId/comments', {
+        schema: {
+            tags: ['Comentários'],
+            summary: 'Adicionar comentário',
+            description: 'Adiciona um novo comentário a um documento',
+            params: zodToFastify(documentCommentsParamsSchema),
+            body: zodToFastify(createCommentSchema),
+            response: {
+                201: {
+                    description: 'Comentário criado',
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: { type: 'object' },
+                    },
+                },
+                400: standardResponses[400],
+                401: standardResponses[401],
+            },
+        },
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const userId = getUserId(request);
-        const { documentId } = request.params as { documentId: string };
+        const { documentId } = documentCommentsParamsSchema.parse(request.params);
 
         const body = createCommentSchema.parse(request.body);
 
@@ -36,24 +84,66 @@ export const commentsRoutes: FastifyPluginAsync = async (fastify) => {
             ...body
         });
 
-        return reply.status(201).send(comment);
+        return reply.status(201).send({ success: true, data: comment });
     });
 
-    fastify.put('/comments/:id', async (request, reply) => {
+    // PUT /api/v1/comments/comments/:id - Update comment
+    // Original path: /comments/:id
+    fastify.put<{
+        Params: { id: string };
+        Body: UpdateCommentInput;
+    }>('/comments/:id', {
+        schema: {
+            tags: ['Comentários'],
+            summary: 'Atualizar comentário',
+            description: 'Edita o conteúdo de um comentário',
+            params: zodToFastify(commentIdParamsSchema),
+            body: zodToFastify(updateCommentSchema),
+            response: {
+                200: {
+                    description: 'Comentário atualizado',
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: { type: 'object' },
+                    },
+                },
+                400: standardResponses[400],
+                401: standardResponses[401],
+                404: standardResponses[404],
+            },
+        },
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const userId = getUserId(request);
-        const { id } = request.params as { id: string };
+        const { id } = commentIdParamsSchema.parse(request.params);
 
         const body = updateCommentSchema.parse(request.body);
 
         const comment = await commentsService.update(id, tenantId, userId, body.content);
-        return comment;
+        return sendSuccess(reply, comment);
     });
 
-    fastify.delete('/comments/:id', async (request, reply) => {
+    // DELETE /api/v1/comments/comments/:id - Delete comment
+    // Original path: /comments/:id
+    fastify.delete<{
+        Params: { id: string };
+    }>('/comments/:id', {
+        schema: {
+            tags: ['Comentários'],
+            summary: 'Excluir comentário',
+            description: 'Remove um comentário',
+            params: zodToFastify(commentIdParamsSchema),
+            response: {
+                204: { description: 'Comentário excluído' },
+                401: standardResponses[401],
+                404: standardResponses[404],
+            },
+        },
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const userId = getUserId(request);
-        const { id } = request.params as { id: string };
+        const { id } = commentIdParamsSchema.parse(request.params);
 
         await commentsService.delete(id, tenantId, userId);
 

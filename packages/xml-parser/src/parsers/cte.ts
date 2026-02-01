@@ -33,6 +33,21 @@ export interface CTeData {
   valorFrete: number;
   situacao: DocumentStatus;
   documentosOriginarios: DocumentoOriginario[];
+  // Campos adicionais para DACTE
+  modal: string; // '01'=Rodoviário, '02'=Aéreo, '03'=Aquaviário, '04'=Ferroviário, '05'=Dutoviário, '06'=Multimodal
+  carga?: {
+    valorCarga: number;
+    produtoPredominante: string;
+    quantidades: Array<{ tipo: string; quantidade: number }>;
+  };
+  valorPrestacao: {
+    total: number;
+    receber: number;
+    componentes: Array<{ nome: string; valor: number }>;
+  };
+  expedidor?: { cnpjCpf: string; razaoSocial: string };
+  recebedor?: { cnpjCpf: string; razaoSocial: string };
+  rodoviario?: { rntrc: string; veiculos: Array<{ placa: string; uf: string }> };
   metadata: Record<string, unknown>;
   searchContent: string;
 }
@@ -143,6 +158,13 @@ export function parseCTe(xml: string): CTeData {
     valorFrete: parseDecimal(vPrest?.vRec),
     situacao,
     documentosOriginarios,
+    // Campos para DACTE
+    modal: String(ide.modal || '01'), // Default rodoviário
+    valorPrestacao: {
+      total: parseDecimal(vPrest?.vTPrest),
+      receber: parseDecimal(vPrest?.vRec),
+      componentes: [], // Simplificado - pode ser expandido se necessário
+    },
     metadata: {
       natOp: ide.natOp,
       tpCTe: ide.tpCTe, // 0=Normal, 1=Complemento, 2=Anulação, 3=Substituto

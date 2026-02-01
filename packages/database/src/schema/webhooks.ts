@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, jsonb, boolean, timestamp, integer, text, json } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, boolean, timestamp, integer, text } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 
 export const webhooks = pgTable('webhooks', {

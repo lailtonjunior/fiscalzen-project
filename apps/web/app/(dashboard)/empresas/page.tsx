@@ -1,88 +1,63 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button, Skeleton } from '@fiscalzen/ui';
-import { Plus, Building2 } from 'lucide-react';
-import { CompanyCard } from '@/components/companies';
-import { useCompanies } from '@/lib/hooks/use-companies';
-import { useTriggerSync } from '@/lib/hooks/use-jobs';
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { DataTable } from '@/components/data-table'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useApiClient } from '@/lib/api'
+import { columns } from './columns'
+import { Plus } from 'lucide-react'
+import Link from 'next/link'
 
 export default function EmpresasPage() {
-  const { data: companies, isLoading } = useCompanies();
-  const triggerSync = useTriggerSync();
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('')
+  const apiClient = useApiClient();
 
-  const handleSync = async (companyId: string) => {
-    setSyncingId(companyId);
-    try {
-      await triggerSync.mutateAsync(companyId);
-    } finally {
-      setSyncingId(null);
-    }
-  };
+  const { data: response, isLoading } = useQuery({
+    queryKey: ['empresas', search],
+    queryFn: async () => {
+      const res = await apiClient.get('/companies', {
+        params: {
+          search: search || undefined,
+          page: 1, // Default to page 1 for now, full pagination requires state
+          limit: 10
+        }
+      });
+      return res.data;
+    },
+  })
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-64" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Normalize data if API returns { data: [], meta: {} } or similar
+  const data = Array.isArray(response?.data) ? response.data :
+    Array.isArray(response) ? response : [];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
-          <p className="text-muted-foreground">
-            Gerencie suas empresas e certificados
-          </p>
-        </div>
-        <Link href="/empresas/nova">
-          <Button>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Empresas</h1>
+        <Button asChild>
+          <Link href="/empresas/nova">
             <Plus className="mr-2 h-4 w-4" />
             Nova Empresa
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
-      {/* Companies Grid */}
-      {companies && companies.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {companies.map((company) => (
-            <CompanyCard
-              key={company.id}
-              company={company}
-              onSync={() => handleSync(company.id)}
-              syncing={syncingId === company.id}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12">
-          <Building2 className="h-12 w-12 text-muted-foreground" />
-          <h2 className="mt-4 text-lg font-semibold">Nenhuma empresa cadastrada</h2>
-          <p className="mt-1 text-muted-foreground">
-            Cadastre sua primeira empresa para comecar a monitorar documentos.
-          </p>
-          <Link href="/empresas/nova" className="mt-4">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Cadastrar Empresa
-            </Button>
-          </Link>
-        </div>
-      )}
+      <div className="flex gap-4">
+        <Input
+          placeholder="Buscar por CNPJ ou nome..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={data}
+        isLoading={isLoading}
+      />
     </div>
-  );
+  )
 }

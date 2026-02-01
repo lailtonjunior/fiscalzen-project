@@ -10,7 +10,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
-        include: ['tests/integration/**/*.integration.test.ts'],
+        // Updated to include new test filenames
+        include: ['tests/integration/**/*.test.ts', 'tests/integration/**/*.integration.test.ts'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'html'],
@@ -19,6 +20,8 @@ export default defineConfig({
         // Longer timeout for database operations
         testTimeout: 30000,
         hookTimeout: 30000,
+        // Global setup for container/db checks
+        globalSetup: ['./tests/integration/global-setup.ts'],
         // Setup files for integration test environment
         setupFiles: ['./tests/integration/setup.integration.ts'],
         // Run tests sequentially to avoid database conflicts

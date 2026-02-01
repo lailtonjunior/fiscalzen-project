@@ -8,6 +8,7 @@ import {
 } from './schemas';
 import { getTenantId } from '../../plugins/auth';
 import { sendSuccess, paginate } from '../../utils/response';
+import { zodToFastify, standardResponses } from '../../utils/schema-converter';
 
 export async function eventsRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -17,7 +18,28 @@ export async function eventsRoutes(fastify: FastifyInstance) {
   fastify.get<{
     Params: DocumentIdParams;
     Querystring: ListEventsQuery;
-  }>('/:id/events', async (request, reply) => {
+  }>('/:id/events', {
+    schema: {
+      tags: ['Eventos'],
+      summary: 'Listar eventos',
+      description: 'Retorna histórico de eventos do documento (autorização, cancelamento, carta de correção, etc)',
+      params: zodToFastify(documentIdSchema),
+      querystring: zodToFastify(listEventsQuerySchema),
+      response: {
+        200: {
+          description: 'Lista de eventos',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: { type: 'array', items: { type: 'object' } },
+            pagination: { type: 'object' },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
     const tenantId = getTenantId(request);
     const { id } = documentIdSchema.parse(request.params);
     const query = listEventsQuerySchema.parse(request.query);

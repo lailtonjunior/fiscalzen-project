@@ -12,6 +12,21 @@ export {
   createSoapClient,
 } from './soap-client';
 
+// Resilience
+export {
+  withRetry,
+  type RetryConfig,
+  defaultRetryConfig,
+} from './retry';
+
+export {
+  CircuitBreaker,
+  CircuitBreakerError,
+  CircuitState,
+  type CircuitBreakerConfig,
+  defaultCircuitConfig,
+} from './circuit-breaker';
+
 // Constants - exporta tudo de constants
 export {
   UF_CODES,

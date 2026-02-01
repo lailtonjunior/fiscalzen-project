@@ -1,11 +1,12 @@
 {
   "version": "1.0.0",
-  "generated": "2026-01-18T06:04:03.036Z",
+  "generated": "2026-01-28T02:03:21.807Z",
   "stack": {
     "primaryLanguage": "typescript",
     "languages": [
       "javascript",
-      "typescript"
+      "typescript",
+      "python"
     ],
     "frameworks": [],
     "buildTools": [
@@ -16,21 +17,33 @@
     "packageManager": "pnpm",
     "isMonorepo": true,
     "hasDocker": false,
-    "hasCI": false
+    "hasCI": true
   },
   "structure": {
-    "totalFiles": 320,
+    "totalFiles": 469,
     "topDirectories": [
+      {
+        "name": "AGENTS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANTI_SCOPE.md",
+        "fileCount": 1
+      },
       {
         "name": "apply-next-dev-cache-fix.mjs",
         "fileCount": 1
       },
       {
         "name": "apps",
-        "fileCount": 135
+        "fileCount": 222
       },
       {
         "name": "Checklist de QA.pdf",
+        "fileCount": 1
+      },
+      {
+        "name": "CLAWDBOT_FIXES.md",
         "fileCount": 1
       },
       {
@@ -38,8 +51,16 @@
         "fileCount": 1
       },
       {
+        "name": "CORE_LOGIC.md",
+        "fileCount": 1
+      },
+      {
         "name": "docker",
-        "fileCount": 2
+        "fileCount": 13
+      },
+      {
+        "name": "docs",
+        "fileCount": 1
       },
       {
         "name": "kill-port.mjs",
@@ -55,7 +76,7 @@
       },
       {
         "name": "packages",
-        "fileCount": 136
+        "fileCount": 169
       },
       {
         "name": "pnpm-lock.yaml",
@@ -66,11 +87,31 @@
         "fileCount": 1
       },
       {
+        "name": "PROJECT_HEALTH.md",
+        "fileCount": 1
+      },
+      {
+        "name": "PROJECT_STATUS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "rag-v1",
+        "fileCount": 8
+      },
+      {
         "name": "README.md",
         "fileCount": 1
       },
       {
         "name": "README.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "scripts",
+        "fileCount": 1
+      },
+      {
+        "name": "test_lmstudio.py",
         "fileCount": 1
       },
       {
@@ -82,6 +123,10 @@
         "fileCount": 1
       },
       {
+        "name": "tsconfig.json",
+        "fileCount": 1
+      },
+      {
         "name": "turbo.json",
         "fileCount": 1
       }
@@ -89,42 +134,42 @@
     "languageDistribution": [
       {
         "extension": ".ts",
-        "count": 171
+        "count": 246
       },
       {
         "extension": ".tsx",
-        "count": 61
-      },
-      {
-        "extension": ".mjs",
-        "count": 37
-      },
-      {
-        "extension": ".json",
-        "count": 21
+        "count": 67
       },
       {
         "extension": ".js",
-        "count": 11
+        "count": 39
+      },
+      {
+        "extension": ".mjs",
+        "count": 38
+      },
+      {
+        "extension": ".json",
+        "count": 32
+      },
+      {
+        "extension": ".md",
+        "count": 10
+      },
+      {
+        "extension": ".txt",
+        "count": 9
       },
       {
         "extension": ".xml",
         "count": 6
       },
       {
-        "extension": ".yaml",
-        "count": 2
-      },
-      {
-        "extension": ".txt",
-        "count": 2
-      },
-      {
-        "extension": ".bak",
-        "count": 2
-      },
-      {
         "extension": ".sql",
+        "count": 4
+      },
+      {
+        "extension": ".yaml",
         "count": 2
       }
     ]
@@ -135,13 +180,25 @@
         "name": "Config",
         "description": "Configuration and constants",
         "directories": [
+          "rag-v1\\src",
           "packages\\xml-parser",
           "packages\\sefaz-client",
           "apps\\web",
           "packages\\sefaz-client\\src",
           "packages\\sefaz-client\\src\\constants"
         ],
-        "symbolCount": 7,
+        "symbolCount": 8,
+        "dependsOn": []
+      },
+      {
+        "name": "Generators",
+        "description": "Content and object generation",
+        "directories": [
+          "packages\\pdf-generator",
+          "packages\\pdf-generator\\src",
+          "packages\\pdf-generator\\src\\generators"
+        ],
+        "symbolCount": 6,
         "dependsOn": []
       },
       {
@@ -153,7 +210,7 @@
           "apps\\web\\components\\documents",
           "mnt\\data\\fiscalzen_local_dev_fixes_v2"
         ],
-        "symbolCount": 18,
+        "symbolCount": 24,
         "dependsOn": [
           "Models"
         ]
@@ -168,23 +225,37 @@
           "apps\\api\\test",
           "apps\\api\\src",
           "packages\\shared\\src\\types",
+          "apps\\web\\lib\\hooks",
+          "apps\\api\\tests\\integration",
           "apps\\api\\src\\utils",
+          "apps\\api\\src\\providers",
           "apps\\api\\src\\plugins",
           "apps\\api\\src\\jobs",
           "apps\\api\\src\\config",
+          "apps\\api\\src\\modules\\webhooks",
+          "apps\\api\\src\\modules\\tags",
+          "apps\\api\\src\\modules\\relations",
+          "apps\\api\\src\\modules\\pdf",
           "apps\\api\\src\\modules\\nfse",
           "apps\\api\\src\\modules\\manifestacao",
           "apps\\api\\src\\modules\\jobs",
           "apps\\api\\src\\modules\\events",
+          "apps\\api\\src\\modules\\downloads",
           "apps\\api\\src\\modules\\documents",
           "apps\\api\\src\\modules\\dashboard",
           "apps\\api\\src\\modules\\companies",
+          "apps\\api\\src\\modules\\comments",
+          "apps\\api\\src\\modules\\certificates",
+          "apps\\api\\src\\modules\\alertas",
           "apps\\api\\src\\modules\\agents",
+          "apps\\api\\src\\modules\\pdf\\utils",
+          "apps\\api\\src\\modules\\pdf\\layouts",
           "tools"
         ],
-        "symbolCount": 171,
+        "symbolCount": 288,
         "dependsOn": [
-          "Services"
+          "Services",
+          "Utils"
         ]
       },
       {
@@ -202,7 +273,7 @@
           "apps\\web\\lib\\stores",
           "apps\\web\\lib\\hooks"
         ],
-        "symbolCount": 139,
+        "symbolCount": 148,
         "dependsOn": []
       },
       {
@@ -210,8 +281,14 @@
         "description": "Business logic and orchestration",
         "directories": [
           "packages\\sefaz-client\\tests",
+          "apps\\api\\tests",
           "packages\\sefaz-client\\src\\services",
           "apps\\api\\src\\services",
+          "apps\\api\\src\\modules\\webhooks",
+          "apps\\api\\src\\modules\\tags",
+          "apps\\api\\src\\modules\\relations",
+          "apps\\api\\src\\modules\\pdf",
+          "apps\\api\\src\\modules\\nsu",
           "apps\\api\\src\\modules\\nfse",
           "apps\\api\\src\\modules\\manifestacao",
           "apps\\api\\src\\modules\\jobs",
@@ -219,9 +296,12 @@
           "apps\\api\\src\\modules\\documents",
           "apps\\api\\src\\modules\\dashboard",
           "apps\\api\\src\\modules\\companies",
+          "apps\\api\\src\\modules\\comments",
+          "apps\\api\\src\\modules\\certificates",
+          "apps\\api\\src\\modules\\alertas",
           "apps\\api\\src\\modules\\agents"
         ],
-        "symbolCount": 64,
+        "symbolCount": 130,
         "dependsOn": [
           "Config",
           "Controllers"
@@ -233,7 +313,7 @@
         "directories": [
           "packages\\database\\src\\schema"
         ],
-        "symbolCount": 27,
+        "symbolCount": 30,
         "dependsOn": []
       },
       {
@@ -246,8 +326,13 @@
           "apps\\web\\components\\documents",
           "apps\\web\\components\\dashboard",
           "apps\\web\\components\\companies",
+          "apps\\web\\components",
           "apps\\web\\app",
           "packages\\ui\\src\\components",
+          "apps\\web\\components\\alerts",
+          "apps\\web\\app\\alerts",
+          "apps\\web\\app\\sign-up\\[[...sign-up]]",
+          "apps\\web\\app\\sign-in\\[[...sign-in]]",
           "apps\\web\\app\\(dashboard)\\upload",
           "apps\\web\\app\\(dashboard)\\manifestacao",
           "apps\\web\\app\\(dashboard)\\empresas",
@@ -258,20 +343,30 @@
           "apps\\web\\app\\(dashboard)\\documentos\\[id]",
           "apps\\web\\app\\(dashboard)\\empresas\\[id]\\nfse"
         ],
-        "symbolCount": 70,
+        "symbolCount": 161,
         "dependsOn": [
           "Utils"
         ]
       }
     ],
-    "patterns": [],
+    "patterns": [
+      {
+        "name": "Service Layer",
+        "confidence": 0.85,
+        "description": "Encapsulates business logic in service classes",
+        "occurrences": 14
+      }
+    ],
     "entryPoints": [
+      "rag-v1\\src\\index.ts",
       "packages\\xml-parser\\src\\index.ts",
       "packages\\ui\\src\\index.ts",
       "packages\\shared\\src\\index.ts",
       "packages\\sefaz-client\\src\\index.ts",
+      "packages\\pdf-generator\\src\\index.ts",
       "packages\\nfse-client\\src\\index.ts",
       "packages\\database\\src\\index.ts",
+      "packages\\cli\\src\\index.ts",
       "apps\\api\\src\\index.ts",
       "apps\\api\\src\\app.ts",
       "packages\\nfse-client\\src\\rpa\\index.ts",
@@ -286,13 +381,21 @@
       "apps\\web\\components\\companies\\index.ts",
       "apps\\api\\src\\jobs\\index.ts",
       "packages\\nfse-client\\src\\abrasf\\municipios\\index.ts",
+      "apps\\api\\src\\modules\\webhooks\\index.ts",
+      "apps\\api\\src\\modules\\tags\\index.ts",
+      "apps\\api\\src\\modules\\relations\\index.ts",
+      "apps\\api\\src\\modules\\pdf\\index.ts",
       "apps\\api\\src\\modules\\nfse\\index.ts",
       "apps\\api\\src\\modules\\manifestacao\\index.ts",
       "apps\\api\\src\\modules\\jobs\\index.ts",
       "apps\\api\\src\\modules\\events\\index.ts",
+      "apps\\api\\src\\modules\\downloads\\index.ts",
       "apps\\api\\src\\modules\\documents\\index.ts",
       "apps\\api\\src\\modules\\dashboard\\index.ts",
       "apps\\api\\src\\modules\\companies\\index.ts",
+      "apps\\api\\src\\modules\\comments\\index.ts",
+      "apps\\api\\src\\modules\\certificates\\index.ts",
+      "apps\\api\\src\\modules\\alertas\\index.ts",
       "apps\\api\\src\\modules\\agents\\index.ts"
     ]
   },
@@ -302,14 +405,21 @@
         "name": "AbrasfClient",
         "kind": "class",
         "file": "packages\\nfse-client\\src\\abrasf\\client.ts",
-        "line": 27,
+        "line": 25,
+        "exported": true
+      },
+      {
+        "name": "AlertasService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\alertas\\service.ts",
+        "line": 19,
         "exported": true
       },
       {
         "name": "ApiClientError",
         "kind": "class",
         "file": "apps\\web\\lib\\api.ts",
-        "line": 110,
+        "line": 37,
         "exported": true
       },
       {
@@ -317,6 +427,13 @@
         "kind": "class",
         "file": "apps\\api\\src\\utils\\errors.ts",
         "line": 1,
+        "exported": true
+      },
+      {
+        "name": "BaseNfseScraper",
+        "kind": "class",
+        "file": "packages\\nfse-client\\src\\rpa\\base-scraper.ts",
+        "line": 13,
         "exported": true
       },
       {
@@ -341,10 +458,80 @@
         "exported": true
       },
       {
+        "name": "CertificateCryptoService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\companies\\crypto.service.ts",
+        "line": 16,
+        "exported": true
+      },
+      {
+        "name": "CertificateValidationService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\certificates\\service.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "CommentsService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\comments\\service.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "CompaniesService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\companies\\service.ts",
+        "line": 28,
+        "exported": true
+      },
+      {
         "name": "ConflictError",
         "kind": "class",
         "file": "apps\\api\\src\\utils\\errors.ts",
         "line": 41,
+        "exported": true
+      },
+      {
+        "name": "DacteGenerator",
+        "kind": "class",
+        "file": "packages\\pdf-generator\\src\\generators\\dacte.generator.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "DanfeGenerator",
+        "kind": "class",
+        "file": "packages\\pdf-generator\\src\\generators\\danfe.generator.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "DashboardService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
+        "line": 51,
+        "exported": true
+      },
+      {
+        "name": "DocumentsService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\documents\\service.ts",
+        "line": 51,
+        "exported": true
+      },
+      {
+        "name": "ErrorBoundary",
+        "kind": "class",
+        "file": "apps\\web\\components\\error-boundary.tsx",
+        "line": 25,
+        "exported": true
+      },
+      {
+        "name": "EventsService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\events\\service.ts",
+        "line": 27,
         "exported": true
       },
       {
@@ -369,10 +556,31 @@
         "exported": true
       },
       {
+        "name": "NsuService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\nsu\\service.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "PdfService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\pdf\\service.ts",
+        "line": 65,
+        "exported": true
+      },
+      {
         "name": "RateLimitError",
         "kind": "class",
         "file": "apps\\api\\src\\utils\\errors.ts",
         "line": 47,
+        "exported": true
+      },
+      {
+        "name": "RelationsService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\relations\\service.ts",
+        "line": 23,
         "exported": true
       },
       {
@@ -393,7 +601,7 @@
         "name": "SefazClient",
         "kind": "class",
         "file": "packages\\sefaz-client\\src\\client.ts",
-        "line": 4,
+        "line": 16,
         "exported": true
       },
       {
@@ -408,6 +616,20 @@
         "kind": "class",
         "file": "packages\\sefaz-client\\src\\soap-client.ts",
         "line": 28,
+        "exported": true
+      },
+      {
+        "name": "StorageService",
+        "kind": "class",
+        "file": "apps\\api\\src\\services\\storage.ts",
+        "line": 28,
+        "exported": true
+      },
+      {
+        "name": "TagsService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\tags\\service.ts",
+        "line": 27,
         "exported": true
       },
       {
@@ -437,9 +659,44 @@
         "file": "apps\\api\\src\\utils\\errors.ts",
         "line": 35,
         "exported": true
+      },
+      {
+        "name": "WebhookService",
+        "kind": "class",
+        "file": "apps\\api\\src\\modules\\webhooks\\service.ts",
+        "line": 30,
+        "exported": true
       }
     ],
     "interfaces": [
+      {
+        "name": "Alerta",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\hooks\\useAlerts.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "AlertaFilters",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\alertas\\service.ts",
+        "line": 10,
+        "exported": true
+      },
+      {
+        "name": "AlertaSummary",
+        "kind": "interface",
+        "file": "apps\\web\\lib\\hooks\\useAlerts.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "AlertCreationResult",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+        "line": 43,
+        "exported": true
+      },
       {
         "name": "ApiError",
         "kind": "interface",
@@ -472,7 +729,7 @@
         "name": "AwaitingFinal",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 213,
+        "line": 214,
         "exported": true
       },
       {
@@ -518,10 +775,38 @@
         "exported": true
       },
       {
+        "name": "CertificateCheckerJobData",
+        "kind": "interface",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 120,
+        "exported": true
+      },
+      {
+        "name": "CertificateCheckerJobData",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+        "line": 51,
+        "exported": true
+      },
+      {
+        "name": "CertificateInfo",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\companies\\crypto.service.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
         "name": "CertificateUploadData",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 258,
+        "line": 259,
+        "exported": true
+      },
+      {
+        "name": "CertificateValidationResult",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+        "line": 13,
         "exported": true
       },
       {
@@ -535,35 +820,35 @@
         "name": "Company",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 62,
+        "line": 63,
         "exported": true
       },
       {
         "name": "CompanyFormData",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 246,
+        "line": 247,
         "exported": true
       },
       {
         "name": "CompanySyncStatus",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 170,
+        "line": 171,
         "exported": true
       },
       {
         "name": "CompanyWithNsu",
         "kind": "interface",
         "file": "apps\\api\\src\\modules\\companies\\service.ts",
-        "line": 10,
+        "line": 11,
         "exported": true
       },
       {
         "name": "CompanyWithStats",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 81,
+        "line": 82,
         "exported": true
       },
       {
@@ -609,17 +894,80 @@
         "exported": true
       },
       {
+        "name": "ConsultarEventosParams",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\services\\event-query.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "ConsultarEventosResponse",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\services\\event-query.ts",
+        "line": 46,
+        "exported": true
+      },
+      {
+        "name": "CreateCommentDto",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\comments\\service.ts",
+        "line": 11,
+        "exported": true
+      },
+      {
+        "name": "CreateTagDto",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\tags\\service.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "CreateWebhookDto",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\webhooks\\service.ts",
+        "line": 13,
+        "exported": true
+      },
+      {
         "name": "CTeData",
         "kind": "interface",
         "file": "packages\\xml-parser\\src\\parsers\\cte.ts",
-        "line": 4,
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "CTeDesacordoParams",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\services\\cte-events.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "CTeEventoResponse",
+        "kind": "interface",
+        "file": "packages\\sefaz-client\\src\\services\\cte-events.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "DacteLayoutOptions",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\pdf\\layouts\\cte.ts",
+        "line": 21,
+        "exported": true
+      },
+      {
+        "name": "DanfeLayoutOptions",
+        "kind": "interface",
+        "file": "apps\\api\\src\\modules\\pdf\\layouts\\nfe.ts",
+        "line": 20,
         "exported": true
       },
       {
         "name": "DashboardSummary",
         "kind": "interface",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 102,
+        "line": 103,
         "exported": true
       },
       {
@@ -670,154 +1018,49 @@
         "file": "apps\\web\\lib\\types.ts",
         "line": 39,
         "exported": true
-      },
-      {
-        "name": "DocumentFilters",
-        "kind": "interface",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 231,
-        "exported": true
-      },
-      {
-        "name": "DocumentItem",
-        "kind": "interface",
-        "file": "packages\\xml-parser\\src\\types.ts",
-        "line": 78,
-        "exported": true
-      },
-      {
-        "name": "DocumentoDistDFe",
-        "kind": "interface",
-        "file": "packages\\sefaz-client\\src\\types.ts",
-        "line": 71,
-        "exported": true
-      },
-      {
-        "name": "DocumentoZip",
-        "kind": "interface",
-        "file": "packages\\sefaz-client\\src\\types.ts",
-        "line": 53,
-        "exported": true
-      },
-      {
-        "name": "DocumentSearchRecord",
-        "kind": "interface",
-        "file": "apps\\api\\src\\services\\search.ts",
-        "line": 4,
-        "exported": true
-      },
-      {
-        "name": "DocumentSummary",
-        "kind": "interface",
-        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
-        "line": 6,
-        "exported": true
-      },
-      {
-        "name": "DocumentWithEvents",
-        "kind": "interface",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 54,
-        "exported": true
-      },
-      {
-        "name": "ErrorResponse",
-        "kind": "interface",
-        "file": "apps\\api\\src\\utils\\response.ts",
-        "line": 17,
-        "exported": true
-      },
-      {
-        "name": "Estado",
-        "kind": "interface",
-        "file": "packages\\shared\\src\\constants\\estados.ts",
-        "line": 1,
-        "exported": true
-      },
-      {
-        "name": "Gap",
-        "kind": "interface",
-        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
-        "line": 36,
-        "exported": true
-      },
-      {
-        "name": "InputProps",
-        "kind": "interface",
-        "file": "packages\\ui\\src\\components\\input.tsx",
-        "line": 4,
-        "exported": true
-      },
-      {
-        "name": "IntegrityGap",
-        "kind": "interface",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 127,
-        "exported": true
-      },
-      {
-        "name": "IntegrityStatus",
-        "kind": "interface",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 120,
-        "exported": true
-      },
-      {
-        "name": "IntegrityStatus",
-        "kind": "interface",
-        "file": "apps\\api\\src\\modules\\dashboard\\service.ts",
-        "line": 15,
-        "exported": true
-      },
-      {
-        "name": "JobEvent",
-        "kind": "interface",
-        "file": "apps\\api\\src\\jobs\\events.ts",
-        "line": 8,
-        "exported": true
-      },
-      {
-        "name": "JobMetrics",
-        "kind": "interface",
-        "file": "apps\\api\\src\\jobs\\events.ts",
-        "line": 19,
-        "exported": true
-      },
-      {
-        "name": "JobsStatus",
-        "kind": "interface",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 165,
-        "exported": true
       }
     ],
     "functions": [
       {
+        "name": "addCertificateCheckerJob",
+        "kind": "function",
+        "file": "apps\\api\\src\\jobs\\queues.ts",
+        "line": 165,
+        "exported": true
+      },
+      {
+        "name": "AddMunicipioDialog",
+        "kind": "function",
+        "file": "apps\\web\\components\\nfse\\add-municipio-dialog.tsx",
+        "line": 29,
+        "exported": true
+      },
+      {
         "name": "addNfseMonitorJob",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\queues.ts",
-        "line": 139,
+        "line": 155,
         "exported": true
       },
       {
         "name": "addSearchSyncJob",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\queues.ts",
-        "line": 131,
+        "line": 147,
         "exported": true
       },
       {
         "name": "addSefazMonitorJob",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\queues.ts",
-        "line": 112,
+        "line": 128,
         "exported": true
       },
       {
         "name": "addXmlProcessorJob",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\queues.ts",
-        "line": 123,
+        "line": 139,
         "exported": true
       },
       {
@@ -828,6 +1071,27 @@
         "exported": true
       },
       {
+        "name": "AlertBadge",
+        "kind": "function",
+        "file": "apps\\web\\components\\alerts\\AlertBadge.tsx",
+        "line": 14,
+        "exported": true
+      },
+      {
+        "name": "AlertsDropdown",
+        "kind": "function",
+        "file": "apps\\web\\components\\alerts\\AlertsDropdown.tsx",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "AwaitingFinalTable",
+        "kind": "function",
+        "file": "apps\\web\\components\\manifestacao\\awaiting-final-table.tsx",
+        "line": 34,
+        "exported": true
+      },
+      {
         "name": "batchIndexDocuments",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\search-sync.ts",
@@ -835,10 +1099,24 @@
         "exported": true
       },
       {
+        "name": "BatchManifestacaoDialog",
+        "kind": "function",
+        "file": "apps\\web\\components\\manifestacao\\batch-manifestacao-dialog.tsx",
+        "line": 34,
+        "exported": true
+      },
+      {
         "name": "buildApp",
         "kind": "function",
         "file": "apps\\api\\src\\app.ts",
-        "line": 26,
+        "line": 33,
+        "exported": true
+      },
+      {
+        "name": "buildEndereco",
+        "kind": "function",
+        "file": "apps\\api\\src\\modules\\pdf\\utils\\formatters.ts",
+        "line": 195,
         "exported": true
       },
       {
@@ -877,6 +1155,13 @@
         "exported": true
       },
       {
+        "name": "CertificateUpload",
+        "kind": "function",
+        "file": "apps\\web\\components\\companies\\certificate-upload.tsx",
+        "line": 23,
+        "exported": true
+      },
+      {
         "name": "checkDatabaseConnection",
         "kind": "function",
         "file": "apps\\api\\src\\config\\database.ts",
@@ -898,6 +1183,13 @@
         "exported": true
       },
       {
+        "name": "checkStorageConnection",
+        "kind": "function",
+        "file": "apps\\api\\src\\config\\storage.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
         "name": "cleanCnpj",
         "kind": "function",
         "file": "packages\\shared\\src\\validators\\cnpj.ts",
@@ -909,6 +1201,13 @@
         "kind": "function",
         "file": "packages\\shared\\src\\validators\\cpf.ts",
         "line": 61,
+        "exported": true
+      },
+      {
+        "name": "cleanupDatabase",
+        "kind": "function",
+        "file": "apps\\api\\tests\\integration\\db-helper.ts",
+        "line": 70,
         "exported": true
       },
       {
@@ -936,7 +1235,7 @@
         "name": "closeQueues",
         "kind": "function",
         "file": "apps\\api\\src\\jobs\\queues.ts",
-        "line": 186,
+        "line": 213,
         "exported": true
       },
       {
@@ -944,6 +1243,13 @@
         "kind": "function",
         "file": "apps\\api\\src\\config\\redis.ts",
         "line": 31,
+        "exported": true
+      },
+      {
+        "name": "closeTestClient",
+        "kind": "function",
+        "file": "apps\\api\\tests\\integration\\db-helper.ts",
+        "line": 38,
         "exported": true
       },
       {
@@ -964,7 +1270,21 @@
         "name": "companiesRoutes",
         "kind": "function",
         "file": "apps\\api\\src\\modules\\companies\\routes.ts",
-        "line": 18,
+        "line": 17,
+        "exported": true
+      },
+      {
+        "name": "CompanyCard",
+        "kind": "function",
+        "file": "apps\\web\\components\\companies\\company-card.tsx",
+        "line": 72,
+        "exported": true
+      },
+      {
+        "name": "CompanyForm",
+        "kind": "function",
+        "file": "apps\\web\\components\\companies\\company-form.tsx",
+        "line": 47,
         "exported": true
       },
       {
@@ -979,6 +1299,13 @@
         "kind": "function",
         "file": "packages\\sefaz-client\\src\\services\\manifestacao.ts",
         "line": 224,
+        "exported": true
+      },
+      {
+        "name": "consultar",
+        "kind": "function",
+        "file": "packages\\cli\\src\\commands\\consultar.ts",
+        "line": 29,
         "exported": true
       },
       {
@@ -1017,6 +1344,13 @@
         "exported": true
       },
       {
+        "name": "consultarEventos",
+        "kind": "function",
+        "file": "packages\\sefaz-client\\src\\services\\event-query.ts",
+        "line": 67,
+        "exported": true
+      },
+      {
         "name": "consultarMDFeDistDFe",
         "kind": "function",
         "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
@@ -1035,111 +1369,6 @@
         "kind": "function",
         "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
         "line": 251,
-        "exported": true
-      },
-      {
-        "name": "consultarMDFePorUltNSU",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\services\\mdfe-distdfe.ts",
-        "line": 232,
-        "exported": true
-      },
-      {
-        "name": "consultarPorChave",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
-        "line": 287,
-        "exported": true
-      },
-      {
-        "name": "consultarPorNSU",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
-        "line": 268,
-        "exported": true
-      },
-      {
-        "name": "consultarPorUltNSU",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\services\\nfe-distdfe.ts",
-        "line": 249,
-        "exported": true
-      },
-      {
-        "name": "createClient",
-        "kind": "function",
-        "file": "packages\\database\\src\\client.ts",
-        "line": 7,
-        "exported": true
-      },
-      {
-        "name": "createParser",
-        "kind": "function",
-        "file": "packages\\xml-parser\\src\\utils.ts",
-        "line": 34,
-        "exported": true
-      },
-      {
-        "name": "createSoapClient",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\soap-client.ts",
-        "line": 266,
-        "exported": true
-      },
-      {
-        "name": "DashboardLayout",
-        "kind": "function",
-        "file": "apps\\web\\app\\(dashboard)\\layout.tsx",
-        "line": 6,
-        "exported": true
-      },
-      {
-        "name": "dashboardRoutes",
-        "kind": "function",
-        "file": "apps\\api\\src\\modules\\dashboard\\routes.ts",
-        "line": 16,
-        "exported": true
-      },
-      {
-        "name": "decodeDocZip",
-        "kind": "function",
-        "file": "packages\\xml-parser\\src\\gzip.ts",
-        "line": 20,
-        "exported": true
-      },
-      {
-        "name": "decryptFromBase64",
-        "kind": "function",
-        "file": "apps\\api\\src\\utils\\encryption.ts",
-        "line": 67,
-        "exported": true
-      },
-      {
-        "name": "decryptFromBuffer",
-        "kind": "function",
-        "file": "apps\\api\\src\\utils\\encryption.ts",
-        "line": 47,
-        "exported": true
-      },
-      {
-        "name": "desconhecerOperacao",
-        "kind": "function",
-        "file": "packages\\sefaz-client\\src\\services\\manifestacao.ts",
-        "line": 263,
-        "exported": true
-      },
-      {
-        "name": "detectAbrasfVersion",
-        "kind": "function",
-        "file": "packages\\xml-parser\\src\\parsers\\nfse.ts",
-        "line": 168,
-        "exported": true
-      },
-      {
-        "name": "detectDocTypeFromChave",
-        "kind": "function",
-        "file": "packages\\xml-parser\\src\\detector.ts",
-        "line": 279,
         "exported": true
       }
     ],
@@ -1187,6 +1416,13 @@
         "exported": true
       },
       {
+        "name": "AlertThreshold",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+        "line": 38,
+        "exported": true
+      },
+      {
         "name": "ApiResponse",
         "kind": "type",
         "file": "apps\\api\\src\\utils\\response.ts",
@@ -1201,10 +1437,17 @@
         "exported": true
       },
       {
+        "name": "CertificateStatus",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+        "line": 8,
+        "exported": true
+      },
+      {
         "name": "CienciaInput",
         "kind": "type",
         "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
-        "line": 27,
+        "line": 43,
         "exported": true
       },
       {
@@ -1218,7 +1461,7 @@
         "name": "Company",
         "kind": "type",
         "file": "packages\\database\\src\\schema\\tenants.ts",
-        "line": 44,
+        "line": 52,
         "exported": true
       },
       {
@@ -1246,7 +1489,7 @@
         "name": "ConfirmacaoInput",
         "kind": "type",
         "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
-        "line": 28,
+        "line": 44,
         "exported": true
       },
       {
@@ -1285,10 +1528,17 @@
         "exported": true
       },
       {
+        "name": "DesacordoInput",
+        "kind": "type",
+        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
         "name": "DesconhecimentoInput",
         "kind": "type",
         "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
-        "line": 29,
+        "line": 45,
         "exported": true
       },
       {
@@ -1316,7 +1566,7 @@
         "name": "DocType",
         "kind": "type",
         "file": "packages\\database\\src\\schema\\documents.ts",
-        "line": 17,
+        "line": 18,
         "exported": true
       },
       {
@@ -1330,7 +1580,7 @@
         "name": "Document",
         "kind": "type",
         "file": "packages\\database\\src\\schema\\documents.ts",
-        "line": 120,
+        "line": 138,
         "exported": true
       },
       {
@@ -1351,7 +1601,7 @@
         "name": "DocumentEvent",
         "kind": "type",
         "file": "packages\\database\\src\\schema\\documents.ts",
-        "line": 122,
+        "line": 140,
         "exported": true
       },
       {
@@ -1376,6 +1626,13 @@
         "exported": true
       },
       {
+        "name": "DocumentRelation",
+        "kind": "type",
+        "file": "packages\\database\\src\\schema\\document-relations.ts",
+        "line": 68,
+        "exported": true
+      },
+      {
         "name": "DocumentStatus",
         "kind": "type",
         "file": "packages\\xml-parser\\src\\types.ts",
@@ -1393,7 +1650,7 @@
         "name": "Env",
         "kind": "type",
         "file": "apps\\api\\src\\config\\env.ts",
-        "line": 74,
+        "line": 129,
         "exported": true
       },
       {
@@ -1408,6 +1665,13 @@
         "kind": "type",
         "file": "apps\\api\\src\\jobs\\events.ts",
         "line": 6,
+        "exported": true
+      },
+      {
+        "name": "JobEventType",
+        "kind": "type",
+        "file": "tools\\apply-jobs-events-fix-v1.mjs",
+        "line": 44,
         "exported": true
       },
       {
@@ -1456,42 +1720,7 @@
         "name": "ManifestacaoStatus",
         "kind": "type",
         "file": "apps\\web\\lib\\types.ts",
-        "line": 180,
-        "exported": true
-      },
-      {
-        "name": "ManifestacaoTipo",
-        "kind": "type",
-        "file": "apps\\web\\lib\\types.ts",
-        "line": 7,
-        "exported": true
-      },
-      {
-        "name": "MonitorJob",
-        "kind": "type",
-        "file": "packages\\database\\src\\schema\\audit.ts",
-        "line": 69,
-        "exported": true
-      },
-      {
-        "name": "MunicipioCodigoParams",
-        "kind": "type",
-        "file": "apps\\api\\src\\modules\\nfse\\schemas.ts",
-        "line": 42,
-        "exported": true
-      },
-      {
-        "name": "MunicipioTipo",
-        "kind": "type",
-        "file": "packages\\nfse-client\\src\\types.ts",
-        "line": 6,
-        "exported": true
-      },
-      {
-        "name": "NaoRealizadaInput",
-        "kind": "type",
-        "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
-        "line": 30,
+        "line": 181,
         "exported": true
       }
     ],
@@ -1502,7 +1731,7 @@
       "name": "AbrasfClient",
       "kind": "class",
       "file": "packages\\nfse-client\\src\\abrasf\\client.ts",
-      "line": 27,
+      "line": 25,
       "exported": true
     },
     {
@@ -1520,31 +1749,45 @@
       "exported": true
     },
     {
+      "name": "addCertificateCheckerJob",
+      "kind": "function",
+      "file": "apps\\api\\src\\jobs\\queues.ts",
+      "line": 165,
+      "exported": true
+    },
+    {
+      "name": "AddMunicipioDialog",
+      "kind": "function",
+      "file": "apps\\web\\components\\nfse\\add-municipio-dialog.tsx",
+      "line": 29,
+      "exported": true
+    },
+    {
       "name": "addNfseMonitorJob",
       "kind": "function",
       "file": "apps\\api\\src\\jobs\\queues.ts",
-      "line": 139,
+      "line": 155,
       "exported": true
     },
     {
       "name": "addSearchSyncJob",
       "kind": "function",
       "file": "apps\\api\\src\\jobs\\queues.ts",
-      "line": 131,
+      "line": 147,
       "exported": true
     },
     {
       "name": "addSefazMonitorJob",
       "kind": "function",
       "file": "apps\\api\\src\\jobs\\queues.ts",
-      "line": 112,
+      "line": 128,
       "exported": true
     },
     {
       "name": "addXmlProcessorJob",
       "kind": "function",
       "file": "apps\\api\\src\\jobs\\queues.ts",
-      "line": 123,
+      "line": 139,
       "exported": true
     },
     {
@@ -1583,10 +1826,66 @@
       "exported": true
     },
     {
+      "name": "Alerta",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\hooks\\useAlerts.ts",
+      "line": 4,
+      "exported": true
+    },
+    {
+      "name": "AlertaFilters",
+      "kind": "interface",
+      "file": "apps\\api\\src\\modules\\alertas\\service.ts",
+      "line": 10,
+      "exported": true
+    },
+    {
+      "name": "AlertasService",
+      "kind": "class",
+      "file": "apps\\api\\src\\modules\\alertas\\service.ts",
+      "line": 19,
+      "exported": true
+    },
+    {
+      "name": "AlertaSummary",
+      "kind": "interface",
+      "file": "apps\\web\\lib\\hooks\\useAlerts.ts",
+      "line": 19,
+      "exported": true
+    },
+    {
+      "name": "AlertBadge",
+      "kind": "function",
+      "file": "apps\\web\\components\\alerts\\AlertBadge.tsx",
+      "line": 14,
+      "exported": true
+    },
+    {
+      "name": "AlertCreationResult",
+      "kind": "interface",
+      "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+      "line": 43,
+      "exported": true
+    },
+    {
+      "name": "AlertsDropdown",
+      "kind": "function",
+      "file": "apps\\web\\components\\alerts\\AlertsDropdown.tsx",
+      "line": 19,
+      "exported": true
+    },
+    {
+      "name": "AlertThreshold",
+      "kind": "type",
+      "file": "apps\\api\\src\\modules\\certificates\\types.ts",
+      "line": 38,
+      "exported": true
+    },
+    {
       "name": "ApiClientError",
       "kind": "class",
       "file": "apps\\web\\lib\\api.ts",
-      "line": 110,
+      "line": 37,
       "exported": true
     },
     {
@@ -1642,7 +1941,14 @@
       "name": "AwaitingFinal",
       "kind": "interface",
       "file": "apps\\web\\lib\\types.ts",
-      "line": 213,
+      "line": 214,
+      "exported": true
+    },
+    {
+      "name": "AwaitingFinalTable",
+      "kind": "function",
+      "file": "apps\\web\\components\\manifestacao\\awaiting-final-table.tsx",
+      "line": 34,
       "exported": true
     },
     {
@@ -1653,10 +1959,24 @@
       "exported": true
     },
     {
+      "name": "BaseNfseScraper",
+      "kind": "class",
+      "file": "packages\\nfse-client\\src\\rpa\\base-scraper.ts",
+      "line": 13,
+      "exported": true
+    },
+    {
       "name": "batchIndexDocuments",
       "kind": "function",
       "file": "apps\\api\\src\\jobs\\search-sync.ts",
       "line": 111,
+      "exported": true
+    },
+    {
+      "name": "BatchManifestacaoDialog",
+      "kind": "function",
+      "file": "apps\\web\\components\\manifestacao\\batch-manifestacao-dialog.tsx",
+      "line": 34,
       "exported": true
     },
     {
@@ -1677,7 +1997,14 @@
       "name": "buildApp",
       "kind": "function",
       "file": "apps\\api\\src\\app.ts",
-      "line": 26,
+      "line": 33,
+      "exported": true
+    },
+    {
+      "name": "buildEndereco",
+      "kind": "function",
+      "file": "apps\\api\\src\\modules\\pdf\\utils\\formatters.ts",
+      "line": 195,
       "exported": true
     },
     {
@@ -1749,193 +2076,95 @@
       "file": "packages\\sefaz-client\\src\\certificate.ts",
       "line": 22,
       "exported": true
-    },
-    {
-      "name": "CertificadoKeys",
-      "kind": "interface",
-      "file": "packages\\sefaz-client\\src\\certificate.ts",
-      "line": 36,
-      "exported": true
-    },
-    {
-      "name": "CertificateUploadData",
-      "kind": "interface",
-      "file": "apps\\web\\lib\\types.ts",
-      "line": 258,
-      "exported": true
-    },
-    {
-      "name": "ChaveAcessoInfo",
-      "kind": "interface",
-      "file": "packages\\shared\\src\\validators\\chave-acesso.ts",
-      "line": 43,
-      "exported": true
-    },
-    {
-      "name": "checkDatabaseConnection",
-      "kind": "function",
-      "file": "apps\\api\\src\\config\\database.ts",
-      "line": 19,
-      "exported": true
-    },
-    {
-      "name": "checkMeilisearchConnection",
-      "kind": "function",
-      "file": "apps\\api\\src\\config\\meilisearch.ts",
-      "line": 13,
-      "exported": true
-    },
-    {
-      "name": "checkRedisConnection",
-      "kind": "function",
-      "file": "apps\\api\\src\\config\\redis.ts",
-      "line": 21,
-      "exported": true
-    },
-    {
-      "name": "CienciaInput",
-      "kind": "type",
-      "file": "apps\\api\\src\\modules\\manifestacao\\schemas.ts",
-      "line": 27,
-      "exported": true
-    },
-    {
-      "name": "cleanCnpj",
-      "kind": "function",
-      "file": "packages\\shared\\src\\validators\\cnpj.ts",
-      "line": 66,
-      "exported": true
-    },
-    {
-      "name": "cleanCpf",
-      "kind": "function",
-      "file": "packages\\shared\\src\\validators\\cpf.ts",
-      "line": 61,
-      "exported": true
-    },
-    {
-      "name": "clearCertificadoCache",
-      "kind": "function",
-      "file": "packages\\sefaz-client\\src\\certificate.ts",
-      "line": 154,
-      "exported": true
-    },
-    {
-      "name": "closeBrowserManager",
-      "kind": "function",
-      "file": "packages\\nfse-client\\src\\rpa\\browser.ts",
-      "line": 106,
-      "exported": true
-    },
-    {
-      "name": "closeDatabaseConnection",
-      "kind": "function",
-      "file": "apps\\api\\src\\config\\database.ts",
-      "line": 31,
-      "exported": true
-    },
-    {
-      "name": "closeQueues",
-      "kind": "function",
-      "file": "apps\\api\\src\\jobs\\queues.ts",
-      "line": 186,
-      "exported": true
-    },
-    {
-      "name": "closeRedisConnection",
-      "kind": "function",
-      "file": "apps\\api\\src\\config\\redis.ts",
-      "line": 31,
-      "exported": true
     }
   ],
   "dependencies": {
     "mostImported": [
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\ui\\src\\lib\\utils.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\config\\database.ts",
         "importedBy": 18
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\types.ts",
-        "importedBy": 17
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\utils\\errors.ts",
+        "importedBy": 18
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\utils\\errors.ts",
-        "importedBy": 15
+        "file": "C:\\fiscalzen-project\\packages\\ui\\src\\lib\\utils.ts",
+        "importedBy": 18
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\database.ts",
+        "file": "C:\\fiscalzen-project\\packages\\sefaz-client\\src\\types.ts",
         "importedBy": 14
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\xml-parser\\src\\types.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\config\\env.ts",
+        "importedBy": 14
+      },
+      {
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\plugins\\auth.ts",
+        "importedBy": 13
+      },
+      {
+        "file": "C:\\fiscalzen-project\\packages\\xml-parser\\src\\types.ts",
         "importedBy": 11
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\env.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\providers\\database.ts",
         "importedBy": 11
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\plugins\\auth.ts",
+        "file": "C:\\fiscalzen-project\\packages\\database\\src\\schema\\tenants.ts",
+        "importedBy": 10
+      },
+      {
+        "file": "C:\\fiscalzen-project\\apps\\web\\lib\\api.ts",
         "importedBy": 9
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\utils\\response.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\config\\redis.ts",
         "importedBy": 9
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\xml-parser\\src\\utils.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\utils\\response.ts",
         "importedBy": 9
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\nfse-client\\src\\types.ts",
-        "importedBy": 8
+        "file": "C:\\fiscalzen-project\\packages\\xml-parser\\src\\utils.ts",
+        "importedBy": 9
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\jobs\\queues.ts",
-        "importedBy": 8
-      },
-      {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\constants\\endpoints.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\jobs\\queues.ts",
         "importedBy": 7
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\web\\lib\\types.ts",
-        "importedBy": 7
-      },
-      {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\web\\lib\\api.ts",
+        "file": "C:\\fiscalzen-project\\packages\\sefaz-client\\src\\constants.ts",
         "importedBy": 6
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\jobs\\events.ts",
+        "file": "C:\\fiscalzen-project\\apps\\web\\lib\\types.ts",
         "importedBy": 6
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\constants.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\jobs\\events.ts",
+        "importedBy": 6
+      },
+      {
+        "file": "C:\\fiscalzen-project\\packages\\nfse-client\\src\\types.ts",
         "importedBy": 5
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\sefaz-client\\src\\soap-client.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\modules\\webhooks\\service.ts",
         "importedBy": 5
       },
       {
-        "file": "C:\\FiscalZen\\fiscalzen\\apps\\api\\src\\config\\redis.ts",
+        "file": "C:\\fiscalzen-project\\apps\\api\\src\\services\\storage.ts",
         "importedBy": 5
-      },
-      {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\database\\src\\schema\\tenants.ts",
-        "importedBy": 5
-      },
-      {
-        "file": "C:\\FiscalZen\\fiscalzen\\packages\\nfse-client\\src\\abrasf\\client.ts",
-        "importedBy": 4
       }
     ]
   },
   "stats": {
-    "totalSymbols": 712,
-    "exportedSymbols": 487,
-    "analysisTimeMs": 1055
+    "totalSymbols": 1081,
+    "exportedSymbols": 637,
+    "analysisTimeMs": 209
   }
 }

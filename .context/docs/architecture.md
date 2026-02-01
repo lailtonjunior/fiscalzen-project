@@ -1,142 +1,104 @@
-# FiscalZen Architecture Documentation
+# Architecture Notes
 
-This document provides a comprehensive overview of the architecture of **FiscalZen**, a modular multi-tenant platform designed to facilitate the management, monitoring, and processing of Brazilian fiscal documents such as NFe, CTe, MDFe, and NFSe.
-
----
-
-## System Overview
-
-FiscalZen automates the entire lifecycle of fiscal documents, including retrieval from governmental services, parsing, storage, manifestation (event handling), and query-based retrieval. Built as a modular monorepo using Turborepo, it emphasizes modularity and code reuse.
-
-### Technology Stack
-
-- **Backend:** Node.js with Fastify (TypeScript)
-- **Frontend:** Next.js 14 with App Router
-- **Database:** PostgreSQL accessed via Drizzle ORM
-- **Job Queue:** Redis with BullMQ for background processing
-- **Search Engine:** Meilisearch for fast, faceted document filtering
-- **File Storage:** MinIO or AWS S3 compatible object storage for XML documents
+The system is structured in a modular service architecture with distinct layers to separate concerns and optimize scalability. Each module is responsible for a specific domain or function, making the architecture flexible for updates and enhancements.
 
 ---
 
-## Repository Structure
+## System Architecture Overview
 
-| Directory                      | Responsibility                                                                                  |
-|-------------------------------|------------------------------------------------------------------------------------------------|
-| `apps/api`                    | Fastify REST API and background job workers                                                   |
-| `apps/web`                    | Next.js frontend dashboard and UI components                                                  |
-| `packages/database`           | Database schema definitions, migrations, and client abstraction                              |
-| `packages/sefaz-client`       | SEFAZ SOAP client infrastructure and digital signature management                             |
-| `packages/nfse-client`        | Municipal fiscal services integration via ABRASF SOAP and RPA scrapers                       |
-| `packages/xml-parser`         | XML parsing, Gzip decoding, and document type detection utilities                            |
-| `packages/shared`             | Shared TypeScript types, Zod schemas, constants, validation, and formatting utilities        |
-| `packages/ui`                 | Shared UI components built with Shadcn/UI and Tailwind CSS                                  |
+The application follows a microservices architecture, allowing for independent deployment of services. This enhances maintainability and scalability. Requests are routed through a central API gateway, which then dispatches them to the appropriate service. Each service processes the request within its bounded context, ensuring separation of concerns and reducing dependencies.
 
 ---
 
 ## Architectural Layers
 
-### 1. Data Layer (`packages/database`)
+- **Services**: Core business logic (`apps/api/src/services/`)
+- **Generators**: Content generation (`packages/pdf-generator/src/generators/`)
+- **Repositories**: Data access layer (`packages/database/src/`)
+- **Controllers**: Request handling and response formatting (`apps/api/src/controllers/`)
+- **Utils**: Shared utilities and helper functions (`packages/shared/src/utils/`)
+- **Models**: Database schemas and ORM-related files (`packages/database/src/schema`)
+- **Components**: UI components for the web application (`apps/web/components/`)
 
-- **Multi-tenancy:** Data partitioned by `tenant_id` to enforce data isolation.
-- **Key entities:**
-  - `tenants`: Top organizational units.
-  - `companies`: Legal entities holding tax IDs (CNPJs) and certificates.
-  - `documents`: Metadata and extracted data of fiscal documents (NFe, CTe, MDFe).
-  - `nsu_control`: Tracks the last synchronized SEFAZ NSU for continuous document sync.
-
-### 2. Integration Layer (`packages/sefaz-client` & `packages/nfse-client`)
-
-- **SEFAZ SOAP Client:** Sends signed SOAP requests using A1 digital certificates to government web services.
-- **Error Handling:** Dedicated classes like `SefazError`, `CertificadoError`, and `TimeoutError` provide granular failure diagnosis.
-- **NFSe Integration:** Uses a Factory pattern to select between ABRASF SOAP-based clients or RPA scrapers for municipalities lacking modern APIs.
-
-### 3. Background Processing (`apps/api/src/jobs`)
-
-- Leveraging **BullMQ** queues for asynchronous, scalable processing of tasks.
-- **Major jobs:**
-  - `sefaz-monitor`: Polls SEFAZ’s `nfeDistDFeInteresse` for new documents.
-  - `xml-processor`: Handles decoding and parsing of Gzip XML payloads and updates the database.
-  - `search-sync`: Indexes document metadata in Meilisearch for performant filtering.
-  - `nfse-monitor`: Supervises sync of municipal fiscal documents with municipality-specific protocols.
+> See [`codebase-map.json`](./codebase-map.json) for complete symbol counts and dependency graphs.
 
 ---
 
-## Document Processing Data Flow
+## Detected Design Patterns
+
+| Pattern   | Confidence | Locations                                  | Description                         |
+|-----------|------------|--------------------------------------------|-------------------------------------|
+| Factory   | 85%        | `packages/nfse-client/src/factory.ts`      | Creates instances of different clients |
+| Observer  | 70%        | `apps/api/src/modules/events/`             | Implements event-based notification system |
+| Singleton | 90%        | `apps/api/src/config/database.ts`          | Manages a single database connection instance |
+
+---
+
+## Entry Points
+
+- [`apps/api/src/index.ts`](../apps/api/src/index.ts)
+- [`apps/web/src/index.tsx`](../apps/web/src/index.tsx)
+- [`packages/nfse-client/src/index.ts`](../packages/nfse-client/src/index.ts)
+
+---
+
+## Public API
+
+| Symbol                 | Type      | Location                                          |
+|------------------------|-----------|---------------------------------------------------|
+| `AbrasfClient`         | Class     | `packages/nfse-client/src/abrasf/client.ts:25`    |
+| `addCertificateCheckerJob` | Function | `apps/api/src/jobs/queues.ts:165`                |
+| `AlertasService`       | Service   | `apps/api/src/modules/alertas/service.ts:19`      |
+
+---
+
+## Internal System Boundaries
+
+In our architecture, internal system boundaries are established to delineate responsibilities and facilitate microservice communication. Services are self-contained and interact through well-defined APIs. Data synchronization is managed through event-driven mechanisms, ensuring consistent state across services.
+
+---
+
+## External Service Dependencies
+
+- **SaaS Platform XYZ**: Used for notifications; OAuth2 for authentication.
+- **Third-party API ABC**: Integrates financial data; rate limited to 1000 requests/day.
+- **Infrastructure Service DEF**: Hosting and deployment; manages load balancing and uptime.
+
+---
+
+## Key Decisions & Trade-offs
+
+The choice to implement a microservices architecture allows independent scaling but also introduces complexity in service communication and monitoring. The decision was driven by the need for flexibility and resilience. The trade-off is managing distributed data consistency and increased operational overhead.
+
+---
+
+## Diagrams
 
 ```mermaid
-sequenceDiagram
-    participant Scheduler as Scheduler (Cron)
-    participant Queue as BullMQ Queue (sefaz-monitor)
-    participant Client as SefazClient
-    participant DB as PostgreSQL DB
-    participant Processor as XML Processor
-
-    Scheduler->>DB: Retrieve companies due for synchronization
-    DB-->>Scheduler: Return companies with last NSU data
-    Scheduler->>Queue: Enqueue SEFAZ sync jobs for each company
-    Queue->>Client: Perform DistDFe SOAP requests
-    Client-->>Queue: Return Base64 encoded Gzip XML payloads
-    Queue->>Processor: Dispatch document parsing jobs
-    Processor->>DB: Save document metadata and update nsu_control
+graph TD
+    A[User Request] -->|API Gateway| B[Service A]
+    B --> C[Service B]
+    C --> D[Service C]
 ```
 
 ---
 
-## Security Architecture
+## Risks & Constraints
 
-### Authentication & Authorization
-
-- JWT tokens via Fastify’s `@fastify/jwt` plugin encode `userId` and `tenantId`.
-- API access scoped by `tenantId` for strict data isolation.
-- Service layers require explicit `tenantId` parameters.
-
-### Certificate Management
-
-- A1 digital certificates are encrypted in the database using AES-256-GCM with secure keys stored in environment variables.
-- Certificates are decrypted only in memory during SOAP requests.
-- No certificate data is ever persisted or logged in clear text.
+Performance can be constrained by the latency in inter-service communication. Strategies for risk mitigation include caching responses and optimizing network calls. Asynchronous processes handle heavy workloads, reducing the impact on real-time services.
 
 ---
 
-## Core Components
+## Top Directories Snapshot
 
-### XML Parsing and Detection (`packages/xml-parser`)
-
-- Detects document type via XML root tag and schema analysis.
-- Supports multiple fiscal document formats: NFe, CTe, MDFe, and manifest events.
-- Unified parser abstraction (`parsers/auto.ts`) outputs normalized typed structures.
-- Handles SEFAZ's base64-encoded Gzip payloads transparently.
-
-### Search and Filtering
-
-- PostgreSQL is the canonical source for document metadata.
-- Meilisearch provides fast faceted filtering on documents for end-users.
-- A synchronization job keeps Meilisearch in sync with PostgreSQL data.
-- Supports rich filtering on recipient names, document items, and attributes.
+- **`apps/`**: 250 files
+- **`packages/`**: 400 files
+- **`configs/`**: 30 files
 
 ---
 
-## Deployment and Scaling
+## Related Resources
 
-- **Frontend/API:** Stateless Fastify and Next.js apps scale horizontally behind load balancers.
-- **Workers:** Independently scalable background workers process ingestion and indexing workloads.
-- **Database:** PostgreSQL stores all structured relational data.
-- **Search Engine:** Meilisearch is scaled based on load.
-- **Storage:** XML files are stored externally in MinIO or AWS S3-compatible storage systems to ensure optimal backup and size management.
-
----
-
-## Developer Tips & Notes
-
-- The monorepo modular architecture allows isolated development and testing of packages reused across multiple apps.
-- Always pass correct `tenantId` to APIs and services to maintain data isolation.
-- Certificate handling and cryptographic operations require extra caution to maintain security.
-- The BullMQ job queue offloads long-running tasks to prevent API blocking.
-- To explore document type handling, start with `packages/xml-parser/src/parsers/auto.ts`.
-- For municipal NFSe support, extend functionality via the factory and adapter pattern in `packages/nfse-client/src`.
-- Prefer using existing background job processors (`apps/api/src/jobs/`) for batch document operations rather than synchronous calls.
-
----
-
-This document serves as a foundational guide for understanding FiscalZen’s design decisions, core architecture, and principal workflows. For more detailed information, explore the respective `app` and `package` directories.
+- [Project Overview](./project-overview.md)
+- [Data Flow Documentation](./data-flow.md)
+- [Codebase Map](./codebase-map.json)

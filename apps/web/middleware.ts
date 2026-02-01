@@ -1,18 +1,21 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 /**
- * Middleware de autenticação Clerk
+ * Middleware de autenticação Clerk v5
  * Protege todas as rotas exceto as públicas listadas
  */
-export default authMiddleware({
-    // Rotas públicas que não requerem autenticação
-    publicRoutes: [
-        "/",
-        "/login",
-        "/sign-up",
-        "/sign-in",
-        "/api/health",
-    ],
+const isPublicRoute = createRouteMatcher([
+    "/",
+    "/login",
+    "/sign-up(.*)",
+    "/sign-in(.*)",
+    "/api/health",
+]);
+
+export default clerkMiddleware(async (auth, request) => {
+    if (!isPublicRoute(request)) {
+        await auth();
+    }
 });
 
 export const config = {

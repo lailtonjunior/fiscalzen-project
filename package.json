@@ -4,14 +4,15 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --concurrency 20",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
     "test": "turbo run test",
     "test:integration": "pnpm --filter @fiscalzen/api test:integration",
     "test:integration:up": "docker-compose -f docker/docker-compose.test.yml up -d --wait",
     "test:integration:down": "docker-compose -f docker/docker-compose.test.yml down -v",
-    "test:integration:init": "cd packages/database && npx cross-env DATABASE_URL=postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test drizzle-kit generate:pg && DATABASE_URL=postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test pnpm db:migrate",
+    "test:integration:init": "cd packages/database && npx cross-env DATABASE_URL=postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test drizzle-kit generate && DATABASE_URL=postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test pnpm db:migrate",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "turbo run clean && rm -rf node_modules",
@@ -23,7 +24,9 @@
     "db:test": "pnpm --filter @fiscalzen/database db:test",
     "docker:up": "docker-compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker-compose -f docker/docker-compose.yml down",
-    "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f"
+    "docker:logs": "docker-compose -f docker/docker-compose.yml logs -f",
+    "prepare": "husky",
+    "verify-config": "node scripts/verify-config.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -31,12 +34,23 @@
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
     "prettier": "^3.2.0",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "turbo": "^2.3.0",
     "typescript": "^5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0",
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
   },
   "engines": {
     "node": ">=20.0.0",

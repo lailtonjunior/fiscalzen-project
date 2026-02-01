@@ -1,0 +1,56 @@
+﻿   Ôû▓ Next.js 15.5.10
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ┬À staleTimes
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully in 4.4s
+   Skipping linting
+   Checking validity of types ...
+node.exe : Failed to compile.
+No linha:1 caractere:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: (Failed to compile.:String)   
+  [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+
+./lib/providers.tsx:53:7
+Type error: Type 'import("C:/fiscalzen-
+project/node_modules/.pnpm/@types+react
+@19.2.10/node_modules/@types/react/inde
+x").ReactNode' is not assignable to 
+type 'React.ReactNode'.
+  Type 'ReactElement<unknown, string | 
+JSXElementConstructor<any>>' is not 
+assignable to type 'ReactNode'.
+    Property 'children' is missing in 
+type 'ReactElement<unknown, string | 
+JSXElementConstructor<any>>' but 
+required in type 'ReactPortal'.
+
+[0m [90m 51 |[39m   
+[36mreturn[39m (
+ [90m 52 |[39m     [33m<[39m[33mQu
+eryClientProvider[39m client[33m=[39
+m{queryClient}[33m>[39m
+[31m[1m>[22m[39m[90m 53 |[39m    
+   {children}
+ [90m    |[39m       
+[31m[1m^[22m[39m
+ [90m 54 |[39m       {process[33m.[
+39menv[33m.[39m[33mNODE_ENV[39m 
+[33m===[39m [32m'development'[39m 
+[33m&&[39m (
+ [90m 55 |[39m         [33m<[39m[3
+3mReactQueryDevtools[39m initialIsOpen
+[33m=[39m{[36mfalse[39m} 
+[33m/[39m[33m>[39m
+ [90m 56 |[39m       )}[0m
+Next.js build worker exited with code: 
+1 and signal: null

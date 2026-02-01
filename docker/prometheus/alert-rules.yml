@@ -1,0 +1,92 @@
+groups:
+  - name: fiscalzen
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taxa de erro alta (> 5%)"
+          description: "A taxa de erros 5xx está acima de 5% nos últimos 5 minutos."
+          
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latência alta (p95 > 2s)"
+          description: "O percentil 95 da latência está acima de 2 segundos."
+
+      - alert: SefazCircuitBreakerOpen
+        expr: circuit_breaker_state{name="sefaz"} == 1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit Breaker SEFAZ Aberto"
+          description: "O Circuit Breaker da SEFAZ está aberto (falhando) há mais de 10 minutos."
+          
+      - alert: QueueBackedUp
+        expr: fila_documentos > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Fila de Documentos Encorpada"
+          description: "Há mais de 1000 documentos na fila de processamento."
+
+      - alert: CertificateExpiringSoon
+        expr: certificados_expirando_soon > 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Certificados Expirando"
+          description: "Há {{ $value }} certificados expirando em menos de 30 dias."
+
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Serviço Indisponível"
+          description: "O serviço {{ $labels.job }} está indisponível."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de Memória Alto (> 90%)"
+          description: "O uso de memória está acima de 90%."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de CPU Alto (> 80%)"
+          description: "O uso de CPU está acima de 80%."
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Conexões do Banco de Dados Altas"
+          description: "O número de conexões ativas do PostgreSQL está acima de 80."
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memória do Redis Alta (> 80%)"
+          description: "O uso de memória do Redis está acima de 80% do limite."

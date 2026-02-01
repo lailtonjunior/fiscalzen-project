@@ -2,35 +2,42 @@ import { FastifyPluginAsync } from 'fastify';
 import { Queue } from 'bullmq';
 import { redis } from '../../config/redis';
 import { documentsService } from '../documents/service';
+import { zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { batchDownloadSchema, downloadJobParamsSchema, type BatchDownloadInput } from './schemas';
 
 // Reusing the queue name from worker
 const BATCH_QUEUE_NAME = 'batch-download';
 const batchDownloadQueue = new Queue(BATCH_QUEUE_NAME, { connection: redis });
 
 export const downloadsRoutes: FastifyPluginAsync = async (fastify) => {
-    // POST /downloads/batch - Iniciar download em lote
-    fastify.post('/batch', {
+    // POST /api/v1/downloads/batch - Iniciar download em lote
+    fastify.post<{
+        Body: BatchDownloadInput;
+    }>('/batch', {
         schema: {
             tags: ['Downloads'],
-            body: {
-                type: 'object',
-                properties: {
-                    documentIds: { type: 'array', items: { type: 'string' }, maxItems: 5000 },
-                    filters: { type: 'object', additionalProperties: true },
-                    format: { type: 'string', enum: ['xml', 'pdf', 'both'], default: 'both' },
-                    includeMetadata: { type: 'boolean', default: true },
-                    organizacao: {
-                        type: 'string',
-                        enum: ['flat', 'by-date', 'by-type', 'by-company'],
-                        default: 'by-date'
-                    }
-                }
-            },
-            security: [{ bearerAuth: [] }]
+            summary: 'Download em lote',
+            description: 'Solicita processamento de download em massa de documentos. Retorna um Job ID.',
+            body: zodToFastify(batchDownloadSchema),
+            response: {
+                202: {
+                    description: 'Download enfileirado',
+                    type: 'object',
+                    properties: {
+                        jobId: { type: 'string' },
+                        status: { type: 'string' },
+                        estimatedDocuments: { type: 'integer' },
+                        estimatedTimeSeconds: { type: 'integer' },
+                    },
+                },
+                400: standardResponses[400],
+                401: standardResponses[401],
+            }
         },
         handler: async (request, reply) => {
             const { tenantId, id: userId } = (request as any).user;
-            const { documentIds, filters, format, includeMetadata, organizacao } = request.body as any;
+            const body = batchDownloadSchema.parse(request.body);
+            const { documentIds, filters, format, includeMetadata, organizacao } = body;
 
             // Validar que tem IDs ou filtros
             if ((!documentIds || documentIds.length === 0) && !filters) {
@@ -44,7 +51,7 @@ export const downloadsRoutes: FastifyPluginAsync = async (fastify) => {
             if (filters) {
                 // Optimization: documentsService.list returns { items, total }
                 // We assume countByFilter or list handles minimal overhead for count
-                const { total } = await documentsService.list(tenantId, { ...filters, page: 1, limit: 1 });
+                const { total } = await documentsService.list(tenantId, { ...filters, page: 1, limit: 1, sortBy: 'createdAt', sortOrder: 'desc' });
                 estimatedCount = total;
 
                 if (estimatedCount > 5000) {
@@ -76,19 +83,32 @@ export const downloadsRoutes: FastifyPluginAsync = async (fastify) => {
         }
     });
 
-    // GET /downloads/batch/:jobId - Status do download
-    fastify.get('/batch/:jobId', {
+    // GET /api/v1/downloads/batch/:jobId - Status do download
+    fastify.get<{
+        Params: { jobId: string };
+    }>('/batch/:jobId', {
         schema: {
             tags: ['Downloads'],
-            params: {
-                type: 'object',
-                properties: { jobId: { type: 'string' } },
-                required: ['jobId']
-            },
-            security: [{ bearerAuth: [] }]
+            summary: 'Status do download',
+            description: 'Consulta o status ou resultado de um job de download em lote',
+            params: zodToFastify(downloadJobParamsSchema),
+            response: {
+                200: {
+                    description: 'Status do job',
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', enum: ['queued', 'active', 'completed', 'failed'] },
+                        progress: { type: 'number' },
+                        result: { type: 'object', nullable: true }, // URL de download, etc.
+                        error: { type: 'string', nullable: true },
+                    },
+                },
+                401: standardResponses[401],
+                404: standardResponses[404],
+            }
         },
         handler: async (request, reply) => {
-            const { jobId } = request.params as { jobId: string };
+            const { jobId } = downloadJobParamsSchema.parse(request.params);
             const { tenantId } = (request as any).user;
 
             const job = await batchDownloadQueue.getJob(jobId);

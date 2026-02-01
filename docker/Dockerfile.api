@@ -2,6 +2,10 @@
 # FiscalZen API - Multi-stage Dockerfile
 # ===========================================
 
+# Build arguments
+ARG NODE_ENV=production
+ARG VERSION=dev
+
 # Stage 1: Base with pnpm
 FROM node:20.11-alpine3.19 AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
@@ -41,7 +45,12 @@ LABEL org.opencontainers.image.title="FiscalZen API" \
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Re-declare build args in this stage
+ARG NODE_ENV
+ARG VERSION
+
+ENV NODE_ENV=${NODE_ENV}
+ENV APP_VERSION=${VERSION}
 
 # Atualiza pacotes de segurança
 RUN apk update && apk upgrade --no-cache && \

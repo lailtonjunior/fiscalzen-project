@@ -65,6 +65,7 @@ export const documents = pgTable(
     observacaoDesacordo: text('observacao_desacordo'),
 
     // Storage
+    nsu: varchar('nsu', { length: 20 }),
     xmlStorageKey: varchar('xml_storage_key', { length: 255 }),
     pdfStorageKey: varchar('pdf_storage_key', { length: 255 }),
     xmlHashSha256: varchar('xml_hash_sha256', { length: 64 }),

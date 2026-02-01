@@ -17,7 +17,7 @@ export class DanfeGenerator implements IPdfGenerator {
 
     // Helper type check
     private isNFeData(doc: any): doc is NFeData {
-        return doc && doc.emitente && doc.destinatario && doc.produtos;
+        return doc && doc.emitente && doc.destinatario && doc.itens;
     }
 
     async generate(xmlParsed: any): Promise<GeneratedPdf> {
@@ -58,7 +58,7 @@ export class DanfeGenerator implements IPdfGenerator {
         // ═══════════════════════════════════════════════════
         // PRODUTOS
         // ═══════════════════════════════════════════════════
-        this.renderProdutos(doc, nfe.produtos);
+        this.renderProdutos(doc, nfe.itens);
 
         // ═══════════════════════════════════════════════════
         // TOTAIS
@@ -110,9 +110,7 @@ export class DanfeGenerator implements IPdfGenerator {
 
         doc.fontSize(7).font('Helvetica');
         doc.text(`CNPJ: ${this.formatCnpj(emitente.cnpj)}`);
-        doc.text(`${emitente.endereco.logradouro}, ${emitente.endereco.numero}`);
-        doc.text(`${emitente.endereco.bairro} - ${emitente.endereco.municipio}/${emitente.endereco.uf}`);
-        doc.text(`CEP: ${this.formatCep(emitente.endereco.cep)} - Fone: ${emitente.telefone || ''}`);
+        doc.text(`UF: ${emitente.uf}`);
 
         // Box DANFE
         const danfeBoxX = 350;
@@ -124,7 +122,7 @@ export class DanfeGenerator implements IPdfGenerator {
         doc.text('Nota Fiscal Eletronica', danfeBoxX + 10, startY + 28);
 
         doc.fontSize(10).font('Helvetica-Bold');
-        const tipoOperacao = nfe.info?.tipo === '0' ? '0 - ENTRADA' : '1 - SAIDA';
+        const tipoOperacao = (nfe.metadata?.tpNF === '0' || nfe.metadata?.tpNF === 0) ? '0 - ENTRADA' : '1 - SAIDA';
         doc.text(tipoOperacao, danfeBoxX + 15, startY + 42);
 
         // Numero em serie

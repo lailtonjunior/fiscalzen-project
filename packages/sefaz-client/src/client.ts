@@ -1,5 +1,7 @@
 import * as https from 'https';
 import type { SefazClientConfig, SefazAmbiente } from './types';
+import { CircuitBreaker } from './circuit-breaker';
+import { withRetry } from './retry';
 
 // Logger interface for optional logging
 export interface SefazLogger {
@@ -18,6 +20,7 @@ export class SefazClient {
   private httpsAgent: https.Agent;
   private logger: SefazLogger;
   private disposed = false;
+  private circuitBreaker: CircuitBreaker;
 
   constructor(config: SefazClientConfig, logger?: SefazLogger) {
     this.config = {
@@ -32,6 +35,12 @@ export class SefazClient {
       pfx: config.certificado.pfxBuffer,
       passphrase: config.certificado.password,
       rejectUnauthorized: true,
+    });
+
+    this.circuitBreaker = new CircuitBreaker('sefaz-soap', {
+      failureThreshold: 5,
+      resetTimeoutMs: 60000,
+      halfOpenMaxCalls: 3
     });
   }
 
@@ -72,30 +81,19 @@ export class SefazClient {
       throw new Error('SefazClient has been disposed');
     }
 
-    let lastError: Error | null = null;
-    const attempts = this.config.retryAttempts || 3;
-
-    for (let attempt = 1; attempt <= attempts; attempt++) {
-      try {
-        const response = await this.doRequest(url, soapEnvelope);
-        return response;
-      } catch (error) {
-        lastError = error as Error;
-        if (attempt < attempts) {
-          const delay = (this.config.retryDelay || 1000) * Math.pow(2, attempt - 1);
-          this.logger.warn(`SEFAZ request failed, retrying...`, {
-            attempt,
-            maxAttempts: attempts,
-            delayMs: delay,
-            error: lastError.message,
-            url,
-          });
-          await this.sleep(delay);
-        }
-      }
-    }
-
-    throw lastError || new Error('Request failed after retries');
+    // Wrap the request logic in CircuitBreaker -> Retry
+    return this.circuitBreaker.execute(() =>
+      withRetry(
+        () => this.doRequest(url, soapEnvelope),
+        {
+          maxAttempts: this.config.retryAttempts || 3,
+          initialDelayMs: this.config.retryDelay || 1000,
+          backoffMultiplier: 2,
+          maxDelayMs: 30000
+        },
+        `SefazClient.request(${url})`
+      )
+    );
   }
 
   private doRequest(url: string, soapEnvelope: string): Promise<string> {
@@ -126,6 +124,7 @@ export class SefazClient {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             resolve(data);
           } else {
+            // Include status code in error message for retry checking
             reject(new Error(`HTTP ${res.statusCode}: ${data}`));
           }
         });

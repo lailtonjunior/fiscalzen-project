@@ -1,182 +1,81 @@
-# FiscalZen Developer Documentation
+# FiscalZen Project Documentation
 
-Welcome to the **FiscalZen** project! FiscalZen is a comprehensive fiscal management platform designed to automate the lifecycle management of Brazilian electronic fiscal documents such as NFe, NFSe, CTe, and MDFe. It integrates extensively with government SEFAZ web services and various municipal service providers.
+Welcome to the FiscalZen project documentation. This guide provides an overview of the project structure, architecture, and core functionalities to help developers navigate and contribute effectively.
 
----
+## Overview
 
-## 📚 Documentation Overview
+The FiscalZen project is a comprehensive software system aimed at managing and processing electronic fiscal documents, primarily focused on the Brazilian NF-e (Nota Fiscal Eletrônica) ecosystem. It includes tools for document parsing, validation, storage, and integration with governmental systems.
 
-| Guide             | Description                                                                                  |
-|-------------------|----------------------------------------------------------------------------------------------|
-| **[Architecture](./architecture.md)**         | Overview of the monorepo structure, service boundaries, and technology stack.         |
-| **[Data Flow](./data-flow.md)**               | Explanation of document flow from SEFAZ services to local database and search engine. |
-| **[Security](./security.md)**                  | Managing A1 certificates, encryption strategies, and API authentication.              |
-| **[Glossary](./glossary.md)**                  | Business terms and domain-specific explanations including NSU, ABRASF, Manifestação. |
+## Project Structure
 
----
+### Core Components
 
-## 🏗️ Repository Structure
+- **Config**: Configuration files and settings across various packages and applications.
+- **Generators**: Responsible for generating PDF documents like DANFE and DACTE.
+- **Repositories**: Database interactions and schema management.
+- **Controllers**: API and application logic handling.
+- **Utils**: Shared utility functions and constants.
+- **Services**: Business logic and integrations with external systems.
+- **Models**: Data schema definitions.
+- **Components**: Frontend user interface components.
 
-FiscalZen is organized as a modular monorepo with applications and packages that separate concerns clearly:
+### Public API
 
-### Applications (`apps/`)
+The project exposes a variety of public classes, functions, and types, including:
 
-- **`api`**  
-  The backend API built on Fastify. Responsible for REST endpoints, background job processing (using BullMQ), and core business logic implementation.
+- `AbrasfClient`
+- `SefazClient`
+- `DanfeGenerator`
+- Various service functions like `addCertificateCheckerJob`
 
-- **`web`**  
-  The frontend dashboard powered by Next.js, providing user-friendly tools to view, search, and manage fiscal documents.
+For a complete list of exported symbols, refer to the source code files within their respective directories.
 
-### Core Packages (`packages/`)
+## Architecture
 
-- **`sefaz-client`**  
-  Provides SOAP client capabilities to communicate with national SEFAZ services, including XML signing with A1 certificates, handling document distribution (NSU), and event manifestation.
+### Key Areas
 
-- **`nfse-client`**  
-  Integration for municipal NFSe services, supporting ABRASF SOAP standards and RPA automation using Playwright for municipalities without official APIs.
+- **Config**: Centralized configuration management for seamless integration among different modules.
+- **Generators**: Handles the creation of PDF documents required for official documentation.
+- **Repositories**: Manages data persistence and retrieval with a focus on scalability and performance.
 
-- **`xml-parser`**  
-  Implements XML detection, decoding (gzip/base64), and schema-driven parsing to convert fiscal document XMLs into structured JSON.
+### Major Dependencies
 
-- **`database`**  
-  Defines database schemas and repository patterns using Drizzle ORM targeting PostgreSQL.
+- `apps\api\src\app.ts`: The main API application setup, importing multiple configurations and routes.
+- `packages\xml-parser\src\parsers\auto.ts`: Automatically detects and parses XML document types.
+- `packages\nfse-client\src\factory.ts`: Provides a factory for creating client instances to interact with NFSe services.
 
-- **`shared`**  
-  Contains shared types, Zod schemas, utilities, and constants used across the system.
+## Development Workflow
 
----
+Developers are encouraged to follow a consistent workflow involving branching strategies, pull requests, and continuous integration (CI) processes. Key documents related to workflow include:
 
-## 🛠️ Key Technical Modules
+- `development-workflow.md`: Detailed information on branching, contribution guidelines, and CI/CD practices.
+- `testing-strategy.md`: Describes testing configurations and gates for quality assurance.
 
-### 1. SEFAZ Integration (`sefaz-client`)
+## Security and Compliance
 
-The `SefazClient` class encapsulates all communication with SEFAZ web services, including SOAP envelope handling and digital XML signing using A1 certificates. It supports multiple fiscal document types such as NFe, CTe, and related events.
+Security is a high priority, especially given the sensitive nature of fiscal document processing. Key areas include:
 
-**Usage example:**
+- **Authentication model**: Ensuring secure access to different parts of the system.
+- **Data compliance**: Aligning with data protection regulations and governmental requirements.
 
-```typescript
-import { SefazClient } from '@fiscalzen/sefaz-client';
+## Contributing
 
-const client = new SefazClient({
-  certificado: certificadoA1Buffer,  // PKCS#12 (.pfx) certificate buffer
-  password: 'your_cert_password',
-  ambiente: 'producao',               // 'homologacao' or 'producao'
-  uf: 'SP'                           // Brazilian state code (UF)
-});
+Contributors are encouraged to familiarize themselves with the project by reviewing:
 
-const response = await client.distribuicaoDFe({ lastNSU: '000000000000001' });
-console.log(response);
-```
+- Architecture Notes
+- Glossary & Domain Concepts
+- Tooling & Productivity Guide
 
-**Features:**
+These documents provide insights into the project's domain, tools, and development priorities.
 
-- Automatic retries and error parsing via `SefazError`.
-- SOAP envelope manipulation and XML digital signature support.
-- Handles synchronous and asynchronous SEFAZ service calls.
+## Additional Resources
 
----
+- **Glossary**: A comprehensive list of domain-specific terms and concepts.
+- **Data Flow & Integrations**: Details on system architecture and integrations with external services.
+- **Tooling Guide**: Recommendations and configurations for development tools and environments.
 
-### 2. XML Parser (`xml-parser`)
-
-Provides a robust XML detection and parsing system tailored for the variety of fiscal document formats that FiscalZen processes.
-
-**Usage example:**
-
-```typescript
-import { detectDocumentType, createParser } from '@fiscalzen/xml-parser';
-
-const xmlString = '<NFe...';  // Raw fiscal document XML
-const detection = detectDocumentType(xmlString);
-
-if (detection.type === 'nfe') {
-  const parser = createParser(detection.schema);
-  const data = await parser.parse(xmlString);
-  console.log(data.emitente.cnpj);
-}
-```
-
-**Capabilities:**
-
-- Support for multiple schemas (NFe 4.00, CTe, NFSe, etc.).
-- Built-in base64 and gzip decoding.
-- Schema-driven parsing producing strongly typed JSON output.
-- Extensible with additional document types and versions.
+For additional guidance or to report any issues, please refer to the project's CONTRIBUTING.md file or contact the repository maintainers.
 
 ---
 
-### 3. Background Jobs (`apps/api/src/jobs`)
-
-FiscalZen uses BullMQ for managing scalable, asynchronous job queues vital for processing large volumes of documents and integration points.
-
-- **sefaz-monitor**: Monitors SEFAZ for new fiscal documents for registered companies.
-- **xml-processor**: Parses and stores raw XML documents and metadata into the database.
-- **search-sync**: Synchronizes document data with Meilisearch for fast, full-text querying in the frontend.
-
-**Adding a job example:**
-
-```typescript
-import { addSefazMonitorJob } from 'apps/api/src/jobs/queues';
-
-await addSefazMonitorJob(companyId);
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js v18+
-- pnpm v8+
-- Docker (for PostgreSQL, Redis, Meilisearch in development)
-
-### Setup
-
-1. **Install dependencies**
-
-   ```bash
-   pnpm install
-   ```
-
-2. **Start required services**
-
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Apply database migrations**
-
-   ```bash
-   pnpm --filter @fiscalzen/database db:push
-   ```
-
-4. **Run the development servers**
-
-   ```bash
-   pnpm dev
-   ```
-
----
-
-## 🔍 Essential Public API Modules
-
-| Module                | Package                 | Purpose                                     |
-|-----------------------|-------------------------|---------------------------------------------|
-| `SefazClient`         | `@fiscalzen/sefaz-client` | SOAP client for national SEFAZ services with XML signing |
-| `AbrasfClient`        | `@fiscalzen/nfse-client`  | Client interface to ABRASF municipal NFSe services, SOAP and RPA based |
-| `detectDocumentType`  | `@fiscalzen/xml-parser`   | Auto-identification of XML schema and document type |
-| `addSefazMonitorJob`  | `apps/api/src/jobs/queues`| Queue job to trigger SEFAZ document sync |
-| `loadCertificado`     | `@fiscalzen/sefaz-client` | Loads and validates PKCS#12 A1 certificates |
-
----
-
-## 📖 Additional Resources
-
-- [Architecture](./architecture.md) – Detailed monorepo layout and module dependencies.
-- [Data Flow](./data-flow.md) – End-to-end processing of fiscal documents.
-- [Security](./security.md) – Certificate handling, secure signing, and API authentication.
-- [Glossary](./glossary.md) – Explanation of domain-specific terms and abbreviations.
-
----
-
-*Last updated: June 2024 — FiscalZen Engineering Team*
+This documentation is a living document and will be updated regularly to reflect changes in the codebase and best practices. Thank you for contributing to the FiscalZen project.

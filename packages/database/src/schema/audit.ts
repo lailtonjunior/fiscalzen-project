@@ -66,7 +66,90 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
+// ============================================
+// Certificate Access Logs - Auditoria de Certificados
+// ============================================
+
+export const certificateAccessLogs = pgTable(
+  'certificate_access_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    companyId: uuid('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id'),
+    action: varchar('action', { length: 50 }).notNull(), // VIEW, DOWNLOAD, USE_FOR_SIGNING, UPLOAD, DELETE, VALIDATE
+    status: varchar('status', { length: 20 }).default('success'), // success, failure, denied
+    ipAddress: inet('ip_address'),
+    userAgent: varchar('user_agent', { length: 500 }),
+    requestId: varchar('request_id', { length: 100 }),
+    metadata: jsonb('metadata'), // Dados adicionais sobre a operacao
+    errorMessage: varchar('error_message', { length: 500 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index('idx_cert_logs_tenant_id').on(table.tenantId),
+    companyIdIdx: index('idx_cert_logs_company_id').on(table.companyId),
+    userIdIdx: index('idx_cert_logs_user_id').on(table.userId),
+    actionIdx: index('idx_cert_logs_action').on(table.action),
+    createdAtIdx: index('idx_cert_logs_created_at').on(table.createdAt),
+    statusIdx: index('idx_cert_logs_status').on(table.status),
+  })
+);
+
+export const certificateAccessLogsRelations = relations(certificateAccessLogs, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [certificateAccessLogs.tenantId],
+    references: [tenants.id],
+  }),
+  company: one(companies, {
+    fields: [certificateAccessLogs.companyId],
+    references: [companies.id],
+  }),
+}));
+
+// ============================================
+// Security Events - Eventos de Seguranca
+// ============================================
+
+export const securityEvents = pgTable(
+  'security_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').references(() => tenants.id, { onDelete: 'cascade' }),
+    eventType: varchar('event_type', { length: 50 }).notNull(), // AUTH_FAILURE, RATE_LIMIT, SUSPICIOUS_ACTIVITY, KEY_ROTATION
+    severity: varchar('severity', { length: 20 }).notNull(), // INFO, WARNING, CRITICAL
+    source: varchar('source', { length: 100 }), // IP, User-Agent, etc
+    description: varchar('description', { length: 1000 }).notNull(),
+    ipAddress: inet('ip_address'),
+    userAgent: varchar('user_agent', { length: 500 }),
+    userId: uuid('user_id'),
+    metadata: jsonb('metadata'),
+    resolved: timestamp('resolved', { withTimezone: true }),
+    resolvedBy: uuid('resolved_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index('idx_security_events_tenant_id').on(table.tenantId),
+    eventTypeIdx: index('idx_security_events_event_type').on(table.eventType),
+    severityIdx: index('idx_security_events_severity').on(table.severity),
+    createdAtIdx: index('idx_security_events_created_at').on(table.createdAt),
+    unresolvedIdx: index('idx_security_events_unresolved').on(table.resolved),
+  })
+);
+
+// ============================================
+// Types
+// ============================================
+
 export type MonitorJob = typeof monitorJobs.$inferSelect;
 export type NewMonitorJob = typeof monitorJobs.$inferInsert;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+export type CertificateAccessLog = typeof certificateAccessLogs.$inferSelect;
+export type NewCertificateAccessLog = typeof certificateAccessLogs.$inferInsert;
+export type SecurityEvent = typeof securityEvents.$inferSelect;
+export type NewSecurityEvent = typeof securityEvents.$inferInsert;

@@ -5,7 +5,9 @@
  * Uses isolated test database on port 5434.
  */
 
+import 'reflect-metadata';
 import { afterAll, vi } from 'vitest';
+import { closeTestClient } from '../helpers/database';
 
 // Test environment variables
 process.env.NODE_ENV = 'test';
@@ -13,7 +15,7 @@ process.env.PORT = '3098';
 process.env.HOST = 'localhost';
 process.env.LOG_LEVEL = 'error';
 
-// Test database (port 5434, different from dev 5433)
+// Test database (port 5434, different from dev 5432)
 process.env.DATABASE_URL = 'postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test';
 
 // Test Redis (port 6380, different from dev 6379)
@@ -38,6 +40,12 @@ export const TEST_USER_ID = '22222222-2222-2222-2222-222222222222';
 export const TEST_COMPANY_ID = '33333333-3333-3333-3333-333333333333';
 
 // Cleanup after all tests
+import { sefazServer } from '../mocks/sefaz';
+import { beforeAll, afterEach } from 'vitest';
+
+beforeAll(() => sefazServer.listen());
+afterEach(() => sefazServer.resetHandlers());
 afterAll(async () => {
+    sefazServer.close();
     vi.clearAllMocks();
 });
