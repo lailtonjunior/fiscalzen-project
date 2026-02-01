@@ -1,15 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { api, useApiClient } from '@/lib/api';
+import { useApiClient } from '@/lib/api';
 import {
-    Users,
     FileText,
-    FileCheck,
     AlertCircle,
     Building2,
     Shield,
-    Activity
 } from 'lucide-react';
 import { StatsCard } from '@/components/dashboard/stats-card';
 import { TimelineChart, DocsByTypeChart } from '@/components/dashboard/charts';

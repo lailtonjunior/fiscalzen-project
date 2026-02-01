@@ -35,7 +35,7 @@ export function usePendingManifestations(companyId?: string) {
     queryKey: manifestacaoKeys.pending(companyId),
     queryFn: async () => {
       const response = await api.get<PendingManifestation[]>('/api/v1/manifestacao/pending', {
-        companyId,
+        params: { companyId },
       });
       return response.data ?? [];
     },
@@ -48,7 +48,7 @@ export function usePendingCiencia(companyId?: string) {
     queryKey: manifestacaoKeys.pendingCiencia(companyId),
     queryFn: async () => {
       const response = await api.get<PendingCiencia[]>('/api/v1/manifestacao/pending-ciencia', {
-        companyId,
+        params: { companyId },
       });
       return response.data ?? [];
     },
@@ -61,7 +61,7 @@ export function useAwaitingFinal(companyId?: string) {
     queryKey: manifestacaoKeys.awaitingFinal(companyId),
     queryFn: async () => {
       const response = await api.get<AwaitingFinal[]>('/api/v1/manifestacao/awaiting-final', {
-        companyId,
+        params: { companyId },
       });
       return response.data ?? [];
     },
@@ -78,7 +78,7 @@ export function useManifestacaoHistory(filters?: { companyId?: string; page?: nu
         total: number;
         page: number;
         pageSize: number;
-      }>('/api/v1/manifestacao/history', filters);
+      }>('/api/v1/manifestacao/history', { params: filters });
       return response.data ?? { items: [], total: 0, page: 1, pageSize: 20 };
     },
   });

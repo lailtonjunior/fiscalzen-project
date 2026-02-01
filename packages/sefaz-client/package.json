@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "dev": "tsup src/index.ts --format esm --dts --watch --silent",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src --ext .ts",

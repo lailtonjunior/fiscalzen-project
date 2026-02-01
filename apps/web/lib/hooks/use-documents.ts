@@ -26,14 +26,16 @@ export function useDocuments(filters: DocumentFilters = {}) {
     queryKey: documentKeys.list(filters),
     queryFn: async () => {
       const response = await api.get<Document[]>('/api/v1/documents', {
-        companyId: filters.companyId,
-        docType: filters.docType,
-        situacao: filters.situacao,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        search: filters.search,
-        page: filters.page,
-        pageSize: filters.pageSize,
+        params: {
+          companyId: filters.companyId,
+          docType: filters.docType,
+          situacao: filters.situacao,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          search: filters.search,
+          page: filters.page,
+          pageSize: filters.pageSize,
+        },
       });
       return response;
     },
@@ -56,7 +58,7 @@ export function useDocumentSearch(query: string) {
     queryKey: documentKeys.search(query),
     queryFn: async () => {
       const response = await api.get<Document[]>('/api/v1/documents/search', {
-        q: query,
+        params: { q: query },
       });
       return response;
     },
@@ -86,9 +88,14 @@ export function useUploadDocuments() {
         formData.append('files', file);
       });
 
-      const response = await api.upload<{ uploaded: number; errors: string[] }>(
+      const response = await api.post<{ uploaded: number; errors: string[] }>(
         '/api/v1/documents/upload',
-        formData
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
       return response.data;
     },

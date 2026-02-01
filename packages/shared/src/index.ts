@@ -17,3 +17,6 @@ export * from './formatters/document';
 export * from './constants/estados';
 export * from './constants/doc-types';
 export * from './constants/situacoes';
+
+// Logger
+export * from './logger';

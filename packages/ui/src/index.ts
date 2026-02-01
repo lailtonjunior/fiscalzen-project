@@ -56,3 +56,13 @@ export { Progress } from './components/progress';
 export { RadioGroup, RadioGroupItem } from './components/radio-group';
 export { Textarea, type TextareaProps } from './components/textarea';
 export { Switch } from './components/switch';
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from './components/table';

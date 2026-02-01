@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const eventType = evt.type;
 
     if (eventType === 'user.created' || eventType === 'user.updated') {
-        const { id, email_addresses, first_name, last_name } = evt.data;
+        const { id, email_addresses: _emails, first_name: _firstName, last_name: _lastName } = evt.data;
         console.log(`User ${id} was ${eventType}`);
         // TODO: Logic to sync user with local database
     }

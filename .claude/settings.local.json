@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(findstr:*)",
+      "Bash(pnpm turbo run build:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm add:*)"
+    ]
+  }
+}

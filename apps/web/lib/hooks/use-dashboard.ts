@@ -25,7 +25,7 @@ export function useDashboardSummary(companyId?: string) {
     queryKey: dashboardKeys.summary(companyId),
     queryFn: async () => {
       const response = await api.get<DashboardSummary>('/api/v1/dashboard/summary', {
-        companyId,
+        params: { companyId },
       });
       return response.data;
     },
@@ -37,7 +37,7 @@ export function useIntegrityStatus(companyId?: string) {
     queryKey: dashboardKeys.integrity(companyId),
     queryFn: async () => {
       const response = await api.get<IntegrityStatus>('/api/v1/dashboard/integrity', {
-        companyId,
+        params: { companyId },
       });
       return response.data;
     },
@@ -50,8 +50,7 @@ export function useTimeline(companyId?: string, days: number = 30) {
     queryKey: dashboardKeys.timeline(companyId, days),
     queryFn: async () => {
       const response = await api.get<TimelineData[]>('/api/v1/dashboard/timeline', {
-        companyId,
-        days,
+        params: { companyId, days },
       });
       return response.data ?? [];
     },
@@ -63,7 +62,7 @@ export function useIntegrityGaps(companyId?: string) {
     queryKey: dashboardKeys.gaps(companyId),
     queryFn: async () => {
       const response = await api.get<IntegrityStatus>('/api/v1/dashboard/gaps', {
-        companyId,
+        params: { companyId },
       });
       return response.data?.gaps ?? [];
     },

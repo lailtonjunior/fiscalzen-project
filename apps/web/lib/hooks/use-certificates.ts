@@ -105,9 +105,14 @@ export function useUploadCertificate() {
       formData.append('certificate', file);
       formData.append('password', password);
 
-      const response = await api.upload<{ expiry: string }>(
+      const response = await api.post<{ expiry: string }>(
         `/companies/${companyId}/certificate`,
-        formData
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
       return response.data;
     },

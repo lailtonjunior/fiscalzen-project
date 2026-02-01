@@ -18,6 +18,10 @@ build/
 .env.*.local
 !.env.example
 
+nul
+*.tsbuildinfo
+
+
 # IDE
 .idea/
 .vscode/

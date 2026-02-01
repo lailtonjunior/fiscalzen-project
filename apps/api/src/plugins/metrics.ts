@@ -1,5 +1,5 @@
 import fp from 'fastify-plugin';
-import metrics from '@fastify/metrics';
+import metricsPlugin from 'fastify-metrics';
 import { Counter, Histogram, Gauge } from 'prom-client';
 
 // Métricas customizadas de Negócio e SEFAZ
@@ -40,7 +40,7 @@ export const circuitBreakerState = new Gauge({
 });
 
 export default fp(async (fastify) => {
-    await fastify.register(metrics, {
+    await fastify.register(metricsPlugin, {
         endpoint: '/metrics',
         defaultMetrics: {
             enabled: true, // CPU, Memory, GC, etc.

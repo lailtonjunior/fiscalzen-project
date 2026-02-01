@@ -140,8 +140,4 @@ export class SefazClient {
       req.end();
     });
   }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

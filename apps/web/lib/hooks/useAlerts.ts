@@ -28,13 +28,13 @@ export function useAlerts() {
     const [summary, setSummary] = useState<AlertaSummary>({ total: 0, naoLidos: 0, altaPrioridade: 0 });
     const [loading, setLoading] = useState(false);
 
-    const fetchAlerts = useCallback(async (filters: any = {}) => {
+    const fetchAlerts = useCallback(async (filters: Record<string, unknown> = {}) => {
         if (!isSignedIn) return;
         try {
             setLoading(true);
             const apiClient = await getApiClient();
-            const res = await apiClient.get<Alerta[]>('/api/v1/alerts', filters);
-            if (res.success && res.data) {
+            const res = await apiClient.get<Alerta[]>('/api/v1/alerts', { params: filters });
+            if (res.data) {
                 setAlerts(res.data);
             }
         } catch (error) {
@@ -49,7 +49,7 @@ export function useAlerts() {
         try {
             const apiClient = await getApiClient();
             const res = await apiClient.get<AlertaSummary>('/api/v1/alerts/summary');
-            if (res.success && res.data) {
+            if (res.data) {
                 setSummary(res.data);
             }
         } catch (error) {

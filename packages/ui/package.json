@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react",
-    "dev": "tsup src/index.ts --format esm --dts --watch --external react",
+    "dev": "tsup src/index.ts --format esm --dts --watch --external react --silent",
     "lint": "eslint src --ext .ts,.tsx",
     "clean": "rm -rf dist"
   },
