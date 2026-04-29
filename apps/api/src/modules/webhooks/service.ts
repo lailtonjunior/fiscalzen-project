@@ -7,6 +7,7 @@ import { DATABASE_TOKEN } from '../../providers/database';
 import { Queue } from 'bullmq';
 import { env } from '../../config/env';
 import crypto from 'crypto';
+import Redis from 'ioredis';
 
 type Database = NodePgDatabase<typeof schema>;
 
@@ -29,6 +30,7 @@ export interface PaginationParams {
 @injectable()
 export class WebhookService {
     private webhookQueue: Queue;
+    private redis: Redis;
 
     constructor(
         @inject(DATABASE_TOKEN) private db: Database
@@ -38,6 +40,7 @@ export class WebhookService {
                 url: env.REDIS_URL,
             } as any
         });
+        this.redis = new Redis(env.REDIS_URL);
     }
 
     async create(tenantId: string, data: CreateWebhookDto) {
@@ -250,6 +253,27 @@ export class WebhookService {
 
             throw error;
         }
+    }
+
+    async executeWithIdempotency(
+        params: { tenantId: string; endpoint: string; idempotencyKey?: string; ttlSeconds: number },
+        processFn: () => Promise<any>
+    ) {
+        if (!params.idempotencyKey) {
+            return processFn();
+        }
+
+        const cacheKey = `webhook:idempotency:${params.tenantId}:${params.endpoint}:${params.idempotencyKey}`;
+        const cached = await this.redis.get(cacheKey);
+
+        if (cached) {
+            return JSON.parse(cached);
+        }
+
+        const result = await processFn();
+        await this.redis.set(cacheKey, JSON.stringify(result), 'EX', params.ttlSeconds);
+
+        return result;
     }
 
     verifySignature(payload: any, signature: string, secret: string): boolean {
