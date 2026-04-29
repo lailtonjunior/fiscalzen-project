@@ -42,4 +42,45 @@ describe('WebhookService', () => {
 
         expect(signature).toBe(expected);
     });
+
+    describe('verifySignature', () => {
+        it('deve retornar true quando a assinatura HMAC for valida', () => {
+            const service = new WebhookService(mockDb);
+            const secret = 'minha-chave-secreta-muito-segura-123';
+            const payload = { evento: 'nfe.autorizada', valor: 1000 };
+            
+            const hmac = crypto.createHmac('sha256', secret);
+            hmac.update(JSON.stringify(payload));
+            const validSignature = `sha256=${hmac.digest('hex')}`;
+
+            const isValid = service.verifySignature(payload, validSignature, secret);
+            
+            expect(isValid).toBe(true);
+        });
+
+        it('deve retornar false quando a assinatura for invalida', () => {
+            const service = new WebhookService(mockDb);
+            const secret = 'minha-chave-secreta-muito-segura-123';
+            const payload = { evento: 'nfe.autorizada', valor: 1000 };
+            
+            const invalidSignature = 'sha256=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
+            const isValid = service.verifySignature(payload, invalidSignature, secret);
+            
+            expect(isValid).toBe(false);
+        });
+
+        it('deve retornar false quando o tamanho dos buffers diferir sem lancar excecao', () => {
+            const service = new WebhookService(mockDb);
+            const secret = 'minha-chave-secreta-muito-segura-123';
+            const payload = { evento: 'nfe.autorizada', valor: 1000 };
+            
+            const invalidShortSignature = 'sha256=abc';
+
+            expect(() => {
+                const isValid = service.verifySignature(payload, invalidShortSignature, secret);
+                expect(isValid).toBe(false);
+            }).not.toThrow();
+        });
+    });
 });

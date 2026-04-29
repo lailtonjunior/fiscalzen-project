@@ -1,21 +1,40 @@
 /**
  * Auth Integration Tests
  */
-import { describe, it, expect } from 'vitest';
-import { buildApp } from '../../src/app';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import {
+    createTestClient,
+    cleanupDatabase,
+    setupTestDatabase,
+    teardownTestDatabase,
+    createTestCompany
+} from '../helpers/database';
 import { generateTestToken, authHeaders } from '../helpers/auth';
 
 describe('Auth Integration', () => {
-    const testUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        role: 'admin',
-        tenantId: 'tenant-123'
-    };
+    let db: ReturnType<typeof createTestClient>;
+    let app: any;
+    let validToken: string;
+
+    beforeAll(async () => {
+        db = await setupTestDatabase();
+        const { buildApp } = await import('../../src/app');
+        app = await buildApp();
+    });
+
+    beforeEach(async () => {
+        await cleanupDatabase(db);
+        const { tenant } = await createTestCompany(db);
+        validToken = generateTestToken({ tenantId: tenant.id });
+    });
+
+    afterAll(async () => {
+        await app.close();
+        await cleanupDatabase(db);
+        await teardownTestDatabase();
+    });
 
     it('should reject access to protected route without token', async () => {
-        const app = await buildApp();
-
         const response = await app.inject({
             method: 'GET',
             url: '/api/v1/companies'
@@ -25,29 +44,17 @@ describe('Auth Integration', () => {
     });
 
     it('should allow access to protected route with valid token', async () => {
-        // Note: This test assumes /api/v1/companies exists and uses the auth plugin
-        // We are mocking the DB response/service flow implicitly by checking 401 vs non-401
-        // Ideally we would mock the service layer if we want to isolate auth logic completely in integration,
-        // but for end-to-end we want to see it hit the route. 
-        // Since we don't have a valid DB setup in this specific "no-setup" file, it might fail inside the route handler
-        // but pass the Auth check. So we expect !401.
-
-        const app = await buildApp();
-        const token = generateTestToken(testUser);
-
         const response = await app.inject({
             method: 'GET',
             url: '/api/v1/companies',
-            headers: authHeaders(token)
+            headers: authHeaders(validToken)
         });
 
-        // It might return 200 (empty list) or 500 (db error) but SHOULD NOT be 401
-        expect(response.statusCode).not.toBe(401);
+        // Should be 200 now that DB is setup even if empty
+        expect(response.statusCode).toBe(200);
     });
 
     it('should reject access with invalid token', async () => {
-        const app = await buildApp();
-
         const response = await app.inject({
             method: 'GET',
             url: '/api/v1/companies',

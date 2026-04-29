@@ -128,4 +128,42 @@ export async function teardownTestDatabase() {
     await closeTestClient();
 }
 
+// Helper to create test user
+// Note: We don't have a users table in the DB (managed by external Auth/Clerk)
+// This helper returns a mock user object useful for auth simulation
+export function createTestUser(overrides: Record<string, any> = {}) {
+    return {
+        id: crypto.randomUUID(),
+        email: 'test@fiscalzen.com.br',
+        firstName: 'Test',
+        lastName: 'User',
+        ...overrides,
+    };
+}
+
+// Helper to create test company (Tenant)
+export async function createTestCompany(db: TestDb, overrides?: any) {
+    const tenantId = crypto.randomUUID();
+
+    // Create Tenant first
+    const [tenant] = await db.insert(schema.tenants).values({
+        id: tenantId,
+        name: 'Test Tenant',
+        cnpj: '12345678000199', // Tenant might have CNPJ too
+        plan: 'starter',
+    }).returning();
+
+    // Create Company
+    const [company] = await db.insert(schema.companies).values({
+        tenantId: tenant.id,
+        razaoSocial: 'FiscalZen Tecnologia',
+        cnpj: '12345678000199',
+        uf: 'SP',
+        ambiente: '2', // Homologacao
+        ...overrides,
+    }).returning();
+
+    return { tenant, company };
+}
+
 export { schema };

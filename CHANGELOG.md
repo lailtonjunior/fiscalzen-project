@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Correção de porta PostgreSQL (5433 -> 5432) em `apps/api/.env`
+- Padronização de scripts `drizzle-kit`
+- Verificação automatizada de configuração (`scripts/verify-config.mjs`)
+
 ### Changed
 - **PostgreSQL port standardized to 5432** - Docker now maps `5432:5432` instead of `5433:5432`
 - **Updated drizzle-kit commands** - Removed deprecated `:pg` suffix from `generate` and `push` commands

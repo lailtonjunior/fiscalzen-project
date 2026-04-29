@@ -29,12 +29,12 @@
   },
   "dependencies": {
     "dotenv": "^16.3.1",
-    "drizzle-orm": "^0.35.0",
+    "drizzle-orm": "^0.45.1",
     "postgres": "^3.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "drizzle-kit": "^0.24.0",
+    "drizzle-kit": "^0.31.8",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"

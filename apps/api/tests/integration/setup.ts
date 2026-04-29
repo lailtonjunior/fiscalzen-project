@@ -40,11 +40,26 @@ export const TEST_USER_ID = '22222222-2222-2222-2222-222222222222';
 export const TEST_COMPANY_ID = '33333333-3333-3333-3333-333333333333';
 
 // Cleanup after all tests
+import { setupTestDatabase, cleanupDatabase, createTestClient } from '../helpers/database';
 import { sefazServer } from '../mocks/sefaz';
 import { beforeAll, afterEach } from 'vitest';
 
-beforeAll(() => sefazServer.listen());
-afterEach(() => sefazServer.resetHandlers());
+beforeAll(async () => {
+    // Start MSW
+    sefazServer.listen();
+
+    // Setup DB
+    await setupTestDatabase();
+});
+
+afterEach(async () => {
+    // Reset handlers
+    sefazServer.resetHandlers();
+
+    // Reset DB data
+    const db = createTestClient();
+    await cleanupDatabase(db);
+});
 afterAll(async () => {
     sefazServer.close();
     vi.clearAllMocks();

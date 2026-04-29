@@ -252,6 +252,19 @@ export class WebhookService {
         }
     }
 
+    verifySignature(payload: any, signature: string, secret: string): boolean {
+        const expectedSignature = this.generateSignature(payload, secret);
+        
+        const signatureBuffer = Buffer.from(signature, 'utf8');
+        const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+
+        if (signatureBuffer.length !== expectedBuffer.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+    }
+
     private generateSignature(payload: any, secret: string): string {
         const hmac = crypto.createHmac('sha256', secret);
         hmac.update(JSON.stringify(payload));

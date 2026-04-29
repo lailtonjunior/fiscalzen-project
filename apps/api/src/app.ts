@@ -61,8 +61,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(authPlugin);
   await app.register(swaggerPlugin);
-  await app.register(authPlugin);
-  await app.register(swaggerPlugin);
+
 
   await app.register(multipart, {
     limits: {

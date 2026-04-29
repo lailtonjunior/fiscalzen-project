@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": "Configuração operacional do Claude Code para o repositório FiscalZen. Alinhado à política em docs/CLAUDE_TDD_FISCALZEN_v2.md. Não remova regras de deny sem revisão humana explícita.",
+
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm dev*)",
+      "Bash(pnpm bench*)",
+      "Bash(pnpm --filter *)",
+      "Bash(pnpm db:generate*)",
+      "Bash(pnpm db:push*)",
+      "Bash(pnpm db:migrate*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git branch*)",
+      "Bash(git checkout -b *)",
+      "Bash(git checkout -- *)",
+      "Bash(git revert*)",
+      "Bash(git stash*)",
+      "Bash(node --version)",
+      "Bash(pnpm --version)",
+      "Bash(docker compose -f docker/docker-compose.yml ps)",
+      "Bash(docker compose -f docker/docker-compose.yml up -d)",
+      "Bash(docker compose -f docker/docker-compose.yml logs*)",
+      "Read(**)",
+      "Edit(apps/**)",
+      "Edit(packages/**)",
+      "Edit(tests/**)",
+      "Edit(docs/**)",
+      "Edit(scripts/**)",
+      "Edit(.claude/cycles/**)",
+      "Edit(.claude/violations.log)",
+      "Write(apps/**)",
+      "Write(packages/**)",
+      "Write(tests/**)",
+      "Write(docs/**)",
+      "Write(.claude/cycles/**)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:npmjs.com)"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf .git*)",
+      "Bash(*DROP DATABASE*)",
+      "Bash(*DROP TABLE*)",
+      "Bash(*TRUNCATE TABLE*)",
+      "Bash(*DELETE FROM * WHERE*1=1*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)",
+      "Bash(git push origin production*)",
+      "Bash(git push origin release/*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(curl *://*prod*)",
+      "Bash(curl *://*production*)",
+      "Bash(curl *nfe.fazenda.gov.br*)",
+      "Bash(curl *fiscalzen.com*)",
+      "Bash(wget *prod*)",
+      "Bash(wget *production*)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(env)",
+      "Bash(printenv*)",
+      "Bash(cat .env*)",
+      "Bash(cat **/*.pfx)",
+      "Bash(cat **/*.key)",
+      "Bash(cat **/*.pem)",
+      "Bash(cat **/*.p12)",
+      "Bash(cat ~/.ssh/*)",
+      "Bash(cat ~/.aws/*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Edit(**/*.pfx)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.p12)",
+      "Edit(packages/security/secrets/**)",
+      "Edit(/etc/**)",
+      "Edit(~/.ssh/**)",
+      "Edit(~/.aws/**)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Write(**/*.pfx)",
+      "Write(**/*.key)",
+      "Write(**/*.pem)",
+      "Write(**/*.p12)",
+      "Write(/etc/**)",
+      "Write(~/.ssh/**)",
+      "Write(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(**/*.pfx)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*.p12)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-bash-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-edit-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit-quality.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/tdd-reminder.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-start-context.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/stop-cycle-warning.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

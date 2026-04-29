@@ -4,43 +4,43 @@ export const docTypeEnum = z.enum(['NFE', 'CTE', 'MDFE', 'NFSE', 'SAT', 'NFCE'])
 export const situacaoEnum = z.enum(['autorizada', 'cancelada', 'denegada', 'inutilizada', 'pendente']);
 
 export const listDocumentsQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(50),
-  companyId: z.string().uuid().optional(),
-  docType: docTypeEnum.optional(),
-  situacao: situacaoEnum.optional(),
-  dataInicio: z.string().datetime().optional(),
-  dataFim: z.string().datetime().optional(),
-  emitCnpj: z.string().length(14).optional(),
-  destCnpj: z.string().length(14).optional(),
-  numero: z.string().optional(),
-  serie: z.string().optional(),
-  chave: z.string().length(44).optional(),
-  sortBy: z.enum(['dataEmissao', 'valorTotal', 'numero', 'createdAt']).default('dataEmissao'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  page: z.coerce.number().int().positive().default(1).describe('Número da página'),
+  limit: z.coerce.number().int().positive().max(100).default(50).describe('Itens por página'),
+  companyId: z.string().uuid().optional().describe('Filtro por ID da empresa'),
+  docType: docTypeEnum.optional().describe('Tipo de documento (NFE, CTE, etc)'),
+  situacao: situacaoEnum.optional().describe('Situação na SEFAZ'),
+  dataInicio: z.string().datetime().optional().describe('Data inicial de emissão (ISO8601)'),
+  dataFim: z.string().datetime().optional().describe('Data final de emissão (ISO8601)'),
+  emitCnpj: z.string().length(14).optional().describe('CNPJ do emitente'),
+  destCnpj: z.string().length(14).optional().describe('CNPJ do destinatário'),
+  numero: z.string().optional().describe('Número do documento'),
+  serie: z.string().optional().describe('Série do documento'),
+  chave: z.string().length(44).optional().describe('Chave de Acesso (44 dígitos)'),
+  sortBy: z.enum(['dataEmissao', 'valorTotal', 'numero', 'createdAt']).default('dataEmissao').describe('Campo de ordenação'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc').describe('Direção da ordenação'),
 });
 
 export const documentIdSchema = z.object({
-  id: z.string().uuid('ID invalido'),
+  id: z.string().uuid('ID invalido').describe('UUID do documento'),
 });
 
 export const searchDocumentsQuerySchema = z.object({
-  q: z.string().min(1, 'Termo de busca obrigatorio'),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(50),
-  companyId: z.string().uuid().optional(),
-  docType: docTypeEnum.optional(),
-  situacao: situacaoEnum.optional(),
-  dataInicio: z.string().datetime().optional(),
-  dataFim: z.string().datetime().optional(),
+  q: z.string().min(1, 'Termo de busca obrigatorio').describe('Termo de busca (full-text)'),
+  page: z.coerce.number().int().positive().default(1).describe('Número da página'),
+  limit: z.coerce.number().int().positive().max(100).default(50).describe('Itens por página'),
+  companyId: z.string().uuid().optional().describe('Filtro por ID da empresa'),
+  docType: docTypeEnum.optional().describe('Tipo de documento'),
+  situacao: situacaoEnum.optional().describe('Situação'),
+  dataInicio: z.string().datetime().optional().describe('Data inicial'),
+  dataFim: z.string().datetime().optional().describe('Data final'),
 });
 
 export const uploadXmlSchema = z.object({
-  companyId: z.string().uuid('Company ID invalido'),
+  companyId: z.string().uuid('Company ID invalido').describe('ID da empresa proprietária do XML'),
 });
 
 export const documentByChaveSchema = z.object({
-  chave: z.string().length(44, 'Chave de acesso deve ter 44 digitos'),
+  chave: z.string().length(44, 'Chave de acesso deve ter 44 digitos').describe('Chave de Acesso (44 dígitos)'),
 });
 
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>;

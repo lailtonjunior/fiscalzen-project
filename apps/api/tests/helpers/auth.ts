@@ -2,23 +2,31 @@
  * Auth Helper for Integration Tests
  */
 
-import { fastify } from 'fastify';
 import jwt from 'jsonwebtoken';
 
-const TEST_SECRET = process.env.JWT_SECRET || 'supersecret';
+const TEST_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-must-be-at-least-32-chars-long';
 
-interface TestUser {
-    id: string;
+interface TokenPayload {
+    sub: string;
     email: string;
-    role: string;
-    tenantId: string;
+    role?: string;
+    tenantId?: string;
+    [key: string]: any;
 }
 
 /**
  * Generate a valid JWT token for testing
  */
-export function generateTestToken(user: TestUser): string {
-    return jwt.sign(user, TEST_SECRET, { expiresIn: '1h' });
+export function generateTestToken(payload: Partial<TokenPayload> = {}): string {
+    const defaultPayload = {
+        sub: payload.sub || crypto.randomUUID(),
+        email: 'test@fiscalzen.com.br',
+        role: 'admin',
+        tenantId: crypto.randomUUID(),
+        ...payload
+    };
+
+    return jwt.sign(defaultPayload, TEST_SECRET, { expiresIn: '1h' });
 }
 
 /**

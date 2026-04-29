@@ -7,7 +7,12 @@
       "Bash(findstr:*)",
       "Bash(pnpm turbo run build:*)",
       "Bash(pnpm run build:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(jq --version)",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "mcp__plugin_context-mode_context-mode__ctx_search",
+      "mcp__plugin_context-mode_context-mode__ctx_stats"
     ]
   }
 }

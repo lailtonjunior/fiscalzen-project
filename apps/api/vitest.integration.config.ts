@@ -23,7 +23,7 @@ export default defineConfig({
         // Global setup for container/db checks
         globalSetup: ['./tests/integration/global-setup.ts'],
         // Setup files for integration test environment
-        setupFiles: ['./tests/integration/setup.integration.ts'],
+        setupFiles: ['./tests/integration/setup.ts'],
         // Run tests sequentially to avoid database conflicts
         sequence: {
             concurrent: false,
