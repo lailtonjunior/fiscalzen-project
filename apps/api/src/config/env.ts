@@ -44,8 +44,15 @@ const envSchema = z.object({
   // ===========================================
   // Meilisearch
   // ===========================================
-  MEILISEARCH_URL: z.string().url().default('http://localhost:7700'),
-  MEILISEARCH_API_KEY: z.string().optional(),
+  MEILISEARCH_URL: z.preprocess(
+    (value) => value || process.env.MEILISEARCH_HOST || 'http://localhost:7700',
+    z.string().url()
+  ),
+  MEILISEARCH_HOST: z.string().url().optional(),
+  MEILISEARCH_API_KEY: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.string().optional()
+  ),
 
   // ===========================================
   // Rate Limiting
@@ -93,6 +100,34 @@ const envSchema = z.object({
     .string()
     .transform((v) => v === 'true' || v === '1')
     .default('true'),
+  ENABLE_SWAGGER: z
+    .string()
+    .transform((v) => v === 'true' || v === '1')
+    .default('false'),
+  ENABLE_TRACING: z
+    .string()
+    .transform((v) => v === 'true' || v === '1')
+    .default('false'),
+  JAEGER_ENDPOINT: z.preprocess(
+    (value) => value === '' ? undefined : value,
+    z.string().url().optional()
+  ),
+  DISABLE_AUTH: z
+    .string()
+    .transform((v) => v === 'true' || v === '1')
+    .default('false'),
+  DEV_TENANT_ID: z
+    .string()
+    .uuid()
+    .default('00000000-0000-0000-0000-000000000000'),
+  DEV_USER_ID: z
+    .string()
+    .uuid()
+    .default('00000000-0000-0000-0000-000000000001'),
+  DEV_USER_EMAIL: z
+    .string()
+    .email()
+    .default('dev@local.test'),
 
   // ===========================================
   // Agent WebSocket (opcional)

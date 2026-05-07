@@ -29,11 +29,15 @@ export interface Document {
   natOp?: string;
   uf: string;
   nsu?: string;
-  storageKey?: string;
+  hasXml?: boolean;
+  hasPdf?: boolean;
   manifestacao?: ManifestacaoTipo;
   manifestacaoData?: string;
   createdAt: string;
   updatedAt: string;
+  emitRazao?: string;
+  destRazao?: string;
+  destCnpjCpf?: string;
 }
 
 export interface DocumentEvent {
@@ -54,6 +58,18 @@ export interface DocumentEvent {
 export interface DocumentWithEvents extends Document {
   events: DocumentEvent[];
   xmlOriginal?: string;
+  hasXml?: boolean;
+  hasPdf?: boolean;
+}
+
+export interface DocumentAttachment {
+  type: 'xml' | 'pdf';
+  label: string;
+  available: boolean;
+  filename: string;
+  downloadPath: string;
+  representation?: 'DANFE' | 'DACTE' | 'DACTE_OS';
+  statusMessage?: string;
 }
 
 // ============================================
@@ -175,6 +191,79 @@ export interface CompanySyncStatus {
 }
 
 // ============================================
+// Download Types
+// ============================================
+
+export type DownloadFormat = 'xml' | 'pdf' | 'both';
+export type DownloadOrganization = 'flat' | 'by-date' | 'by-type' | 'by-company';
+export type DownloadJobStatus = 'queued' | 'active' | 'completed' | 'failed';
+
+export interface BatchDownloadRequest {
+  documentIds?: string[];
+  filters?: Record<string, unknown>;
+  format: DownloadFormat;
+  includeMetadata: boolean;
+  organizacao: DownloadOrganization;
+}
+
+export interface BatchDownloadCreated {
+  jobId: string;
+  status: DownloadJobStatus;
+  estimatedDocuments: number;
+  estimatedTimeSeconds: number;
+}
+
+export interface BatchDownloadJob {
+  jobId: string;
+  status: DownloadJobStatus;
+  progress: number;
+  estimatedDocuments?: number | null;
+  format?: DownloadFormat;
+  includeMetadata?: boolean;
+  organizacao?: DownloadOrganization;
+  createdAt: string;
+  processedAt?: string | null;
+  finishedAt?: string | null;
+  result?: {
+    success?: boolean;
+    processed?: number;
+    errors?: number;
+  } | null;
+  error?: string | null;
+}
+
+export interface DocumentHistoryItem {
+  id: string;
+  eventType: string;
+  source: string;
+  title: string;
+  summary: string | null;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+  kind: 'audit' | 'fiscal-event';
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export interface PaginatedCollection<T> {
+  items: T[];
+  meta?: PaginationMeta;
+  pagination?: PaginationInfo;
+}
+
+// ============================================
 // Manifestacao Types
 // ============================================
 
@@ -219,10 +308,14 @@ export interface AwaitingFinal {
 }
 
 export interface ManifestacaoHistoryItem {
+  id?: string;
   document: Document;
   tipo: ManifestacaoTipo;
   data: string;
   justificativa?: string;
+  status?: 'completed' | 'failed';
+  protocolo?: string;
+  erro?: string;
 }
 
 // ============================================

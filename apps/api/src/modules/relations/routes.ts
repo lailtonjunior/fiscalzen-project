@@ -1,7 +1,9 @@
 import { FastifyPluginAsync } from 'fastify';
 import { container } from 'tsyringe';
 import { RelationsService } from './service';
+import { getTenantId } from '../../plugins/auth';
 import { zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { sendSuccess } from '../../utils/response';
 import {
     documentIdParamsSchema,
     listRelationsQuerySchema,
@@ -28,8 +30,14 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
             response: {
                 200: {
                     description: 'Lista de relações',
-                    type: 'array',
-                    items: { type: 'object' }
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'array',
+                            items: { type: 'object' }
+                        }
+                    }
                 },
                 400: standardResponses[400],
                 401: standardResponses[401],
@@ -37,12 +45,12 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
         },
         handler: async (request, reply) => {
             const { id } = documentIdParamsSchema.parse(request.params);
-            const { tenantId } = (request as any).user;
+            const tenantId = getTenantId(request);
             const { direction } = listRelationsQuerySchema.parse(request.query);
 
             const relations = await relationsService.getRelatedDocuments(id, tenantId, direction);
 
-            return reply.send(relations);
+            return sendSuccess(reply, relations);
         }
     });
 
@@ -60,8 +68,14 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
                     description: 'Lista de NFes órfãs',
                     type: 'object',
                     properties: {
-                        count: { type: 'integer' },
-                        documents: { type: 'array', items: { type: 'object' } }
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                count: { type: 'integer' },
+                                documents: { type: 'array', items: { type: 'object' } }
+                            }
+                        }
                     }
                 },
                 400: standardResponses[400],
@@ -69,7 +83,7 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
             }
         },
         handler: async (request, reply) => {
-            const { tenantId } = (request as any).user;
+            const tenantId = getTenantId(request);
             const { startDate, endDate } = orphanNfesQuerySchema.parse(request.query);
 
             const orphans = await relationsService.findOrphanNFes(tenantId, {
@@ -77,7 +91,7 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
                 endDate: endDate ? new Date(endDate) : undefined
             });
 
-            return reply.send({
+            return sendSuccess(reply, {
                 count: orphans.length,
                 documents: orphans
             });
@@ -94,19 +108,25 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
             response: {
                 200: {
                     description: 'Lista de NFes',
-                    type: 'array',
-                    items: { type: 'object' }
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'array',
+                            items: { type: 'object' }
+                        }
+                    }
                 },
                 401: standardResponses[401],
             }
         },
         handler: async (request, reply) => {
             const { chave } = chaveParamsSchema.parse(request.params);
-            const { tenantId } = (request as any).user;
+            const tenantId = getTenantId(request);
 
             const nfes = await relationsService.getNFesFromCTe(chave, tenantId);
 
-            return reply.send(nfes);
+            return sendSuccess(reply, nfes);
         }
     });
 
@@ -120,19 +140,25 @@ export const relationsRoutes: FastifyPluginAsync = async (fastify) => {
             response: {
                 200: {
                     description: 'Lista de CTes',
-                    type: 'array',
-                    items: { type: 'object' }
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'array',
+                            items: { type: 'object' }
+                        }
+                    }
                 },
                 401: standardResponses[401],
             }
         },
         handler: async (request, reply) => {
             const { chave } = chaveParamsSchema.parse(request.params);
-            const { tenantId } = (request as any).user;
+            const tenantId = getTenantId(request);
 
             const ctes = await relationsService.getCTesForNFe(chave, tenantId);
 
-            return reply.send(ctes);
+            return sendSuccess(reply, ctes);
         }
     });
 };

@@ -7,7 +7,7 @@
  * Note: Only uses columns that exist in the current migrations.
  */
 
-import { createTestClient, schema } from './db-helper';
+import { createTestClient, schema } from '../helpers/database';
 import { TEST_TENANT_ID, TEST_COMPANY_ID } from './setup.integration';
 
 type TestDb = ReturnType<typeof createTestClient>;

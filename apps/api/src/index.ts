@@ -3,6 +3,7 @@ import "dotenv/config";
 import pino from "pino";
 import { buildApp } from "./app";
 import { env } from "./config/env";
+import { stopTracing } from "./config/tracing";
 import { checkDatabaseConnection, closeDatabaseConnection } from "./config/database";
 import { checkRedisConnection, closeRedisConnection, redis } from "./config/redis";
 import { checkMeilisearchConnection, setupMeilisearchIndexes } from "./config/meilisearch";
@@ -31,7 +32,9 @@ async function start() {
   bootLogger.info("Checking Redis connection...");
   let redisOk = false;
   try {
-    await redis.connect();
+    if (redis.status === "wait" || redis.status === "end") {
+      await redis.connect();
+    }
     redisOk = await checkRedisConnection();
     if (!redisOk) {
       bootLogger.warn("Redis connection failed - some features may be limited");
@@ -48,7 +51,10 @@ async function start() {
     bootLogger.warn("Meilisearch connection failed - search will be limited");
   } else {
     bootLogger.info("Meilisearch connected");
-    await setupMeilisearchIndexes();
+    const indexesOk = await setupMeilisearchIndexes();
+    if (!indexesOk) {
+      bootLogger.warn("Meilisearch index setup failed - search will be limited");
+    }
   }
 
   const app = await buildApp();
@@ -124,6 +130,12 @@ async function start() {
       await closeRedisConnection();
     } catch {
       // Ignore redis close errors during shutdown
+    }
+
+    try {
+      await stopTracing();
+    } catch {
+      // Ignore tracing shutdown errors
     }
 
     app.log.info("Shutdown complete");

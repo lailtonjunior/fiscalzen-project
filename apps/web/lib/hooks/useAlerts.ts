@@ -10,7 +10,7 @@ export interface Alerta {
     priority: 'ALTA' | 'MEDIA' | 'BAIXA';
     title: string;
     message: string;
-    data: any;
+    data: Record<string, unknown> | null;
     lido: boolean;
     lidoEm: string | null;
     createdAt: string;

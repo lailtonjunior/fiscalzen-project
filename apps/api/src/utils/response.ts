@@ -6,11 +6,21 @@ export interface PaginationMeta {
   limit: number;
   total: number;
   pages: number;
+  totalPages?: number;
+}
+
+export interface ResponseMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
+  totalPages?: number;
 }
 
 export interface SuccessResponse<T> {
   success: true;
   data: T;
+  meta?: ResponseMeta;
   pagination?: PaginationMeta;
 }
 
@@ -37,7 +47,17 @@ export function sendSuccess<T>(
   };
 
   if (pagination) {
-    response.pagination = pagination;
+    response.meta = {
+      page: pagination.page,
+      pageSize: pagination.limit,
+      total: pagination.total,
+      hasNext: pagination.page < pagination.pages,
+      totalPages: pagination.totalPages ?? pagination.pages,
+    };
+    response.pagination = {
+      ...pagination,
+      totalPages: pagination.totalPages ?? pagination.pages,
+    };
   }
 
   return reply.status(statusCode).send(response);
@@ -95,6 +115,7 @@ export function paginate<T>(
       limit,
       total,
       pages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit),
     },
   };
 }

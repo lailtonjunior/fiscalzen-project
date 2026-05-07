@@ -50,18 +50,16 @@ describe('Certificates Integration Tests', () => {
             expiryDate.setFullYear(expiryDate.getFullYear() + 1); // Expires in 1 year
 
             const [updated] = await db.update(schema.companies).set({
-                // @ts-ignore - Assuming these fields exist in schema or will be added
-                certPassword: 'encrypted-password', // usually encrypted
-                certExpiration: expiryDate,
-                certThumbprint: 'thumbprint-hash',
-                hasCertificate: true
+                certificate: 'encrypted-certificate',
+                certificatePassword: 'encrypted-password',
+                certificateExpiry: expiryDate,
             })
                 .where(eq(schema.companies.id, company.id))
                 .returning();
 
             // Assert
-            expect(updated.hasCertificate).toBe(true);
-            expect(new Date(updated.certExpiration!).getTime()).toBe(expiryDate.getTime());
+            expect(updated.certificate).toBe('encrypted-certificate');
+            expect(new Date(updated.certificateExpiry!).getTime()).toBe(expiryDate.getTime());
         });
 
         it('should handle certificate expiration check', async () => {
@@ -79,12 +77,13 @@ describe('Certificates Integration Tests', () => {
                 nomeFantasia: 'Expired',
                 uf: 'SP',
                 active: true,
-                hasCertificate: true,
-                certExpiration: expiredDate
+                certificate: 'encrypted-certificate',
+                certificatePassword: 'encrypted-password',
+                certificateExpiry: expiredDate
             }).returning();
 
             // Act
-            const isExpired = new Date(company.certExpiration!) < new Date();
+            const isExpired = new Date(company.certificateExpiry!) < new Date();
 
             // Assert
             expect(isExpired).toBe(true);

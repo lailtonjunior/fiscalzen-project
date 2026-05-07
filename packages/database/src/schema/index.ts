@@ -1,6 +1,7 @@
 export * from './tenants';
 export * from './companies';
 export * from './documents';
+export * from './document-history';
 export * from './events';
 export * from './agents';
 export * from './audit';
@@ -11,3 +12,4 @@ export * from './tags';
 export * from './comments';
 export * from './alerts';
 export * from './webhooks';
+export * from './download-registry';

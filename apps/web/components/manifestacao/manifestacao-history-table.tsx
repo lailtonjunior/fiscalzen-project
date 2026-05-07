@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  Badge,
   Skeleton,
 } from '@fiscalzen/ui';
 import { History, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -88,6 +89,11 @@ export function ManifestacaoHistoryTable({ companyId }: ManifestacaoHistoryTable
                 <div className="flex items-center gap-2">
                   <p className="font-medium">{item.document.emitRazaoSocial}</p>
                   <ManifestacaoTipoBadge tipo={item.tipo} />
+                  {item.status === 'failed' ? (
+                    <Badge variant="destructive">Falhou</Badge>
+                  ) : (
+                    <Badge variant="secondary">Concluida</Badge>
+                  )}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                   <span>NFe {item.document.numero}</span>
@@ -95,10 +101,16 @@ export function ManifestacaoHistoryTable({ companyId }: ManifestacaoHistoryTable
                   <span>
                     Manifestado em {format(new Date(item.data), 'dd/MM/yyyy HH:mm')}
                   </span>
+                  {item.protocolo && <span>Protocolo {item.protocolo}</span>}
                 </div>
                 {item.justificativa && (
                   <p className="mt-1 text-sm text-muted-foreground">
                     Justificativa: {item.justificativa}
+                  </p>
+                )}
+                {item.erro && (
+                  <p className="mt-1 text-sm text-destructive">
+                    Erro: {item.erro}
                   </p>
                 )}
               </div>

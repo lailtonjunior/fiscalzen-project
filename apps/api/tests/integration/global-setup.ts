@@ -3,32 +3,40 @@
  * 
  * Ensures database is ready before running any tests.
  */
-import { createTestClient, schemaExists } from '../helpers/database';
-// @ts-ignore
-import { execSync } from 'child_process';
+import { assertDatabaseConnection, createTestClient, schemaExists } from '../helpers/database';
+import { closeTestClient } from '../helpers/database';
+import { describeTestDatabaseTarget, getTestDatabaseUrl, setupIntegrationEnvironment } from './setup.integration';
 
 export default async function () {
-    console.log('\n🔵 Global Setup: Checking test environment...');
+    setupIntegrationEnvironment();
 
     const db = createTestClient();
-    const hasSchema = await schemaExists(db);
+    try {
+        await assertDatabaseConnection(db);
+        const hasSchema = await schemaExists(db);
 
-    if (!hasSchema) {
-        console.log('⚠️  Schema not found. Attempting to push schema...');
-        try {
-            // This assumes we are in apps/api and database package is at ../../packages/database
-            // Adjust path if necessary based on monorepo structure
-            // Actually, easiest way is to use the existing tool or script if available.
-            // For now, we warn the user as auto-migration might be risky/complex in global setup without proper context.
-            console.warn('❌ Test database not initialized! Please run: pnpm db:push:test');
-        } catch (e) {
-            console.error('Failed to initialize db', e);
+        if (!hasSchema) {
+            throw new Error(
+                [
+                    'Integration test database schema not initialized.',
+                    `Checked ${describeTestDatabaseTarget(getTestDatabaseUrl())}.`,
+                    'Run pnpm db:push:test before pnpm --filter @fiscalzen/api test:integration.',
+                ].join(' ')
+            );
         }
-    } else {
-        console.log('✅ Test database connected and schema exists.');
+    } catch (error) {
+        const message =
+            error instanceof Error && error.message
+                ? error.message
+                : String(error || 'unknown error');
+        throw new Error(
+            [
+                `Integration test environment is not ready: ${message}.`,
+                `Checked ${describeTestDatabaseTarget(getTestDatabaseUrl())}.`,
+                'Start the test services with pnpm test:integration:up and prepare the schema with pnpm db:push:test.',
+            ].join(' ')
+        );
+    } finally {
+        await closeTestClient();
     }
-
-    // Close connection used for check
-    // @ts-ignore
-    if (db.end) await db.end();
 }

@@ -6,6 +6,8 @@ export const createCompanySchema = z.object({
   nomeFantasia: z.string().max(255).optional().describe('Nome Fantasia'),
   ie: z.string().max(20).optional().describe('Inscrição Estadual'),
   im: z.string().max(20).optional().describe('Inscrição Municipal'),
+  uf: z.string().length(2).optional().describe('Sigla da UF (ex: SP)'),
+  codigoMunicipio: z.string().max(10).optional().describe('Código IBGE do município'),
   endereco: z.object({
     logradouro: z.string().max(255).optional().describe('Rua / Logradouro'),
     numero: z.string().max(20).optional().describe('Número'),
@@ -33,8 +35,8 @@ export const uploadCertificateSchema = z.object({
 });
 
 export const listCompaniesQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1).describe('Número da página'),
-  limit: z.coerce.number().int().positive().max(100).default(50).describe('Itens por página'),
+  page: z.coerce.number().int().min(1).default(1).describe('Número da página'),
+  limit: z.coerce.number().int().min(1).max(100).default(50).describe('Itens por página'),
   ativo: z.enum(['true', 'false']).optional().transform((v) => v === 'true').describe('Filtrar por status ativo'),
   search: z.string().optional().describe('Busca por CNPJ ou Razão Social'),
 });

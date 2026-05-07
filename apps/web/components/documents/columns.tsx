@@ -9,8 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@fiscalzen/ui';
-import { MoreHorizontal, Eye, Download, FileCheck } from 'lucide-react';
+import { MoreHorizontal, Eye, Download, FileCheck, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { useDownloadPdf, useDownloadXml } from '@/lib/hooks/use-documents';
 import type { Document } from '@/lib/types';
 
 // ============================================
@@ -60,6 +61,63 @@ function CurrencyCell({ value }: { value: string | number }) {
 
 function DateCell({ value }: { value: string }) {
   return format(new Date(value), 'dd/MM/yyyy');
+}
+
+function DocumentActions({ document }: { document: Document }) {
+  const downloadXml = useDownloadXml();
+  const downloadPdf = useDownloadPdf();
+  const canGeneratePdf = document.docType === 'NFE' || document.docType === 'CTE';
+
+  const handleDownloadXml = async () => {
+    try {
+      await downloadXml.mutateAsync(document.id);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Falha ao baixar XML do documento.');
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      await downloadPdf.mutateAsync(document.id);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Falha ao gerar PDF do documento.');
+    }
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Abrir menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link href={`/documentos/${document.id}`}>
+            <Eye className="mr-2 h-4 w-4" />
+            Ver detalhes
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownloadXml} disabled={downloadXml.isPending}>
+          <Download className="mr-2 h-4 w-4" />
+          Download XML
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownloadPdf} disabled={!canGeneratePdf || downloadPdf.isPending}>
+          <FileText className="mr-2 h-4 w-4" />
+          {canGeneratePdf ? 'Visualizar PDF' : 'PDF indisponivel'}
+        </DropdownMenuItem>
+        {!document.manifestacao && document.docType === 'NFE' && (
+          <DropdownMenuItem asChild>
+            <Link href={`/manifestacao?documentId=${document.id}`}>
+              <FileCheck className="mr-2 h-4 w-4" />
+              Manifestar
+            </Link>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 // ============================================
@@ -150,34 +208,7 @@ export const columns: ColumnDef<Document>[] = [
     cell: ({ row }) => {
       const document = row.original;
 
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Abrir menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/documentos/${document.id}`}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver detalhes
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Download className="mr-2 h-4 w-4" />
-              Download XML
-            </DropdownMenuItem>
-            {!document.manifestacao && document.docType === 'NFE' && (
-              <DropdownMenuItem>
-                <FileCheck className="mr-2 h-4 w-4" />
-                Manifestar
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
+      return <DocumentActions document={document} />;
     },
   },
 ];

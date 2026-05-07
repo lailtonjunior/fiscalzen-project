@@ -14,23 +14,38 @@ import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
 // Import schema from workspace package
 import * as schema from '@fiscalzen/database/schema';
-
-const TEST_DATABASE_URL = process.env.DATABASE_URL ||
-    'postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test';
+import {
+    assertSafeTestDatabaseUrl,
+    describeTestDatabaseTarget,
+    getTestDatabaseUrl,
+    setupIntegrationEnvironment,
+    TEST_SCHEMA_NAME,
+    TEST_SCHEMA_READY_TABLE,
+} from '../integration/setup.integration';
 
 export type TestDb = PostgresJsDatabase<typeof schema>;
 
 let _db: TestDb | null = null;
 let _client: ReturnType<typeof postgres> | null = null;
 
+function resolveTestDatabaseUrl() {
+    setupIntegrationEnvironment();
+    const databaseUrl = getTestDatabaseUrl();
+    assertSafeTestDatabaseUrl(databaseUrl);
+    return databaseUrl;
+}
+
 // Create a test database client (singleton)
 export function createTestClient(): TestDb {
     if (_db) return _db;
 
-    _client = postgres(TEST_DATABASE_URL, {
+    const testDatabaseUrl = resolveTestDatabaseUrl();
+
+    _client = postgres(testDatabaseUrl, {
         max: 5,
         idle_timeout: 10,
         connect_timeout: 10,
+        onnotice: () => {},
     });
     _db = drizzle(_client, { schema });
     return _db;
@@ -70,6 +85,8 @@ const CLEANUP_ORDER = [
  * Truncates tables in correct order respecting FK constraints
  */
 export async function cleanupDatabase(db: TestDb) {
+    resolveTestDatabaseUrl();
+
     for (const table of CLEANUP_ORDER) {
         try {
             await db.execute(sql.raw(`TRUNCATE TABLE "${table}" CASCADE`));
@@ -83,18 +100,19 @@ export async function cleanupDatabase(db: TestDb) {
  * Check if schema tables exist
  */
 export async function schemaExists(db: TestDb): Promise<boolean> {
-    try {
-        const result = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'tenants'
-      ) as exists
+    const result = await db.execute(sql`
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables
+            WHERE table_schema = ${TEST_SCHEMA_NAME}
+            AND table_name = ${TEST_SCHEMA_READY_TABLE}
+        ) as exists
     `);
-        return (result[0] as { exists: boolean }).exists;
-    } catch {
-        return false;
-    }
+
+    return (result[0] as { exists: boolean }).exists;
+}
+
+export async function assertDatabaseConnection(db: TestDb) {
+    await db.execute(sql`SELECT 1`);
 }
 
 /**
@@ -108,10 +126,14 @@ export async function setupTestDatabase(): Promise<TestDb> {
     const hasSchema = await schemaExists(db);
 
     if (!hasSchema) {
-        console.log('⚠️  Test database schema not found!');
-        console.log('   Run this command first:');
-        console.log('   $env:DATABASE_URL="postgresql://fiscalzen_test:fiscalzen_test@localhost:5434/fiscalzen_test"; cd packages\\database; npx drizzle-kit push:pg');
-        throw new Error('Test database schema not initialized. Run drizzle-kit push:pg first.');
+        const databaseUrl = getTestDatabaseUrl();
+        throw new Error(
+            [
+                'Integration test database schema not initialized.',
+                `Checked ${describeTestDatabaseTarget(databaseUrl)}.`,
+                'Run pnpm db:push:test before pnpm --filter @fiscalzen/api test:integration.',
+            ].join(' ')
+        );
     }
 
     // Clean any existing data

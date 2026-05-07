@@ -87,7 +87,7 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
             description: 'Marca um alerta específico como lido',
             params: zodToFastify(alertIdParamsSchema),
             response: {
-                200: { description: 'Alerta marcado como lido' },
+                200: standardResponses[200],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
@@ -98,7 +98,7 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
 
         await alertasService.marcarComoLido(id, tenantId);
 
-        return { success: true };
+        return sendSuccess(reply, { read: true });
     });
 
     // PATCH /api/v1/alertas/read-all - Mark all as read
@@ -108,13 +108,13 @@ export const alertsRoutes: FastifyPluginAsync = async (fastify) => {
             summary: 'Marcar todos como lidos',
             description: 'Marca todos os alertas do usuário como lidos',
             response: {
-                200: { description: 'Todos alertas marcados como lidos' },
+                200: standardResponses[200],
                 401: standardResponses[401],
             },
         },
     }, async (request, reply) => {
         const tenantId = getTenantId(request);
         await alertasService.marcarTodosComoLidos(tenantId);
-        return { success: true };
+        return sendSuccess(reply, { readAll: true });
     });
 };

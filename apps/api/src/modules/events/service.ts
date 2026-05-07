@@ -8,6 +8,7 @@ import { injectable, inject, container } from 'tsyringe';
 import { DATABASE_TOKEN } from '../../providers/database';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '@fiscalzen/database/schema';
+import { historyService } from '../history/service';
 
 // Helper types
 type Database = NodePgDatabase<typeof schema>;
@@ -48,7 +49,7 @@ export class EventsService {
         .select()
         .from(documentEvents)
         .where(eq(documentEvents.documentId, documentId))
-        .orderBy(desc(documentEvents.dhEvento))
+        .orderBy(desc(documentEvents.eventDate), desc(documentEvents.createdAt))
         .limit(limit)
         .offset(offset),
       this.db
@@ -198,6 +199,26 @@ export class EventsService {
 
     // 6. Update Document Status (Side Effect)
     await this.updateDocumentFromEvento(document.id, eventoData);
+
+    await historyService.registerEvent({
+      tenantId,
+      documentId: document.id,
+      companyId: document.companyId,
+      eventType: `document.event.${eventoData.tpEvento}`,
+      source: 'events.ingest',
+      title: 'Evento fiscal sincronizado',
+      summary: `${eventoData.descEvento} recebido para a chave ${eventoData.chave}`,
+      details: {
+        protocol: eventoData.nProt ?? null,
+        cStat: eventoData.cStat,
+        xMotivo: eventoData.xMotivo,
+        eventType: eventoData.tpEvento,
+        eventSeq: eventoData.nSeqEvento,
+        sourceId: event.id,
+        correlationId: `${document.id}:${eventoData.tpEvento}:${eventoData.nSeqEvento}`,
+      },
+      createdAt: eventDate,
+    });
 
     return { success: true, action: 'create', eventId: event.id };
   }

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, jsonb, timestamp, boolean, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, jsonb, timestamp, boolean, text, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const tenants = pgTable('tenants', {
@@ -16,29 +16,35 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   companies: many(companies),
 }));
 
-export const companies = pgTable('companies', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
-  cnpj: varchar('cnpj', { length: 14 }).notNull(),
-  razaoSocial: varchar('razao_social', { length: 255 }),
-  nomeFantasia: varchar('nome_fantasia', { length: 255 }),
-  uf: varchar('uf', { length: 2 }),
-  inscricaoEstadual: varchar('inscricao_estadual', { length: 20 }),
-  inscricaoMunicipal: varchar('inscricao_municipal', { length: 20 }),
-  codigoMunicipio: varchar('codigo_municipio', { length: 7 }),
-  ambiente: varchar('ambiente', { length: 1 }).default('2'), // 1=Production, 2=Homologation
+export const companies = pgTable(
+  'companies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tenantId: uuid('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
+    cnpj: varchar('cnpj', { length: 14 }).notNull(),
+    razaoSocial: varchar('razao_social', { length: 255 }),
+    nomeFantasia: varchar('nome_fantasia', { length: 255 }),
+    uf: varchar('uf', { length: 2 }),
+    inscricaoEstadual: varchar('inscricao_estadual', { length: 20 }),
+    inscricaoMunicipal: varchar('inscricao_municipal', { length: 20 }),
+    codigoMunicipio: varchar('codigo_municipio', { length: 7 }),
+    ambiente: varchar('ambiente', { length: 1 }).default('2'), // 1=Production, 2=Homologation
 
-  // Certificate info
-  certificate: text('certificate'),
-  certificatePassword: text('certificate_password'),
-  certificateExpiry: timestamp('certificate_expiry', { withTimezone: true }),
+    // Certificate info
+    certificate: text('certificate'),
+    certificatePassword: text('certificate_password'),
+    certificateExpiry: timestamp('certificate_expiry', { withTimezone: true }),
 
-  settings: jsonb('settings').default({}),
-  lastEventCheck: timestamp('last_event_check', { withTimezone: true }),
-  active: boolean('active').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+    settings: jsonb('settings').default({}),
+    lastEventCheck: timestamp('last_event_check', { withTimezone: true }),
+    active: boolean('active').default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueTenantCnpj: unique('uq_companies_tenant_cnpj').on(table.tenantId, table.cnpj),
+  })
+);
 
 export const companiesRelations = relations(companies, ({ one }) => ({
   tenant: one(tenants, {

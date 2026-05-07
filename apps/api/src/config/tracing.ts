@@ -1,39 +1,62 @@
+import { logger } from './logger';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
-import { Resource } from '@opentelemetry/resources';
-import { semanticConventions } from '@opentelemetry/semantic-conventions';
-import { logger } from './logger';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 
-// Do not start tracing in test environments to avoid port conflicts or noise
-if (process.env.NODE_ENV !== 'test') {
-    const sdk = new NodeSDK({
-        traceExporter: new JaegerExporter({
-            endpoint: process.env.JAEGER_ENDPOINT || 'http://localhost:14268/api/traces',
-        }),
-        instrumentations: [
-            getNodeAutoInstrumentations({
-                // Disable filesystem tracing as it's too noisy
-                '@opentelemetry/instrumentation-fs': { enabled: false },
-                '@opentelemetry/instrumentation-pino': { enabled: true },
-                '@opentelemetry/instrumentation-fastify': { enabled: true },
-                '@opentelemetry/instrumentation-http': { enabled: true },
+let tracingSdk: NodeSDK | undefined;
+
+const isEnabled = (value: string | undefined) => value === 'true' || value === '1';
+
+export const startTracing = () => {
+    if (!isEnabled(process.env.ENABLE_TRACING)) {
+        logger.info('OpenTelemetry tracing disabled (ENABLE_TRACING is not true)');
+        return;
+    }
+
+    if (tracingSdk) {
+        return;
+    }
+
+    try {
+        const traceExporter = process.env.JAEGER_ENDPOINT
+            ? new JaegerExporter({ endpoint: process.env.JAEGER_ENDPOINT })
+            : undefined;
+
+        tracingSdk = new NodeSDK({
+            resource: resourceFromAttributes({
+                'service.name': 'fiscalzen-api',
+                'service.version': process.env.npm_package_version ?? '0.1.0',
+                'deployment.environment': process.env.NODE_ENV ?? 'development',
             }),
-        ],
-        resource: new Resource({
-            [semanticConventions.SERVICE_NAME]: 'fiscalzen-api',
-            [semanticConventions.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
-            environment: process.env.NODE_ENV || 'development',
-        }),
-    });
+            traceExporter,
+            instrumentations: [getNodeAutoInstrumentations()],
+        });
 
-    sdk.start()
-        .then(() => logger.info('Tracing initialized'))
-        .catch((error) => logger.error({ error: error.message }, 'Error initializing tracing'));
+        tracingSdk.start();
+        logger.info(
+            { exporter: traceExporter ? 'jaeger' : 'default' },
+            'OpenTelemetry tracing enabled'
+        );
+    } catch (err) {
+        tracingSdk = undefined;
+        logger.warn({ err }, 'OpenTelemetry tracing failed to start; continuing without tracing');
+    }
+};
 
-    process.on('SIGTERM', () => {
-        sdk.shutdown()
-            .then(() => logger.info('Tracing terminated'))
-            .catch((error) => logger.error({ error: error.message }, 'Error terminating tracing'));
-    });
-}
+export const stopTracing = async () => {
+    if (!tracingSdk) {
+        return;
+    }
+
+    try {
+        await tracingSdk.shutdown();
+        logger.info('OpenTelemetry tracing stopped');
+    } catch (err) {
+        logger.warn({ err }, 'OpenTelemetry tracing failed to stop cleanly');
+    } finally {
+        tracingSdk = undefined;
+    }
+};
+
+startTracing();

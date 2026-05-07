@@ -11,10 +11,11 @@ import {
   type SearchDocumentsQuery,
   type DocumentByChaveParams,
 } from './schemas';
-import { getTenantId } from '../../plugins/auth';
+import { getTenantId, getUserId } from '../../plugins/auth';
 import { sendSuccess, paginate } from '../../utils/response';
 import { ValidationError } from '../../utils/errors';
 import { zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { serializePublicDocument } from './public-document';
 
 export async function documentsRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -35,7 +36,17 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'array', items: { type: 'object' } },
+            data: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            meta: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                pageSize: { type: 'integer' },
+                total: { type: 'integer' },
+                hasNext: { type: 'boolean' },
+                totalPages: { type: 'integer' },
+              },
+            },
             pagination: {
               type: 'object',
               properties: {
@@ -43,9 +54,11 @@ export async function documentsRoutes(fastify: FastifyInstance) {
                 limit: { type: 'integer' },
                 total: { type: 'integer' },
                 pages: { type: 'integer' },
+                totalPages: { type: 'integer' },
               },
             },
           },
+          required: ['success', 'data', 'meta'],
         },
         401: standardResponses[401],
       },
@@ -75,9 +88,29 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'array', items: { type: 'object' } },
-            pagination: { type: 'object' },
+            data: { type: 'array', items: { type: 'object', additionalProperties: true } },
+            meta: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                pageSize: { type: 'integer' },
+                total: { type: 'integer' },
+                hasNext: { type: 'boolean' },
+                totalPages: { type: 'integer' },
+              },
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                limit: { type: 'integer' },
+                total: { type: 'integer' },
+                pages: { type: 'integer' },
+                totalPages: { type: 'integer' },
+              },
+            },
           },
+          required: ['success', 'data', 'meta'],
         },
         401: standardResponses[401],
       },
@@ -93,6 +126,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       limit: result.limit,
       total: result.total,
       pages: Math.ceil(result.total / result.limit),
+      totalPages: Math.ceil(result.total / result.limit),
     });
   });
 
@@ -109,7 +143,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         400: standardResponses[400],
@@ -137,7 +171,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
     const xmlContent = await data.toBuffer();
     const document = await documentsService.uploadXml(tenantId, companyId, xmlContent.toString('utf-8'));
 
-    return sendSuccess(reply, document, 201);
+    return sendSuccess(reply, serializePublicDocument(document as Record<string, unknown>), 201);
   });
 
   // GET /api/v1/documents/chave/:chave - Get by chave de acesso
@@ -155,7 +189,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         401: standardResponses[401],
@@ -168,7 +202,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
     const document = await documentsService.getByChave(tenantId, chave);
 
-    return sendSuccess(reply, document);
+    return sendSuccess(reply, serializePublicDocument(document as Record<string, unknown>));
   });
 
   // GET /api/v1/documents/:id - Get document details
@@ -186,7 +220,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         401: standardResponses[401],
@@ -199,7 +233,52 @@ export async function documentsRoutes(fastify: FastifyInstance) {
 
     const document = await documentsService.getById(tenantId, id);
 
-    return sendSuccess(reply, document);
+    return sendSuccess(reply, serializePublicDocument(document as Record<string, unknown>));
+  });
+
+  // GET /api/v1/documents/:id/attachments - List available fiscal attachments
+  fastify.get<{
+    Params: DocumentIdParams;
+  }>('/:id/attachments', {
+    schema: {
+      tags: ['Documents'],
+      summary: 'Listar anexos fiscais',
+      description: 'Retorna os anexos disponiveis para o documento, sem expor chaves internas de storage',
+      params: zodToFastify(documentIdSchema),
+      response: {
+        200: {
+          description: 'Lista de anexos disponiveis',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['xml', 'pdf'] },
+                  label: { type: 'string' },
+                  available: { type: 'boolean' },
+                  filename: { type: 'string' },
+                  downloadPath: { type: 'string' },
+                  representation: { type: 'string' },
+                  statusMessage: { type: 'string' },
+                },
+                required: ['type', 'label', 'available', 'filename', 'downloadPath'],
+              },
+            },
+          },
+        },
+        401: standardResponses[401],
+        404: standardResponses[404],
+      },
+    },
+  }, async (request, reply) => {
+    const tenantId = getTenantId(request);
+    const { id } = documentIdSchema.parse(request.params);
+    const attachments = await documentsService.listAttachments(tenantId, id);
+
+    return sendSuccess(reply, attachments);
   });
 
   // GET /api/v1/documents/:id/xml - Download original XML
@@ -213,7 +292,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       params: zodToFastify(documentIdSchema),
       produces: ['application/xml'],
       response: {
-        200: { description: 'Arquivo XML' },
+        200: { type: 'string', description: 'Arquivo XML' },
         401: standardResponses[401],
         404: standardResponses[404],
       },
@@ -230,30 +309,34 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       .send(xml);
   });
 
-  // GET /api/v1/documents/:id/pdf - Get PDF download URL
+  // GET /api/v1/documents/:id/pdf - Get PDF availability metadata
   fastify.get<{
     Params: DocumentIdParams;
   }>('/:id/pdf', {
     schema: {
       tags: ['Documents'],
-      summary: 'Obter URL do PDF',
-      description: 'Retorna URL pré-assinada para download do DANFE/DACTE',
+      summary: 'Obter disponibilidade do PDF',
+      description: 'Retorna metadados para o PDF fiscal disponivel sem expor URL de storage',
       params: zodToFastify(documentIdSchema),
       response: {
         200: {
-          description: 'URL para download',
+          description: 'Metadados do PDF fiscal',
           type: 'object',
           properties: {
             success: { type: 'boolean' },
             data: {
               type: 'object',
               properties: {
-                url: { type: 'string', format: 'uri' },
-                expiresIn: { type: 'integer' },
+                available: { type: 'boolean' },
+                cached: { type: 'boolean' },
+                filename: { type: 'string' },
+                representation: { type: 'string' },
+                downloadPath: { type: 'string' },
               },
             },
           },
         },
+        400: standardResponses[400],
         401: standardResponses[401],
         404: standardResponses[404],
       },
@@ -262,7 +345,7 @@ export async function documentsRoutes(fastify: FastifyInstance) {
     const tenantId = getTenantId(request);
     const { id } = documentIdSchema.parse(request.params);
 
-    const result = await documentsService.getPdfUrl(tenantId, id);
+    const result = await documentsService.getPdfInfo(tenantId, id);
 
     return sendSuccess(reply, result);
   });
@@ -278,21 +361,21 @@ export async function documentsRoutes(fastify: FastifyInstance) {
       params: zodToFastify(documentIdSchema),
       produces: ['application/pdf'],
       response: {
-        200: { description: 'Arquivo PDF' },
+        200: { type: 'string', description: 'Arquivo PDF' },
         401: standardResponses[401],
         404: standardResponses[404],
       },
     },
   }, async (request, reply) => {
     const tenantId = getTenantId(request);
+    const userId = getUserId(request);
     const { id } = documentIdSchema.parse(request.params);
 
-    const document = await documentsService.getById(tenantId, id);
-    const pdf = await documentsService.getPdf(tenantId, id);
+    const { buffer, filename } = await documentsService.getPdf(tenantId, id, userId);
 
     return reply
       .header('Content-Type', 'application/pdf')
-      .header('Content-Disposition', `attachment; filename="${document.chave || id}.pdf"`)
-      .send(pdf);
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(buffer);
   });
 }

@@ -1,5 +1,6 @@
 import { MeiliSearch } from 'meilisearch';
 import { env } from './env';
+import { logger } from './logger';
 
 export const meilisearch = new MeiliSearch({
   host: env.MEILISEARCH_URL,
@@ -15,12 +16,15 @@ export async function checkMeilisearchConnection(): Promise<boolean> {
     await meilisearch.health();
     return true;
   } catch (error) {
-    console.error('Meilisearch connection failed:', error);
+    logger.warn(
+      { err: error, host: env.MEILISEARCH_URL },
+      'Meilisearch health check failed; search will be limited'
+    );
     return false;
   }
 }
 
-export async function setupMeilisearchIndexes(): Promise<void> {
+export async function setupMeilisearchIndexes(): Promise<boolean> {
   try {
     // Create documents index if not exists
     const indexes = await meilisearch.getIndexes();
@@ -77,8 +81,21 @@ export async function setupMeilisearchIndexes(): Promise<void> {
       ],
     });
 
-    console.log('Meilisearch indexes configured');
+    logger.info(
+      { host: env.MEILISEARCH_URL, index: INDEXES.DOCUMENTS },
+      'Meilisearch indexes configured'
+    );
+    return true;
   } catch (error) {
-    console.error('Failed to setup Meilisearch indexes:', error);
+    logger.warn(
+      {
+        err: error,
+        host: env.MEILISEARCH_URL,
+        index: INDEXES.DOCUMENTS,
+        hasApiKey: Boolean(env.MEILISEARCH_API_KEY),
+      },
+      'Meilisearch index setup failed; API startup will continue with search degraded'
+    );
+    return false;
   }
 }

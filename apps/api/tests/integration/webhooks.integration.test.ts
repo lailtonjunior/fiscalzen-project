@@ -40,10 +40,11 @@ describe('Webhooks Integration Tests', () => {
     ) {
         const webhook = {
             tenantId,
+            name: 'Webhook Teste',
             url: 'https://example.com/webhook',
             secret: 'test-secret-key',
             events: ['document.created', 'document.manifested'],
-            active: true,
+            isActive: true,
             ...overrides,
         };
 
@@ -61,9 +62,10 @@ describe('Webhooks Integration Tests', () => {
 
             // Assert
             expect(webhook.id).toBeDefined();
+            expect(webhook.name).toBe('Webhook Teste');
             expect(webhook.url).toBe('https://example.com/webhook');
             expect(webhook.events).toContain('document.created');
-            expect(webhook.active).toBe(true);
+            expect(webhook.isActive).toBe(true);
         });
 
         it('should list webhooks by tenant', async () => {
@@ -125,39 +127,39 @@ describe('Webhooks Integration Tests', () => {
         it('should toggle webhook active status', async () => {
             // Setup
             const tenant = await createTestTenant(db);
-            const webhook = await createTestWebhook(tenant.id, { active: true });
+            const webhook = await createTestWebhook(tenant.id, { isActive: true });
 
             // Act - Deactivate
             const [deactivated] = await db
                 .update(schema.webhooks)
-                .set({ active: false })
+                .set({ isActive: false })
                 .where(eq(schema.webhooks.id, webhook.id))
                 .returning();
 
             // Assert
-            expect(deactivated.active).toBe(false);
+            expect(deactivated.isActive).toBe(false);
 
             // Act - Reactivate
             const [reactivated] = await db
                 .update(schema.webhooks)
-                .set({ active: true })
+                .set({ isActive: true })
                 .where(eq(schema.webhooks.id, webhook.id))
                 .returning();
 
-            expect(reactivated.active).toBe(true);
+            expect(reactivated.isActive).toBe(true);
         });
 
         it('should only return active webhooks for event dispatch', async () => {
             // Setup
             const tenant = await createTestTenant(db);
-            await createTestWebhook(tenant.id, { active: true, url: 'https://active.com' });
-            await createTestWebhook(tenant.id, { active: false, url: 'https://inactive.com' });
+            await createTestWebhook(tenant.id, { isActive: true, url: 'https://active.com' });
+            await createTestWebhook(tenant.id, { isActive: false, url: 'https://inactive.com' });
 
             // Act
             const activeHooks = await db
                 .select()
                 .from(schema.webhooks)
-                .where(eq(schema.webhooks.active, true));
+                .where(eq(schema.webhooks.isActive, true));
 
             // Assert
             expect(activeHooks).toHaveLength(1);

@@ -213,7 +213,7 @@ export async function companyNfseRoutes(fastify: FastifyInstance) {
       description: 'Remove a configuração de NFS-e para o município',
       params: zodToFastify(municipioCodigoSchema),
       response: {
-        204: { description: 'Configuração excluída' },
+        204: standardResponses[204],
         401: standardResponses[401],
         404: standardResponses[404],
       },

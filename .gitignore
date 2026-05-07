@@ -16,7 +16,25 @@ build/
 .env.bak
 .env.local
 .env.*.local
+.env.test
+.env.test.local
+.env.production
 !.env.example
+!.env.test.example
+
+# Secrets
+docker/secrets/*.txt
+docker/secrets/*.key
+docker/secrets/*.pem
+docker/secrets/*.pfx
+docker/secrets/*.p12
+docker/secrets/*.crt
+docker/secrets/*.cer
+!docker/secrets/README.md
+
+/secrets/
+/certs/
+/.certs/
 
 nul
 *.tsbuildinfo
@@ -35,6 +53,9 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+api_logs.txt
+backend_logs.txt
+api_log*.txt
 
 # Testing
 coverage/

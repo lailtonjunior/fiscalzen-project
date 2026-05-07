@@ -22,6 +22,20 @@
       "when": 1769399308033,
       "tag": "0002_salty_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1770000000000,
+      "tag": "0003_download_registry",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1770000600000,
+      "tag": "0004_document_history",
+      "breakpoints": true
     }
   ]
 }

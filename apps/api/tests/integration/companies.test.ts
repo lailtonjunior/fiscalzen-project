@@ -113,7 +113,7 @@ describe('Companies Integration Tests', () => {
     });
 
     describe('Company Constraints', () => {
-        it('should enforce unique CNPJ per tenant', async () => {
+        it('should enforce unique CNPJ per tenant at the database level', async () => {
             // Setup
             const tenant = await createTestTenant(db);
             await createTestCompany(db, tenant.id, { cnpj: '12345678000100' });

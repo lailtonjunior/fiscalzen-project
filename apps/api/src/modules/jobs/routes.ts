@@ -7,8 +7,9 @@ import {
   type SyncRequestInput,
 } from './schemas';
 import { getTenantId } from '../../plugins/auth';
-import { sendSuccess } from '../../utils/response';
+import { sendError, sendSuccess } from '../../utils/response';
 import { zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { ForbiddenError } from '../../utils/errors';
 
 export async function jobsRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -186,10 +187,7 @@ export async function jobsRoutes(fastify: FastifyInstance) {
 
     // Only admins can retry jobs
     if (request.user.role !== 'admin') {
-      return reply.status(403).send({
-        success: false,
-        error: { code: 'FORBIDDEN', message: 'Apenas administradores podem executar esta acao' },
-      });
+      return sendError(reply, new ForbiddenError('Apenas administradores podem executar esta acao'));
     }
 
     const result = await jobsService.retryFailedJobs(queueName);
@@ -234,10 +232,7 @@ export async function jobsRoutes(fastify: FastifyInstance) {
 
     // Only admins can clean queues
     if (request.user.role !== 'admin') {
-      return reply.status(403).send({
-        success: false,
-        error: { code: 'FORBIDDEN', message: 'Apenas administradores podem executar esta acao' },
-      });
+      return sendError(reply, new ForbiddenError('Apenas administradores podem executar esta acao'));
     }
 
     const result = await jobsService.cleanQueue(queueName, status);

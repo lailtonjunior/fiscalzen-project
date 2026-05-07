@@ -60,7 +60,7 @@ describe('Companies API Integration', () => {
     describe('POST /api/v1/companies', () => {
         it('should create a company with valid data', async () => {
             const payload = {
-                cnpj: '12345678000199',
+                cnpj: '98765432000188',
                 razaoSocial: 'New Company LTDA',
                 nomeFantasia: 'New Co',
                 uf: 'SP'
@@ -75,8 +75,8 @@ describe('Companies API Integration', () => {
 
             expect(response.statusCode).toBe(201);
             const body = JSON.parse(response.body);
-            expect(body).toHaveProperty('id');
-            expect(body.cnpj).toBe(payload.cnpj);
+            expect(body.data).toHaveProperty('id');
+            expect(body.data.cnpj).toBe(payload.cnpj);
         });
 
         it('should reject invalid CNPJ', async () => {

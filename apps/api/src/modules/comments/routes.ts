@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { commentsService } from './service';
 import { getTenantId, getUserId } from '../../plugins/auth';
 import { zodToFastify, standardResponses } from '../../utils/schema-converter';
-import { sendSuccess } from '../../utils/response';
+import { sendCreated, sendNoContent, sendSuccess } from '../../utils/response';
 import {
     createCommentSchema,
     updateCommentSchema,
@@ -84,7 +84,7 @@ export const commentsRoutes: FastifyPluginAsync = async (fastify) => {
             ...body
         });
 
-        return reply.status(201).send({ success: true, data: comment });
+        return sendCreated(reply, comment);
     });
 
     // PUT /api/v1/comments/comments/:id - Update comment
@@ -135,7 +135,7 @@ export const commentsRoutes: FastifyPluginAsync = async (fastify) => {
             description: 'Remove um comentário',
             params: zodToFastify(commentIdParamsSchema),
             response: {
-                204: { description: 'Comentário excluído' },
+                204: standardResponses[204],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
@@ -147,6 +147,6 @@ export const commentsRoutes: FastifyPluginAsync = async (fastify) => {
 
         await commentsService.delete(id, tenantId, userId);
 
-        return reply.status(204).send();
+        return sendNoContent(reply);
     });
 };

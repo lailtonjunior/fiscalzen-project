@@ -1,18 +1,26 @@
-import { eq, and, sql, desc, asc, gte, lte } from "drizzle-orm";
+import { eq, and, sql, desc, asc, gte, lte, or, ilike } from "drizzle-orm";
 import { documents } from "@fiscalzen/database/schema";
 import { NotFoundError, ValidationError, ConflictError } from "../../utils/errors";
 import { StorageService, type StorageKey } from "../../services/storage";
 import { search } from "../../services/search";
 import { parseNFe, parseCTe, detectDocumentType } from "@fiscalzen/xml-parser";
-// import { PdfService } from "../pdf/service"; // TODO: Fix pdfmake ESM compatibility
+import { PdfService } from "../pdf/service";
 import { RelationsService } from "../relations/service";
 import type { ListDocumentsQuery, SearchDocumentsQuery } from "./schemas";
+import {
+  buildPdfFilename,
+  buildXmlFilename,
+  getPdfRepresentation,
+  isPdfSupportedDocumentType,
+} from "./pdf-helpers";
 import { sha256Hex } from "../../utils/encryption";
 import { injectable, inject, container } from "tsyringe";
 import { DATABASE_TOKEN } from "../../providers/database";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "@fiscalzen/database/schema";
 import type { Situacao, DocType } from "@fiscalzen/database/schema";
+import { historyService } from "../history/service";
+import { logger } from "../../config/logger";
 
 type Database = NodePgDatabase<typeof schema>;
 
@@ -47,12 +55,22 @@ function toIntOrThrow(label: string, v: string): number {
   return n;
 }
 
+export interface DocumentAttachmentItem {
+  type: "xml" | "pdf";
+  label: string;
+  available: boolean;
+  filename: string;
+  downloadPath: string;
+  representation?: "DANFE" | "DACTE" | "DACTE_OS";
+  statusMessage?: string;
+}
+
 @injectable()
 export class DocumentsService {
   constructor(
     @inject(DATABASE_TOKEN) private db: Database,
     @inject(StorageService) private storage: StorageService,
-    // @inject(PdfService) private pdfService: PdfService, // TODO: Fix pdfmake ESM compatibility
+    @inject(PdfService) private pdfService: PdfService,
     @inject(RelationsService) private relationsService: RelationsService
   ) { }
 
@@ -70,6 +88,17 @@ export class DocumentsService {
     if (filters.numero) conditions.push(eq(documents.numero, Number(filters.numero)));
     if (filters.serie) conditions.push(eq(documents.serie, Number(filters.serie)));
     if (filters.chave) conditions.push(eq(documents.chave, filters.chave));
+    if (filters.search) {
+      const term = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(documents.chave, term),
+          ilike(documents.emitRazao, term),
+          ilike(documents.destRazao, term),
+          sql`CAST(${documents.numero} AS TEXT) ILIKE ${term}`
+        )!
+      );
+    }
 
     if (filters.dataInicio) conditions.push(gte(documents.dataEmissao, filters.dataInicio));
     if (filters.dataFim) conditions.push(lte(documents.dataEmissao, filters.dataFim));
@@ -138,46 +167,166 @@ export class DocumentsService {
     return this.storage.downloadXml(key);
   }
 
-  async getPdf(tenantId: string, documentId: string): Promise<Buffer> {
+  async getPdfInfo(tenantId: string, documentId: string) {
     const document = await this.getById(tenantId, documentId);
+    const filename = buildPdfFilename(document);
 
-    // Try to download PDF from storage
-    if (document.pdfStorageKey) {
-      try {
-        const pdf = await this.storage.downloadPdf(document.pdfStorageKey);
-        return pdf;
-      } catch (err) {
-        // Fallback to generation
-      }
+    if (!isPdfSupportedDocumentType(document.docType)) {
+      throw new ValidationError(`Tipo de documento nao suportado para PDF: ${document.docType}`);
     }
 
-    // Generate from XML
-    // Use getXml directly which handles the key lookup
-    const xml = await this.getXml(tenantId, documentId);
+    if (!document.xmlStorageKey) {
+      throw new ValidationError("Documento sem XML armazenado para geracao de PDF");
+    }
 
-    // TODO: Re-enable once pdfmake ESM compatibility is fixed
-    // if (document.docType === 'NFE') {
-    //   const data = parseNFe(xml);
-    //   return this.pdfService.generateDanfe(data);
-    // } else if (document.docType === 'CTE') {
-    //   const data = parseCTe(xml);
-    //   return this.pdfService.generateDacte(data);
-    // }
-    void xml; // Suppress unused variable warning
-
-    throw new ValidationError('Geracao de PDF temporariamente indisponivel');
+    return {
+      available: true,
+      cached: Boolean(document.pdfStorageKey),
+      filename,
+      representation: getPdfRepresentation(document.docType),
+      downloadPath: `/api/v1/documents/${documentId}/pdf/download`,
+    };
   }
 
-  /**
-   * Returns a presigned URL for downloading the PDF.
-   * Generates PDF if not yet cached.
-   */
-  async getPdfUrl(tenantId: string, documentId: string): Promise<{ url: string; cached: boolean }> {
-    // TODO: Re-enable once pdfmake ESM compatibility is fixed
-    // const result = await this.pdfService.generatePdf(documentId, tenantId);
-    void tenantId;
-    void documentId;
-    throw new ValidationError('Geracao de PDF temporariamente indisponivel');
+  async getPdf(
+    tenantId: string,
+    documentId: string,
+    userId?: string
+  ): Promise<{ buffer: Buffer; filename: string; cached: boolean }> {
+    const document = await this.getById(tenantId, documentId);
+    const filename = buildPdfFilename(document);
+
+    if (!isPdfSupportedDocumentType(document.docType)) {
+      throw new ValidationError(`Tipo de documento nao suportado para PDF: ${document.docType}`);
+    }
+
+    if (!document.xmlStorageKey) {
+      throw new ValidationError("Documento sem XML armazenado para geracao de PDF");
+    }
+
+    const baseDetails = {
+      docType: document.docType,
+      chave: document.chave,
+      sourceId: document.id,
+      correlationId: document.id,
+    };
+
+    await historyService.registerEvent({
+      tenantId,
+      documentId: document.id,
+      companyId: document.companyId,
+      userId,
+      eventType: "pdf.requested",
+      source: "pdf",
+      title: "Geracao de PDF solicitada",
+      summary: `${getPdfRepresentation(document.docType)} solicitado para o documento ${document.chave ?? document.id}`,
+      details: baseDetails,
+    });
+
+    try {
+      if (document.pdfStorageKey) {
+        try {
+          const pdf = await this.storage.downloadPdf(document.pdfStorageKey);
+
+          await historyService.registerEvent({
+            tenantId,
+            documentId: document.id,
+            companyId: document.companyId,
+            userId,
+            eventType: "pdf.generated",
+            source: "pdf",
+            title: "PDF fiscal disponibilizado",
+            summary: `${getPdfRepresentation(document.docType)} recuperado do cache para download`,
+            details: {
+              ...baseDetails,
+              cached: true,
+            },
+          });
+
+          return { buffer: pdf, filename, cached: true };
+        } catch {
+          // Fall through to regeneration if cached artifact became unavailable.
+        }
+      }
+
+      const result = await this.pdfService.getPdfBuffer(documentId, tenantId);
+
+      await historyService.registerEvent({
+        tenantId,
+        documentId: document.id,
+        companyId: document.companyId,
+        userId,
+        eventType: "pdf.generated",
+        source: "pdf",
+        title: "PDF fiscal gerado",
+        summary: `${result.metadata.tipo} gerado para o documento ${document.chave ?? document.id}`,
+        details: {
+          ...baseDetails,
+          cached: result.cached,
+          pdfType: result.metadata.tipo,
+          generatedAt: result.metadata.geradoEm.toISOString(),
+          pages: result.metadata.paginas,
+        },
+      });
+
+      return {
+        buffer: result.buffer,
+        filename,
+        cached: result.cached,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao gerar PDF";
+
+      await historyService.registerEvent({
+        tenantId,
+        documentId: document.id,
+        companyId: document.companyId,
+        userId,
+        eventType: "pdf.failed",
+        source: "pdf",
+        title: "Falha ao gerar PDF",
+        summary: `Nao foi possivel disponibilizar PDF para o documento ${document.chave ?? document.id}`,
+        details: {
+          ...baseDetails,
+          error: message,
+        },
+      });
+
+      throw error;
+    }
+  }
+
+  async listAttachments(tenantId: string, documentId: string): Promise<DocumentAttachmentItem[]> {
+    const document = await this.getById(tenantId, documentId);
+
+    const attachments: DocumentAttachmentItem[] = [
+      {
+        type: "xml",
+        label: "XML original",
+        available: Boolean(document.xmlStorageKey),
+        filename: buildXmlFilename(document),
+        downloadPath: `/api/v1/documents/${documentId}/xml`,
+        statusMessage: document.xmlStorageKey
+          ? "Arquivo XML armazenado e disponivel para download."
+          : "Documento ainda nao possui XML armazenado.",
+      },
+    ];
+
+    if (isPdfSupportedDocumentType(document.docType)) {
+      attachments.push({
+        type: "pdf",
+        label: `${getPdfRepresentation(document.docType)} operacional`,
+        available: Boolean(document.xmlStorageKey),
+        filename: buildPdfFilename(document),
+        downloadPath: `/api/v1/documents/${documentId}/pdf/download`,
+        representation: getPdfRepresentation(document.docType),
+        statusMessage: document.xmlStorageKey
+          ? "PDF fiscal pode ser gerado a partir do XML armazenado."
+          : "PDF indisponivel enquanto o XML do documento nao estiver armazenado.",
+      });
+    }
+
+    return attachments;
   }
 
   async search(tenantId: string, query: SearchDocumentsQuery) {
@@ -271,7 +420,7 @@ export class DocumentsService {
 
     // 2. Idempotency Check
     const existing = await this.db.query.documents.findFirst({
-      where: eq(documents.chave, docData.chave),
+      where: and(eq(documents.chave, docData.chave), eq(documents.tenantId, tenantId)),
     });
 
     if (existing) {
@@ -345,7 +494,33 @@ export class DocumentsService {
       // We pass the DB document and the parsedData object from Step 1.
       this.relationsService.processDocumentRelations(document, parsedData).catch(err => {
         // Log error but don't fail ingestion
-        console.error(`Falha ao processar relacionamentos para ${document.chave}:`, err);
+        logger.error(
+          {
+            err,
+            documentId: document.id,
+            tenantId,
+            chave: document.chave,
+          },
+          'Falha ao processar relacionamentos do documento'
+        );
+      });
+
+      await historyService.registerEvent({
+        tenantId,
+        documentId: document.id,
+        companyId,
+        eventType: params.source === "upload" ? "document.uploaded" : "document.synced",
+        source: params.source === "upload" ? "documents.upload" : "jobs.xml-processor",
+        title: params.source === "upload" ? "Documento importado manualmente" : "Documento sincronizado",
+        summary: `${document.docType} ${document.chave ?? document.id} persistido no tenant`,
+        details: {
+          nsu: nsu ?? null,
+          docType: document.docType,
+          situacao: document.situacao,
+          source: params.source ?? "job",
+          sourceId: document.id,
+          correlationId: nsu ?? document.id,
+        },
       });
 
       return { success: true, action: "create", documentId: document.id };
@@ -379,7 +554,7 @@ export class DocumentsService {
 
     // Check existing
     const existing = await this.db.query.documents.findFirst({
-      where: eq(documents.chave, resumoData.chNFe),
+      where: and(eq(documents.chave, resumoData.chNFe), eq(documents.tenantId, tenantId)),
     });
 
     if (existing) {
@@ -405,6 +580,23 @@ export class DocumentsService {
         searchContent: "resumo",
       })
       .returning();
+
+    await historyService.registerEvent({
+      tenantId,
+      documentId: document.id,
+      companyId,
+      eventType: 'document.summary.synced',
+      source: 'jobs.xml-processor',
+      title: 'Resumo de documento sincronizado',
+      summary: `Resumo NSU ${nsu} recebido para a chave ${resumoData.chNFe}`,
+      details: {
+        nsu,
+        docType: 'NFE',
+        chave: resumoData.chNFe,
+        sourceId: document.id,
+        correlationId: nsu,
+      },
+    });
 
     return { success: true, action: "create_resumo", documentId: document.id };
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { Alerta } from '@/lib/hooks/useAlerts';
 import { useAlerts } from '@/lib/hooks/useAlerts';
 import {
     Card,
@@ -29,7 +30,7 @@ export default function AlertsPage() {
         });
     }, [fetchAlerts, activeTab]);
 
-    const handleAlertClick = (alert: any) => {
+    const handleAlertClick = (alert: Alerta) => {
         markAsRead(alert.id);
         if (alert.documentId) {
             router.push(`/documents/${alert.documentId}`);

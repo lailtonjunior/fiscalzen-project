@@ -12,7 +12,7 @@ import { NotFoundError, ValidationError } from '../../utils/errors';
 
 // Use createRequire for CommonJS pdfmake module
 const require = createRequire(import.meta.url);
-const PdfPrinter = require('pdfmake');
+const PdfPrinter = require('pdfmake/js/Printer').default;
 
 // Layouts
 import { getNFeLayout, type DanfeLayoutOptions } from './layouts/nfe';
@@ -40,6 +40,13 @@ export interface PdfResult {
   url: string;
   cached: boolean;
   metadata: GeneratedPdf['metadata'];
+}
+
+export interface PdfBufferResult {
+  buffer: Buffer;
+  cached: boolean;
+  metadata: GeneratedPdf['metadata'];
+  storageKey: string;
 }
 
 type Database = NodePgDatabase<typeof schema>;
@@ -77,6 +84,17 @@ export class PdfService {
   // ============================================
 
   async generatePdf(documentId: string, tenantId: string): Promise<PdfResult> {
+    const result = await this.getPdfBuffer(documentId, tenantId);
+    const url = await this.storage.generatePresignedUrl(result.storageKey);
+
+    return {
+      url,
+      cached: result.cached,
+      metadata: result.metadata,
+    };
+  }
+
+  async getPdfBuffer(documentId: string, tenantId: string): Promise<PdfBufferResult> {
     // 1. Fetch document
     const document = await this.db.query.documents.findFirst({
       where: and(eq(documents.id, documentId), eq(documents.tenantId, tenantId)),
@@ -88,17 +106,23 @@ export class PdfService {
 
     // 2. Check if PDF already exists
     if (document.pdfStorageKey) {
-      const url = await this.storage.generatePresignedUrl(document.pdfStorageKey);
-      return {
-        url,
-        cached: true,
-        metadata: {
-          chave: document.chave || '',
-          tipo: this.getDocTipo(document.docType),
-          paginas: 1,
-          geradoEm: new Date(),
-        },
-      };
+      try {
+        const buffer = await this.storage.downloadPdf(document.pdfStorageKey);
+
+        return {
+          buffer,
+          cached: true,
+          storageKey: document.pdfStorageKey,
+          metadata: {
+            chave: document.chave || '',
+            tipo: this.getDocTipo(document.docType),
+            paginas: 1,
+            geradoEm: new Date(),
+          },
+        };
+      } catch {
+        // Cached artifact became unavailable; continue with regeneration from XML.
+      }
     }
 
     // 3. Download XML
@@ -143,14 +167,12 @@ export class PdfService {
     await this.db
       .update(documents)
       .set({ pdfStorageKey: pdfKey, updatedAt: new Date() })
-      .where(eq(documents.id, documentId));
-
-    // 7. Generate presigned URL
-    const url = await this.storage.generatePresignedUrl(pdfKey);
+      .where(and(eq(documents.id, documentId), eq(documents.tenantId, tenantId)));
 
     return {
-      url,
+      buffer: pdf.buffer,
       cached: false,
+      storageKey: pdfKey,
       metadata: pdf.metadata,
     };
   }
@@ -281,23 +303,27 @@ export class PdfService {
   // ============================================
 
   private createPdf(docDefinition: TDocumentDefinitions): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const pdfDoc = this.printer.createPdfKitDocument(docDefinition);
-      const chunks: Buffer[] = [];
+    return new Promise(async (resolve, reject) => {
+      try {
+        const pdfDoc = await this.printer.createPdfKitDocument(docDefinition);
+        const chunks: Buffer[] = [];
 
-      pdfDoc.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
+        pdfDoc.on('data', (chunk: Buffer) => {
+          chunks.push(chunk);
+        });
 
-      pdfDoc.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
+        pdfDoc.on('end', () => {
+          resolve(Buffer.concat(chunks));
+        });
 
-      pdfDoc.on('error', (err: Error) => {
-        reject(err);
-      });
+        pdfDoc.on('error', (err: Error) => {
+          reject(err);
+        });
 
-      pdfDoc.end();
+        pdfDoc.end();
+      } catch (error) {
+        reject(error);
+      }
     });
   }
 

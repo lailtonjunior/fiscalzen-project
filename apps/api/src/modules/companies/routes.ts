@@ -13,7 +13,7 @@ import {
 import { getTenantId } from '../../plugins/auth';
 import { sendSuccess, sendCreated, sendNoContent, paginate } from '../../utils/response';
 import { ValidationError } from '../../utils/errors';
-import { zodToFastify, commonSchemas, standardResponses } from '../../utils/schema-converter';
+import { zodToFastify, standardResponses } from '../../utils/schema-converter';
 
 export async function companiesRoutes(fastify: FastifyInstance) {
   // All routes require authentication
@@ -35,6 +35,16 @@ export async function companiesRoutes(fastify: FastifyInstance) {
           properties: {
             success: { type: 'boolean' },
             data: { type: 'array', items: { type: 'object' } },
+            meta: {
+              type: 'object',
+              properties: {
+                page: { type: 'integer' },
+                pageSize: { type: 'integer' },
+                total: { type: 'integer' },
+                hasNext: { type: 'boolean' },
+                totalPages: { type: 'integer' },
+              },
+            },
             pagination: {
               type: 'object',
               properties: {
@@ -42,9 +52,11 @@ export async function companiesRoutes(fastify: FastifyInstance) {
                 limit: { type: 'integer' },
                 total: { type: 'integer' },
                 pages: { type: 'integer' },
+                totalPages: { type: 'integer' },
               },
             },
           },
+          required: ['success', 'data', 'meta'],
         },
         401: standardResponses[401],
       },
@@ -74,7 +86,7 @@ export async function companiesRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         400: standardResponses[400],
@@ -105,7 +117,7 @@ export async function companiesRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         401: standardResponses[401],
@@ -138,7 +150,7 @@ export async function companiesRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: { type: 'object' },
+            data: { type: 'object', additionalProperties: true },
           },
         },
         400: standardResponses[400],
@@ -166,7 +178,10 @@ export async function companiesRoutes(fastify: FastifyInstance) {
       description: 'Desativa uma empresa (soft delete)',
       params: zodToFastify(companyIdSchema),
       response: {
-        204: { description: 'Empresa desativada' },
+        204: {
+          type: 'null',
+          description: 'Empresa desativada',
+        },
         401: standardResponses[401],
         404: standardResponses[404],
       },
@@ -254,11 +269,19 @@ export async function companiesRoutes(fastify: FastifyInstance) {
           properties: {
             success: { type: 'boolean' },
             data: {
-              type: 'object',
-              properties: {
-                lastNsu: { type: 'string' },
-                lastSync: { type: 'string' },
-                totalDocuments: { type: 'integer' },
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  docType: { type: 'string' },
+                  lastNsu: { type: 'string' },
+                  maxNsu: { type: 'string', nullable: true },
+                  lastSync: { type: 'string', nullable: true },
+                  nextSync: { type: 'string', nullable: true },
+                  syncStatus: { type: 'string' },
+                  errorCount: { type: 'integer' },
+                  lastError: { type: 'string', nullable: true },
+                },
               },
             },
           },

@@ -4,9 +4,10 @@ export const docTypeEnum = z.enum(['NFE', 'CTE', 'MDFE', 'NFSE', 'SAT', 'NFCE'])
 export const situacaoEnum = z.enum(['autorizada', 'cancelada', 'denegada', 'inutilizada', 'pendente']);
 
 export const listDocumentsQuerySchema = z.object({
-  page: z.coerce.number().int().positive().default(1).describe('Número da página'),
-  limit: z.coerce.number().int().positive().max(100).default(50).describe('Itens por página'),
+  page: z.coerce.number().int().min(1).default(1).describe('Número da página'),
+  limit: z.coerce.number().int().min(1).max(100).default(50).describe('Itens por página'),
   companyId: z.string().uuid().optional().describe('Filtro por ID da empresa'),
+  search: z.string().trim().min(1).optional().describe('Busca textual por chave, numero, emitente ou destinatario'),
   docType: docTypeEnum.optional().describe('Tipo de documento (NFE, CTE, etc)'),
   situacao: situacaoEnum.optional().describe('Situação na SEFAZ'),
   dataInicio: z.string().datetime().optional().describe('Data inicial de emissão (ISO8601)'),
@@ -26,8 +27,8 @@ export const documentIdSchema = z.object({
 
 export const searchDocumentsQuerySchema = z.object({
   q: z.string().min(1, 'Termo de busca obrigatorio').describe('Termo de busca (full-text)'),
-  page: z.coerce.number().int().positive().default(1).describe('Número da página'),
-  limit: z.coerce.number().int().positive().max(100).default(50).describe('Itens por página'),
+  page: z.coerce.number().int().min(1).default(1).describe('Número da página'),
+  limit: z.coerce.number().int().min(1).max(100).default(50).describe('Itens por página'),
   companyId: z.string().uuid().optional().describe('Filtro por ID da empresa'),
   docType: docTypeEnum.optional().describe('Tipo de documento'),
   situacao: situacaoEnum.optional().describe('Situação'),

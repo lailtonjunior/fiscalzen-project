@@ -1,16 +1,41 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api';
+import { api, apiRaw, type ApiEnvelope } from '../api';
 import type {
   Document,
   ManifestacaoTipo,
   PendingManifestation,
-  PendingCiencia,
   AwaitingFinal,
   ManifestacaoHistoryItem,
 } from '../types';
 import { documentKeys } from './use-documents';
+
+interface PendingManifestacaoApiItem {
+  id: string;
+  chave: string;
+  numero: string;
+  serie: string;
+  dataEmissao: string;
+  valorTotal: string;
+  emitRazaoSocial: string;
+  emitCnpj: string;
+  createdAt: string;
+  companyId?: string;
+  nsu?: string;
+}
+
+interface BatchManifestacaoResult {
+  processed: number;
+  failed: number;
+  errors: Array<{ documentId: string; error: string }>;
+}
+
+interface PendingManifestacaoCountResponse {
+  count: number;
+}
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 // ============================================
 // Query Keys
@@ -23,8 +48,104 @@ export const manifestacaoKeys = {
   awaitingFinal: (companyId?: string) => [...manifestacaoKeys.all, 'awaiting-final', companyId] as const,
   history: (filters?: { companyId?: string; page?: number }) =>
     [...manifestacaoKeys.all, 'history', filters] as const,
-  count: () => [...manifestacaoKeys.all, 'count'] as const,
+  count: (companyId?: string) => [...manifestacaoKeys.all, 'count', companyId] as const,
 };
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Erro desconhecido';
+}
+
+function toPendingDocument(item: PendingManifestacaoApiItem): Document {
+  return {
+    id: item.id,
+    tenantId: '',
+    companyId: item.companyId ?? '',
+    chave: item.chave,
+    numero: item.numero,
+    serie: item.serie,
+    docType: 'NFE',
+    situacao: 'pendente',
+    dataEmissao: item.dataEmissao,
+    valorTotal: item.valorTotal,
+    emitCnpj: item.emitCnpj,
+    emitRazaoSocial: item.emitRazaoSocial,
+    uf: '',
+    nsu: item.nsu,
+    createdAt: item.createdAt,
+    updatedAt: item.createdAt,
+  };
+}
+
+function getDaysPending(date: string) {
+  const emissionDate = new Date(date).getTime();
+  const now = Date.now();
+  return Math.max(0, Math.floor((now - emissionDate) / DAY_IN_MS));
+}
+
+async function fetchPendingManifestacoes(companyId?: string): Promise<PendingManifestation[]> {
+  const response = await api.get<PendingManifestacaoApiItem[]>('/api/v1/manifestacao/pendentes', {
+    params: {
+      companyId,
+      page: 1,
+      limit: 100,
+    },
+  });
+
+  const items = response.data ?? [];
+  return items.map((item) => ({
+    document: toPendingDocument(item),
+    daysPending: getDaysPending(item.dataEmissao),
+  }));
+}
+
+async function submitManifestacao({
+  documentId,
+  tipo,
+  justificativa,
+}: {
+  documentId: string;
+  tipo: ManifestacaoTipo;
+  justificativa?: string;
+}) {
+  const response = await api.post(`/api/v1/manifestacao/${documentId}`, {
+    tipo,
+    justificativa,
+  });
+  return response.data;
+}
+
+async function processBatchManifestacao({
+  documentIds,
+  tipo,
+}: {
+  documentIds: string[];
+  tipo: ManifestacaoTipo;
+}): Promise<BatchManifestacaoResult> {
+  const results = await Promise.allSettled(
+    documentIds.map(async (documentId) =>
+      submitManifestacao({
+        documentId,
+        tipo,
+      })
+    )
+  );
+
+  const errors = results.flatMap((result, index) =>
+    result.status === 'rejected'
+      ? [{ documentId: documentIds[index], error: getErrorMessage(result.reason) }]
+      : []
+  );
+
+  return {
+    processed: results.length - errors.length,
+    failed: errors.length,
+    errors,
+  };
+}
 
 // ============================================
 // Queries
@@ -33,12 +154,7 @@ export const manifestacaoKeys = {
 export function usePendingManifestations(companyId?: string) {
   return useQuery({
     queryKey: manifestacaoKeys.pending(companyId),
-    queryFn: async () => {
-      const response = await api.get<PendingManifestation[]>('/api/v1/manifestacao/pending', {
-        params: { companyId },
-      });
-      return response.data ?? [];
-    },
+    queryFn: () => fetchPendingManifestacoes(companyId),
     refetchInterval: 5 * 60 * 1000,
   });
 }
@@ -47,10 +163,20 @@ export function usePendingCiencia(companyId?: string) {
   return useQuery({
     queryKey: manifestacaoKeys.pendingCiencia(companyId),
     queryFn: async () => {
-      const response = await api.get<PendingCiencia[]>('/api/v1/manifestacao/pending-ciencia', {
-        params: { companyId },
-      });
-      return response.data ?? [];
+      const pendingItems = await fetchPendingManifestacoes(companyId);
+      return pendingItems.map(({ document, daysPending }) => ({
+        id: document.id,
+        chave: document.chave,
+        emitCnpj: document.emitCnpj,
+        emitRazaoSocial: document.emitRazaoSocial,
+        valorTotal: document.valorTotal,
+        dataEmissao: document.dataEmissao,
+        nsu: document.nsu ?? '',
+        companyId: document.companyId,
+        companyName: '',
+        daysPending,
+        isUrgent: daysPending > 7,
+      }));
     },
     refetchInterval: 5 * 60 * 1000,
   });
@@ -60,10 +186,27 @@ export function useAwaitingFinal(companyId?: string) {
   return useQuery({
     queryKey: manifestacaoKeys.awaitingFinal(companyId),
     queryFn: async () => {
-      const response = await api.get<AwaitingFinal[]>('/api/v1/manifestacao/awaiting-final', {
-        params: { companyId },
+      const response = await api.get<Array<Document & { manifestacaoData?: string }>>('/api/v1/manifestacao/awaiting-final', {
+        params: {
+          companyId,
+          page: 1,
+          limit: 100,
+        },
       });
-      return response.data ?? [];
+
+      const items = response.data ?? [];
+      return items.map((document) => {
+        const cienciaData = document.manifestacaoData ?? document.updatedAt;
+        const remainingMs = new Date(cienciaData).getTime() + 180 * DAY_IN_MS - Date.now();
+        const daysUntilDeadline = Math.max(0, Math.ceil(remainingMs / DAY_IN_MS));
+
+        return {
+          document,
+          cienciaData,
+          daysUntilDeadline,
+          isNearDeadline: daysUntilDeadline <= 15,
+        } satisfies AwaitingFinal;
+      });
     },
     refetchInterval: 5 * 60 * 1000,
   });
@@ -73,27 +216,39 @@ export function useManifestacaoHistory(filters?: { companyId?: string; page?: nu
   return useQuery({
     queryKey: manifestacaoKeys.history(filters),
     queryFn: async () => {
-      const response = await api.get<{
-        items: ManifestacaoHistoryItem[];
-        total: number;
-        page: number;
-        pageSize: number;
-      }>('/api/v1/manifestacao/history', { params: filters });
-      return response.data ?? { items: [], total: 0, page: 1, pageSize: 20 };
+      const response = await apiRaw.get<ApiEnvelope<ManifestacaoHistoryItem[]>>('/api/v1/manifestacao/history', {
+        params: {
+          companyId: filters?.companyId,
+          page: filters?.page ?? 1,
+          limit: filters?.pageSize ?? 20,
+        },
+      });
+
+      return {
+        items: response.data.data ?? [],
+        total: response.data.pagination?.total ?? response.data.meta?.total ?? 0,
+        page: filters?.page ?? 1,
+        pageSize: filters?.pageSize ?? 20,
+      };
     },
   });
 }
 
-export function usePendingCount() {
+export function usePendingCount(companyId?: string) {
   return useQuery({
-    queryKey: manifestacaoKeys.count(),
+    queryKey: manifestacaoKeys.count(companyId),
     queryFn: async () => {
-      const response = await api.get<{
-        pendingCiencia: number;
-        awaitingFinal: number;
-        total: number;
-      }>('/api/v1/manifestacao/count');
-      return response.data ?? { pendingCiencia: 0, awaitingFinal: 0, total: 0 };
+      const response = await api.get<PendingManifestacaoCountResponse & { pendingCiencia?: number; awaitingFinal?: number; total?: number }>('/api/v1/manifestacao/count', {
+        params: { companyId },
+      });
+      const pendingCiencia = response.data.pendingCiencia ?? response.data.count;
+      const awaitingFinal = response.data.awaitingFinal ?? 0;
+
+      return {
+        pendingCiencia,
+        awaitingFinal,
+        total: response.data.total ?? pendingCiencia + awaitingFinal,
+      };
     },
     refetchInterval: 2 * 60 * 1000,
   });
@@ -115,13 +270,12 @@ export function useManifestar() {
       documentId: string;
       tipo: ManifestacaoTipo;
       justificativa?: string;
-    }) => {
-      const response = await api.post<Document>(`/api/v1/manifestacao/${documentId}`, {
+    }) =>
+      submitManifestacao({
+        documentId,
         tipo,
         justificativa,
-      });
-      return response.data;
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: manifestacaoKeys.all });
       queryClient.invalidateQueries({ queryKey: documentKeys.all });
@@ -133,12 +287,11 @@ export function useDarCiencia() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (documentId: string) => {
-      const response = await api.post<Document>(`/api/v1/manifestacao/${documentId}`, {
+    mutationFn: (documentId: string) =>
+      submitManifestacao({
+        documentId,
         tipo: '210210',
-      });
-      return response.data;
-    },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: manifestacaoKeys.all });
       queryClient.invalidateQueries({ queryKey: documentKeys.all });
@@ -156,16 +309,11 @@ export function useManifestarBatch() {
     }: {
       documentIds: string[];
       tipo: ManifestacaoTipo;
-    }) => {
-      const response = await api.post<{ processed: number; errors: string[] }>(
-        '/api/v1/manifestacao/batch',
-        {
-          documentIds,
-          tipo,
-        }
-      );
-      return response.data;
-    },
+    }) =>
+      processBatchManifestacao({
+        documentIds,
+        tipo,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: manifestacaoKeys.all });
       queryClient.invalidateQueries({ queryKey: documentKeys.all });
@@ -177,16 +325,11 @@ export function useBatchCiencia() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (documentIds: string[]) => {
-      const response = await api.post<{
-        processed: number;
-        failed: number;
-        errors: Array<{ documentId: string; error: string }>;
-      }>('/api/v1/manifestacao/batch-ciencia', {
+    mutationFn: (documentIds: string[]) =>
+      processBatchManifestacao({
         documentIds,
-      });
-      return response.data;
-    },
+        tipo: '210210',
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: manifestacaoKeys.all });
       queryClient.invalidateQueries({ queryKey: documentKeys.all });

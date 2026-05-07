@@ -129,7 +129,7 @@ export async function agentsRoutes(fastify: FastifyInstance) {
       description: 'Remove o registro de um agente',
       params: zodToFastify(agentIdSchema),
       response: {
-        204: { description: 'Agente removido' },
+        204: standardResponses[204],
         401: standardResponses[401],
         404: standardResponses[404],
       },

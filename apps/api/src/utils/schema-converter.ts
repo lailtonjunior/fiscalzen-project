@@ -10,16 +10,31 @@ import type { z } from 'zod';
  */
 export function zodToFastify<T extends z.ZodType>(schema: T) {
     const jsonSchema = zodToJsonSchema(schema, {
-        target: 'openApi3',
+        target: 'jsonSchema7',
         $refStrategy: 'none', // Inline all refs for Fastify compatibility
     });
 
-    // Remove $schema property that Fastify doesn't need
-    if ('$schema' in jsonSchema) {
-        delete jsonSchema.$schema;
-    }
+    sanitizeFastifySchema(jsonSchema);
 
     return jsonSchema;
+}
+
+function sanitizeFastifySchema(schema: unknown): void {
+    if (!schema || typeof schema !== 'object') {
+        return;
+    }
+
+    const record = schema as Record<string, unknown>;
+    delete record.$schema;
+
+    for (const key of Object.keys(record)) {
+        if (record[key] === undefined) {
+            delete record[key];
+            continue;
+        }
+
+        sanitizeFastifySchema(record[key]);
+    }
 }
 
 /**
@@ -45,6 +60,15 @@ export const commonSchemas = {
                 type: 'array',
                 items: itemSchema,
             },
+            meta: {
+                type: 'object',
+                properties: {
+                    page: { type: 'integer' },
+                    pageSize: { type: 'integer' },
+                    total: { type: 'integer' },
+                    hasNext: { type: 'boolean' },
+                },
+            },
             pagination: {
                 type: 'object',
                 properties: {
@@ -55,7 +79,7 @@ export const commonSchemas = {
                 },
             },
         },
-        required: ['success', 'data', 'pagination'],
+        required: ['success', 'data', 'meta'],
     }),
 
     // Error response
@@ -99,52 +123,30 @@ export const commonSchemas = {
  */
 export const standardResponses = {
     200: {
-        description: 'Operação realizada com sucesso',
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: {},
+            meta: { type: 'object', additionalProperties: true },
+            pagination: { type: 'object', additionalProperties: true },
+        },
+        required: ['success'],
     },
     201: {
-        description: 'Recurso criado com sucesso',
+        type: 'object',
+        properties: {
+            success: { type: 'boolean' },
+            data: {},
+        },
+        required: ['success', 'data'],
     },
     204: {
+        type: 'null',
         description: 'Operação realizada, sem conteúdo de retorno',
     },
-    400: {
-        description: 'Erro de validação',
-        content: {
-            'application/json': {
-                schema: commonSchemas.errorResponse,
-            },
-        },
-    },
-    401: {
-        description: 'Não autenticado',
-        content: {
-            'application/json': {
-                schema: commonSchemas.errorResponse,
-            },
-        },
-    },
-    403: {
-        description: 'Acesso negado',
-        content: {
-            'application/json': {
-                schema: commonSchemas.errorResponse,
-            },
-        },
-    },
-    404: {
-        description: 'Recurso não encontrado',
-        content: {
-            'application/json': {
-                schema: commonSchemas.errorResponse,
-            },
-        },
-    },
-    500: {
-        description: 'Erro interno do servidor',
-        content: {
-            'application/json': {
-                schema: commonSchemas.errorResponse,
-            },
-        },
-    },
+    400: commonSchemas.errorResponse,
+    401: commonSchemas.errorResponse,
+    403: commonSchemas.errorResponse,
+    404: commonSchemas.errorResponse,
+    500: commonSchemas.errorResponse,
 };

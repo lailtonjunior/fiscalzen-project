@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import type { Alerta } from '@/lib/hooks/useAlerts';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,7 +24,7 @@ export function AlertsDropdown() {
         fetchAlerts({ limit: 5, lido: false });
     }, [fetchAlerts]);
 
-    const handleAlertClick = (alert: any) => {
+    const handleAlertClick = (alert: Alerta) => {
         markAsRead(alert.id);
         if (alert.documentId) {
             router.push(`/documents/${alert.documentId}`);

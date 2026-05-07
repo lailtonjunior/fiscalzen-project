@@ -2,7 +2,8 @@ import fp from 'fastify-plugin';
 import swagger, { type FastifyDynamicSwaggerOptions } from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import type { FastifyInstance } from 'fastify';
-import { env } from '../config/env';
+
+const isEnabled = (value: string | undefined) => value === 'true' || value === '1';
 
 const swaggerOptions: FastifyDynamicSwaggerOptions = {
     openapi: {
@@ -87,18 +88,22 @@ const swaggerUiOptions = {
 };
 
 async function swaggerPlugin(fastify: FastifyInstance) {
-    // Only enable Swagger in development or if explicitly enabled
-    const isEnabled = env.NODE_ENV === 'development' || process.env.ENABLE_SWAGGER === 'true';
-
-    if (!isEnabled) {
-        fastify.log.info('Swagger documentation disabled in production');
+    if (!isEnabled(process.env.ENABLE_SWAGGER)) {
+        fastify.log.info('Swagger documentation disabled (ENABLE_SWAGGER is not true)');
         return;
     }
 
-    await fastify.register(swagger, swaggerOptions);
-    await fastify.register(swaggerUi, swaggerUiOptions);
+    try {
+        await fastify.register(swagger, swaggerOptions);
+        await fastify.register(swaggerUi, swaggerUiOptions);
 
-    fastify.log.info('Swagger documentation available at /docs');
+        fastify.log.info(
+            { route: swaggerUiOptions.routePrefix },
+            'Swagger documentation enabled'
+        );
+    } catch (err) {
+        fastify.log.warn({ err }, 'Swagger registration failed; continuing without Swagger');
+    }
 }
 
 export default fp(swaggerPlugin, {

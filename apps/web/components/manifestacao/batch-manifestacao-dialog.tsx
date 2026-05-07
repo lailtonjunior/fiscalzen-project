@@ -50,7 +50,7 @@ export function BatchManifestacaoDialog({
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      let response;
+      let response: BatchResult;
       if (isCiencia) {
         response = await batchCiencia.mutateAsync(selectedIds);
       } else {
@@ -59,11 +59,7 @@ export function BatchManifestacaoDialog({
           tipo,
         });
       }
-      setResult({
-        processed: response?.processed ?? selectedIds.length,
-        failed: (response as Record<string, unknown>)?.failed as number ?? 0,
-        errors: (response as Record<string, unknown>)?.errors as Array<{ documentId: string; error: string }> ?? [],
-      });
+      setResult(response);
     } catch (error) {
       setResult({
         processed: 0,

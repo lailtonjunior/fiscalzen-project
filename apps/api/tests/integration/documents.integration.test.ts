@@ -43,7 +43,8 @@ describe('Documents API Integration', () => {
         await cleanupDatabase(db);
 
         // Setup initial data
-        const { tenant, company } = await createTestCompany(db);
+        const tenant = await createTestTenant(db);
+        const company = await createTestCompany(db, tenant.id);
         tenantId = tenant.id;
         companyId = company.id;
 

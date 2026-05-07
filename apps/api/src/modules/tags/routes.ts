@@ -1,8 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { tagsService } from './service';
 import { getTenantId, getUserId } from '../../plugins/auth';
-import { zodToFastify, standardResponses } from '../../utils/schema-converter';
-import { sendSuccess } from '../../utils/response';
+import { commonSchemas, zodToFastify, standardResponses } from '../../utils/schema-converter';
+import { sendNoContent, sendSuccess } from '../../utils/response';
 import {
     createTagSchema,
     updateTagSchema,
@@ -20,6 +20,28 @@ import {
 
 export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.addHook('onRequest', fastify.authenticate);
+    const tagIdParamsJsonSchema = {
+        type: 'object',
+        properties: {
+            id: { type: 'string', format: 'uuid' },
+        },
+        required: ['id'],
+    } as const;
+    const documentIdParamsJsonSchema = {
+        type: 'object',
+        properties: {
+            documentId: { type: 'string', format: 'uuid' },
+        },
+        required: ['documentId'],
+    } as const;
+    const documentTagParamsJsonSchema = {
+        type: 'object',
+        properties: {
+            documentId: { type: 'string', format: 'uuid' },
+            tagId: { type: 'string', format: 'uuid' },
+        },
+        required: ['documentId', 'tagId'],
+    } as const;
 
     // GET /api/v1/tags - List tags
     fastify.get('/', {
@@ -74,7 +96,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
         const body = createTagSchema.parse(request.body);
         const tag = await tagsService.create(tenantId, userId, body);
 
-        return reply.status(201).send({ success: true, data: tag });
+        return sendSuccess(reply, tag, 201);
     });
 
     // PUT /api/v1/tags/:id - Update tag
@@ -86,7 +108,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
             tags: ['Tags'],
             summary: 'Atualizar tag',
             description: 'Atualiza propriedades de uma tag existente',
-            params: zodToFastify(tagIdParamsSchema),
+            params: tagIdParamsJsonSchema,
             body: zodToFastify(updateTagSchema),
             response: {
                 200: {
@@ -97,9 +119,9 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
                         data: { type: 'object' },
                     },
                 },
-                400: standardResponses[400],
-                401: standardResponses[401],
-                404: standardResponses[404],
+                400: commonSchemas.errorResponse,
+                401: commonSchemas.errorResponse,
+                404: commonSchemas.errorResponse,
             },
         },
     }, async (request, reply) => {
@@ -120,11 +142,14 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
             tags: ['Tags'],
             summary: 'Excluir tag',
             description: 'Remove uma tag e sua associação com documentos',
-            params: zodToFastify(tagIdParamsSchema),
+            params: tagIdParamsJsonSchema,
             response: {
-                204: { description: 'Tag excluída' },
-                401: standardResponses[401],
-                404: standardResponses[404],
+                204: {
+                    description: 'Tag excluída',
+                    type: 'null',
+                },
+                401: commonSchemas.errorResponse,
+                404: commonSchemas.errorResponse,
             },
         },
     }, async (request, reply) => {
@@ -133,7 +158,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
 
         await tagsService.delete(id, tenantId);
 
-        return reply.status(204).send();
+        return sendNoContent(reply);
     });
 
     // POST /api/v1/tags/documents/:documentId/tags - Add tags to document
@@ -145,13 +170,27 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
             tags: ['Tags'],
             summary: 'Adicionar tags ao documento',
             description: 'Associa uma ou mais tags a um documento fiscal',
-            params: zodToFastify(documentTagsParamsSchema),
+            params: documentIdParamsJsonSchema,
             body: zodToFastify(addTagsToDocumentSchema),
             response: {
-                200: { description: 'Tags adicionadas com sucesso' },
-                400: standardResponses[400],
-                401: standardResponses[401],
-                404: standardResponses[404],
+                200: {
+                    description: 'Tags adicionadas com sucesso',
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                added: { type: 'boolean' },
+                            },
+                            required: ['added'],
+                        },
+                    },
+                    required: ['success', 'data'],
+                },
+                400: commonSchemas.errorResponse,
+                401: commonSchemas.errorResponse,
+                404: commonSchemas.errorResponse,
             },
         },
     }, async (request, reply) => {
@@ -163,7 +202,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
 
         await tagsService.addTagsToDocument(documentId, body.tagIds, tenantId, userId);
 
-        return { success: true };
+        return sendSuccess(reply, { added: true });
     });
 
     // DELETE /api/v1/tags/documents/:documentId/tags/:tagId - Remove tag from document
@@ -174,11 +213,14 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
             tags: ['Tags'],
             summary: 'Remover tag do documento',
             description: 'Desassocia uma tag de um documento fiscal',
-            params: zodToFastify(documentTagParamsSchema),
+            params: documentTagParamsJsonSchema,
             response: {
-                204: { description: 'Tag removida do documento' },
-                401: standardResponses[401],
-                404: standardResponses[404],
+                204: {
+                    description: 'Tag removida do documento',
+                    type: 'null',
+                },
+                401: commonSchemas.errorResponse,
+                404: commonSchemas.errorResponse,
             },
         },
     }, async (request, reply) => {
@@ -187,7 +229,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
 
         await tagsService.removeTagFromDocument(documentId, tagId, tenantId);
 
-        return reply.status(204).send();
+        return sendNoContent(reply);
     });
 
     // GET /api/v1/tags/slug/:slug/documents - Get docs by tag
@@ -200,7 +242,7 @@ export const tagsRoutes: FastifyPluginAsync = async (fastify) => {
             summary: 'Listar documentos por tag',
             description: 'Busca documentos que possuem uma tag específica (pelo slug)',
             params: zodToFastify(tagSlugParamsSchema),
-            querystring: zodToFastify(listDocumentsByTagQuerySchema),
+            // querystring: zodToFastify(listDocumentsByTagQuerySchema),
             response: {
                 200: {
                     description: 'Lista de documentos',

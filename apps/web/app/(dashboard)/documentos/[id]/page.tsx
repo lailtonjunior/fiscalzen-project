@@ -3,6 +3,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -23,8 +24,14 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useDocument, useDownloadXml } from '@/lib/hooks/use-documents';
-import { XmlViewer, EventsTimeline } from '@/components/documents';
+import {
+  useDocument,
+  useDocumentAttachments,
+  useDocumentHistory,
+  useDownloadPdf,
+  useDownloadXml,
+} from '@/lib/hooks/use-documents';
+import { HistoryTimeline, XmlViewer } from '@/components/documents';
 
 interface DocumentPageProps {
   params: Promise<{ id: string }>;
@@ -58,8 +65,22 @@ function formatCnpj(cnpj: string) {
 export default function DocumentPage({ params }: DocumentPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { data: document, isLoading } = useDocument(resolvedParams.id);
+  const [fileActionError, setFileActionError] = useState<string | null>(null);
+  const { data: document, isLoading, isError, error } = useDocument(resolvedParams.id);
+  const { data: attachments = [] } = useDocumentAttachments(resolvedParams.id);
+  const {
+    data: history = [],
+    isLoading: isHistoryLoading,
+    isError: isHistoryError,
+    error: historyError,
+  } = useDocumentHistory(resolvedParams.id);
   const downloadXml = useDownloadXml();
+  const downloadPdf = useDownloadPdf();
+  const emitRazao = document?.emitRazao ?? document?.emitRazaoSocial;
+  const destRazao = document?.destRazao ?? document?.destRazaoSocial;
+  const destCnpj = document?.destCnpjCpf ?? document?.destCnpj;
+  const pdfAttachment = attachments.find((attachment) => attachment.type === 'pdf');
+  const xmlAttachment = attachments.find((attachment) => attachment.type === 'xml');
 
   if (isLoading) {
     return (
@@ -76,13 +97,15 @@ export default function DocumentPage({ params }: DocumentPageProps) {
     );
   }
 
-  if (!document) {
+  if (isError || !document) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <FileText className="h-12 w-12 text-muted-foreground" />
         <h2 className="mt-4 text-lg font-semibold">Documento nao encontrado</h2>
         <p className="text-muted-foreground">
-          O documento solicitado nao existe ou foi removido.
+          {error instanceof Error
+            ? error.message
+            : 'O documento solicitado nao existe ou foi removido.'}
         </p>
         <Button className="mt-4" onClick={() => router.push('/documentos')}>
           Voltar para Documentos
@@ -90,6 +113,28 @@ export default function DocumentPage({ params }: DocumentPageProps) {
       </div>
     );
   }
+
+  const handleDownloadXml = async () => {
+    try {
+      setFileActionError(null);
+      await downloadXml.mutateAsync(document.id);
+    } catch (mutationError) {
+      setFileActionError(
+        mutationError instanceof Error ? mutationError.message : 'Falha ao baixar XML do documento.'
+      );
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setFileActionError(null);
+      await downloadPdf.mutateAsync(document.id);
+    } catch (mutationError) {
+      setFileActionError(
+        mutationError instanceof Error ? mutationError.message : 'Falha ao gerar PDF do documento.'
+      );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -124,11 +169,19 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => downloadXml.mutate(document.id)}
+            onClick={handleDownloadXml}
             disabled={downloadXml.isPending}
           >
             <Download className="mr-2 h-4 w-4" />
             Download XML
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadPdf}
+            disabled={!pdfAttachment?.available || downloadPdf.isPending}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Visualizar PDF
           </Button>
           {!document.manifestacao && document.docType === 'NFE' && (
             <Link href={`/manifestacao?documentId=${document.id}`}>
@@ -140,6 +193,12 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           )}
         </div>
       </div>
+
+      {fileActionError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {fileActionError}
+        </div>
+      )}
 
       {/* Info Cards */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -154,7 +213,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
           <CardContent className="space-y-2">
             <div>
               <p className="text-sm text-muted-foreground">Razao Social</p>
-              <p className="font-medium">{document.emitRazaoSocial}</p>
+              <p className="font-medium">{emitRazao}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">CNPJ</p>
@@ -178,16 +237,16 @@ export default function DocumentPage({ params }: DocumentPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {document.destRazaoSocial ? (
+            {destRazao ? (
               <>
                 <div>
                   <p className="text-sm text-muted-foreground">Razao Social</p>
-                  <p className="font-medium">{document.destRazaoSocial}</p>
+                  <p className="font-medium">{destRazao}</p>
                 </div>
-                {document.destCnpj && (
+                {destCnpj && (
                   <div>
                     <p className="text-sm text-muted-foreground">CNPJ</p>
-                    <p className="font-mono">{formatCnpj(document.destCnpj)}</p>
+                    <p className="font-mono">{formatCnpj(destCnpj)}</p>
                   </div>
                 )}
               </>
@@ -244,6 +303,36 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Anexos fiscais</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-md border px-3 py-3">
+            <div>
+              <p className="font-medium">{xmlAttachment?.label ?? 'XML original'}</p>
+              <p className="text-sm text-muted-foreground">
+                {xmlAttachment?.statusMessage ?? 'Anexo XML ainda nao disponivel.'}
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleDownloadXml} disabled={!xmlAttachment?.available || downloadXml.isPending}>
+              Baixar XML
+            </Button>
+          </div>
+          <div className="flex items-center justify-between rounded-md border px-3 py-3">
+            <div>
+              <p className="font-medium">{pdfAttachment?.label ?? 'PDF fiscal'}</p>
+              <p className="text-sm text-muted-foreground">
+                {pdfAttachment?.statusMessage ?? 'PDF indisponivel para este tipo de documento ou sem XML.'}
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleDownloadPdf} disabled={!pdfAttachment?.available || downloadPdf.isPending}>
+              Baixar PDF
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Natureza da Operacao */}
       {document.natOp && (
         <Card>
@@ -258,8 +347,11 @@ export default function DocumentPage({ params }: DocumentPageProps) {
         </Card>
       )}
 
-      {/* Events Timeline */}
-      <EventsTimeline events={document.events} />
+      <HistoryTimeline
+        items={history}
+        isLoading={isHistoryLoading}
+        errorMessage={isHistoryError ? (historyError instanceof Error ? historyError.message : 'Falha ao carregar historico.') : null}
+      />
 
       {/* XML Viewer */}
       <XmlViewer xml={document.xmlOriginal} title="XML Original" />

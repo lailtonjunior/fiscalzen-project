@@ -28,13 +28,30 @@ export interface CompanyWithNsu {
 export class CompaniesService {
   constructor(@inject(DATABASE_TOKEN) private db: Database) { }
 
+  private mapCompanyInput(data: Partial<CreateCompanyInput | UpdateCompanyInput>) {
+    const mapped = {
+      cnpj: data.cnpj,
+      razaoSocial: data.razaoSocial,
+      nomeFantasia: data.nomeFantasia,
+      inscricaoEstadual: data.ie,
+      inscricaoMunicipal: data.im,
+      uf: data.uf ?? data.endereco?.uf,
+      codigoMunicipio: data.codigoMunicipio ?? data.endereco?.codigoMunicipio,
+      active: data.ativo,
+    };
+
+    return Object.fromEntries(
+      Object.entries(mapped).filter(([, value]) => value !== undefined)
+    );
+  }
+
   async list(tenantId: string, query: ListCompaniesQuery) {
     const { page, limit, ativo, search } = query;
     const offset = (page - 1) * limit;
 
     const conditions = [eq(companies.tenantId, tenantId)];
 
-    if (ativo !== undefined) conditions.push(eq(companies.ativo, ativo));
+    if (ativo !== undefined) conditions.push(eq(companies.active, ativo));
 
     // FIX: avoid manual SQL templating for LIKE; use drizzle ilike() helpers.
     if (search) {
@@ -84,16 +101,8 @@ export class CompaniesService {
       .insert(companies)
       .values({
         tenantId,
-        cnpj: data.cnpj,
-        razaoSocial: data.razaoSocial,
-        nomeFantasia: data.nomeFantasia,
-        ie: data.ie,
-        im: data.im,
-        endereco: data.endereco,
-        telefone: data.telefone,
-        email: data.email,
-        regimeTributario: data.regimeTributario,
-        ativo: data.ativo ?? true,
+        active: true,
+        ...this.mapCompanyInput(data),
       })
       .returning();
 
@@ -119,9 +128,15 @@ export class CompaniesService {
       if (cnpjExists) throw new ConflictError(`Empresa com CNPJ ${data.cnpj} ja existe`);
     }
 
+    const updateData = this.mapCompanyInput(data);
+
+    if (Object.keys(updateData).length === 0) {
+      throw new ValidationError('Nenhum campo valido informado para atualizacao');
+    }
+
     const [updated] = await this.db
       .update(companies)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...updateData, updatedAt: new Date() })
       .where(and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)))
       .returning();
 
@@ -134,7 +149,10 @@ export class CompaniesService {
     });
     if (!existing) throw new NotFoundError("Empresa", companyId);
 
-    await this.db.update(companies).set({ ativo: false, updatedAt: new Date() }).where(eq(companies.id, companyId));
+    await this.db
+      .update(companies)
+      .set({ active: false, updatedAt: new Date() })
+      .where(and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)));
   }
 
   async uploadCertificate(tenantId: string, companyId: string, pfxBuffer: Buffer, password: string) {
@@ -170,7 +188,7 @@ export class CompaniesService {
         certificateExpiry: info.validTo,
         updatedAt: new Date(),
       })
-      .where(eq(companies.id, companyId));
+      .where(and(eq(companies.id, companyId), eq(companies.tenantId, tenantId)));
 
     return {
       cnpj: info.cnpj,
@@ -187,7 +205,10 @@ export class CompaniesService {
     });
     if (!existing) throw new NotFoundError("Empresa", companyId);
 
-    const nsuEntries = await this.db.select().from(nsuControl).where(eq(nsuControl.companyId, companyId));
+    const nsuEntries = await this.db
+      .select()
+      .from(nsuControl)
+      .where(eq(nsuControl.companyId, companyId));
 
     return nsuEntries.map((entry) => ({
       docType: entry.docType,

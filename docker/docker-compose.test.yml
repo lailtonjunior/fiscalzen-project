@@ -10,7 +10,7 @@ services:
     image: postgres:16-alpine
     container_name: fiscalzen-postgres-test
     ports:
-      - '5434:5432'
+      - '55434:5432'
     environment:
       POSTGRES_USER: fiscalzen_test
       POSTGRES_PASSWORD: fiscalzen_test
@@ -34,7 +34,7 @@ services:
     image: redis:7-alpine
     container_name: fiscalzen-redis-test
     ports:
-      - '6380:6379'
+      - '56380:6379'
     # No auth for test simplicity
     command: redis-server --appendonly no
     tmpfs:

@@ -3,6 +3,8 @@ import { container } from 'tsyringe';
 import { WebhookService } from './service';
 import { getTenantId } from '../../plugins/auth';
 import { standardResponses } from '../../utils/schema-converter';
+import { sendSuccess } from '../../utils/response';
+import { NotFoundError } from '../../utils/errors';
 
 const webhookService = container.resolve(WebhookService);
 
@@ -27,9 +29,10 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 401: standardResponses[401],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
-        return webhookService.list(tenantId);
+        const webhooks = await webhookService.list(tenantId);
+        return sendSuccess(reply, webhooks);
     });
 
     // POST /api/v1/webhooks - Create webhook
@@ -40,23 +43,25 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
             description: 'Configura um novo webhook para receber notificações',
             body: {
                 type: 'object',
-                required: ['url', 'events'],
+                required: ['name', 'url', 'events'],
                 properties: {
+                    name: { type: 'string', minLength: 1, maxLength: 100 },
                     url: { type: 'string', format: 'uri' },
                     events: { type: 'array', items: { type: 'string' } },
                     active: { type: 'boolean', default: true },
                 },
             },
             response: {
-                201: { description: 'Webhook criado' },
+                201: standardResponses[201],
                 400: standardResponses[400],
                 401: standardResponses[401],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const data = request.body as any;
-        return webhookService.create(tenantId, data);
+        const webhook = await webhookService.create(tenantId, data);
+        return sendSuccess(reply, webhook, 201);
     });
 
     // GET /api/v1/webhooks/:id - Get webhook
@@ -70,17 +75,19 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 properties: { id: { type: 'string', format: 'uuid' } },
             },
             response: {
-                200: { description: 'Detalhes do webhook' },
+                200: standardResponses[200],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
         const webhook = await webhookService.get(id, tenantId);
-        if (!webhook) throw { statusCode: 404, message: 'Webhook not found' };
-        return webhook;
+        if (!webhook) {
+            throw new NotFoundError('Webhook');
+        }
+        return sendSuccess(reply, webhook);
     });
 
     // PUT /api/v1/webhooks/:id - Update webhook
@@ -94,17 +101,18 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 properties: { id: { type: 'string', format: 'uuid' } },
             },
             response: {
-                200: { description: 'Webhook atualizado' },
+                200: standardResponses[200],
                 400: standardResponses[400],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
         const data = request.body as any;
-        return webhookService.update(id, tenantId, data);
+        const webhook = await webhookService.update(id, tenantId, data);
+        return sendSuccess(reply, webhook);
     });
 
     // DELETE /api/v1/webhooks/:id - Delete webhook
@@ -118,16 +126,16 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 properties: { id: { type: 'string', format: 'uuid' } },
             },
             response: {
-                200: { description: 'Webhook excluído' },
+                200: standardResponses[200],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
         await webhookService.delete(id, tenantId);
-        return { success: true };
+        return sendSuccess(reply, { deleted: true });
     });
 
     // POST /api/v1/webhooks/:id/test - Test webhook
@@ -141,15 +149,16 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 properties: { id: { type: 'string', format: 'uuid' } },
             },
             response: {
-                200: { description: 'Resultado do teste' },
+                200: standardResponses[200],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
-        return webhookService.test(id, tenantId);
+        const result = await webhookService.test(id, tenantId);
+        return sendSuccess(reply, result);
     });
 
     // GET /api/v1/webhooks/:id/logs - Get webhook logs
@@ -170,20 +179,21 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 },
             },
             response: {
-                200: { description: 'Lista de logs' },
+                200: standardResponses[200],
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
         const { page, limit } = request.query as any;
 
-        return webhookService.getLogs(id, tenantId, {
+        const logs = await webhookService.getLogs(id, tenantId, {
             page: page ? parseInt(page) : 1,
             limit: limit ? parseInt(limit) : 20
         });
+        return sendSuccess(reply, logs);
     });
 
     // POST /api/v1/webhooks/:id/regenerate-secret - Regenerate secret
@@ -201,18 +211,24 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                     description: 'Novo secret gerado',
                     type: 'object',
                     properties: {
-                        secret: { type: 'string' },
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                secret: { type: 'string' },
+                            },
+                        },
                     },
                 },
                 401: standardResponses[401],
                 404: standardResponses[404],
             },
         },
-    }, async (request) => {
+    }, async (request, reply) => {
         const tenantId = getTenantId(request);
         const { id } = request.params as { id: string };
         const secret = await webhookService.regenerateSecret(id, tenantId);
-        return { secret };
+        return sendSuccess(reply, { secret });
     });
 
     // GET /api/v1/webhooks/events-metadata - Available events
@@ -226,13 +242,19 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                     description: 'Lista de eventos',
                     type: 'object',
                     properties: {
-                        events: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    id: { type: 'string' },
-                                    label: { type: 'string' },
+                        success: { type: 'boolean' },
+                        data: {
+                            type: 'object',
+                            properties: {
+                                events: {
+                                    type: 'array',
+                                    items: {
+                                        type: 'object',
+                                        properties: {
+                                            id: { type: 'string' },
+                                            label: { type: 'string' },
+                                        },
+                                    },
                                 },
                             },
                         },
@@ -240,8 +262,8 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 },
             },
         },
-    }, async () => {
-        return {
+    }, async (_request, reply) => {
+        return sendSuccess(reply, {
             events: [
                 { id: 'document.created', label: 'Documento Criado/Importado' },
                 { id: 'document.manifested', label: 'Documento Manifestado' },
@@ -249,6 +271,6 @@ export const webhooksRoutes: FastifyPluginAsync = async (fastify) => {
                 { id: 'document.cte_desacordo', label: 'Desacordo de CTe' },
                 { id: 'document.tagged', label: 'Tag Adicionada' }
             ]
-        };
+        });
     });
 };

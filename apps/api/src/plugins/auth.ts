@@ -35,14 +35,11 @@ declare module 'fastify' {
 
 function buildDevUser(): JwtPayload {
   // UUIDs validos para DEV (evita "invalid input syntax for type uuid")
-  const sub = process.env.DEV_USER_ID ?? '00000000-0000-0000-0000-000000000001';
-  const tenantId = process.env.DEV_TENANT_ID ?? '00000000-0000-0000-0000-000000000000';
-
   return {
-    sub,
-    tenantId,
+    sub: env.DEV_USER_ID,
+    tenantId: env.DEV_TENANT_ID,
     role: 'admin',
-    email: 'dev@local',
+    email: env.DEV_USER_EMAIL,
   };
 }
 
@@ -61,8 +58,8 @@ async function authPlugin(fastify: FastifyInstance) {
     // DEV ONLY: bypass opcional (NUNCA habilitar em produção!)
     // Double-check: explicitamente verificamos NODE_ENV === 'development'
     if (
-      process.env.NODE_ENV === 'development' &&
-      process.env.DISABLE_AUTH === 'true'
+      env.NODE_ENV === 'development' &&
+      env.DISABLE_AUTH
     ) {
       // Log warning para visibilidade (development only)
       fastify.log.warn(
@@ -74,7 +71,7 @@ async function authPlugin(fastify: FastifyInstance) {
     }
 
     // Safeguard: se DISABLE_AUTH está definido em prod, logar e ignorar
-    if (process.env.NODE_ENV === 'production' && process.env.DISABLE_AUTH) {
+    if (env.NODE_ENV === 'production' && env.DISABLE_AUTH) {
       fastify.log.error(
         '🚨 DISABLE_AUTH definido em PRODUÇÃO! Ignorando para segurança.'
       );

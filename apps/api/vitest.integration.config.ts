@@ -24,6 +24,8 @@ export default defineConfig({
         globalSetup: ['./tests/integration/global-setup.ts'],
         // Setup files for integration test environment
         setupFiles: ['./tests/integration/setup.ts'],
+        // Do not run integration test files in parallel against the shared test database
+        fileParallelism: false,
         // Run tests sequentially to avoid database conflicts
         sequence: {
             concurrent: false,

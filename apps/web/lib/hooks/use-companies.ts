@@ -46,7 +46,7 @@ export function useCompanyNsuControl(companyId: string) {
   return useQuery({
     queryKey: companyKeys.nsuControl(companyId),
     queryFn: async () => {
-      const response = await api.get<NsuControl[]>(`/api/v1/companies/${companyId}/nsu`);
+      const response = await api.get<NsuControl[]>(`/api/v1/companies/${companyId}/nsu-status`);
       return response.data ?? [];
     },
     enabled: !!companyId,
@@ -72,7 +72,7 @@ export function useUpdateCompany() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CompanyFormData> }) => {
-      const response = await api.patch<Company>(`/api/v1/companies/${id}`, data);
+      const response = await api.put<Company>(`/api/v1/companies/${id}`, data);
       return response.data;
     },
     onSuccess: (_, variables) => {

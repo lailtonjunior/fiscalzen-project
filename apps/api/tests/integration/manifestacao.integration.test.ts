@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import {
     createTestClient,
     cleanupDatabase,
@@ -48,7 +48,7 @@ describe('Manifestação Integration Tests', () => {
                 .update(schema.documents)
                 .set({
                     manifestacao: 'ciencia',
-                    manifestacaoData: new Date().toISOString(),
+                    manifestacaoData: new Date(),
                 })
                 .where(eq(schema.documents.id, doc.id))
                 .returning();
@@ -117,7 +117,7 @@ describe('Manifestação Integration Tests', () => {
                 .where(
                     and(
                         eq(schema.documents.tenantId, tenant.id),
-                        eq(schema.documents.manifestacao, null as unknown as string)
+                        isNull(schema.documents.manifestacao)
                     )
                 );
 

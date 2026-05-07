@@ -2,7 +2,7 @@ import 'dotenv/config';
 import postgres from 'postgres';
 
 async function testConnection() {
-  const connectionString = process.env.DATABASE_URL || 'postgresql://fiscalzen:fiscalzen_dev@localhost:5432/fiscalzen';
+  const connectionString = process.env.DATABASE_URL || 'postgresql://fiscalzen:fiscalzen@localhost:55432/fiscalzen';
 
   console.log('🔍 Testing database connection...');
   console.log(`📍 URL: ${connectionString.replace(/:[^:@]+@/, ':***@')}`);
